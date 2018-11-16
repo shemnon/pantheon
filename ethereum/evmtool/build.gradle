@@ -1,0 +1,31 @@
+apply plugin: 'java-library'
+apply plugin: 'application'
+
+jar {
+  baseName 'pantheon-evmtool'
+  manifest {
+    attributes(
+      'Specification-Title': baseName,
+      'Specification-Version': project.version,
+      'Implementation-Title': baseName,
+      'Implementation-Version': calculateVersion()
+      )
+  }
+}
+
+dependencies {
+  implementation('info.picocli:picocli')
+  implementation project(':ethereum:core')
+  implementation project(':util')
+}
+
+startScripts {
+  outputDir = startScripts.outputDir
+  mainClassName = 'tech.pegasys.pantheon.evmtool.EVMTool'
+  applicationName = 'evm'
+  classpath = startScripts.classpath
+  doLast {
+    unixScript.text = unixScript.text.replace('PANTHEON_HOME', '\$APP_HOME')
+    windowsScript.text = windowsScript.text.replace('PANTHEON_HOME', '%~dp0..')
+  }
+}

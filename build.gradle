@@ -330,6 +330,7 @@ startScripts {
 }
 
 dependencies {
+  compile project(':ethereum:evmtool')
   compile project(':pantheon')
   errorprone 'com.google.errorprone:error_prone_core:2.3.1'
 }
