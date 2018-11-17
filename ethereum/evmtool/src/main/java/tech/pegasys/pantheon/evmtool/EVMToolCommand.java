@@ -12,13 +12,50 @@
  */
 package tech.pegasys.pantheon.evmtool;
 
+import tech.pegasys.pantheon.config.GenesisConfigFile;
+import tech.pegasys.pantheon.config.GenesisConfigOptions;
+import tech.pegasys.pantheon.ethereum.chain.Blockchain;
+import tech.pegasys.pantheon.ethereum.chain.GenesisState;
 import tech.pegasys.pantheon.ethereum.core.Address;
+import tech.pegasys.pantheon.ethereum.core.BlockHeader;
+import tech.pegasys.pantheon.ethereum.core.BlockHeaderBuilder;
+import tech.pegasys.pantheon.ethereum.core.Gas;
+import tech.pegasys.pantheon.ethereum.core.Hash;
+import tech.pegasys.pantheon.ethereum.core.LogsBloomFilter;
 import tech.pegasys.pantheon.ethereum.core.Wei;
+import tech.pegasys.pantheon.ethereum.db.BlockchainStorage;
+import tech.pegasys.pantheon.ethereum.db.DefaultMutableBlockchain;
+import tech.pegasys.pantheon.ethereum.db.KeyValueStoragePrefixedKeyBlockchainStorage;
+import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHashFunction;
+import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
+import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
+import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
+import tech.pegasys.pantheon.ethereum.vm.BlockHashLookup;
+import tech.pegasys.pantheon.ethereum.vm.Code;
+import tech.pegasys.pantheon.ethereum.vm.EVM;
+import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
+import tech.pegasys.pantheon.ethereum.vm.ehalt.ExceptionalHaltException;
+import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
+import tech.pegasys.pantheon.ethereum.worldstate.KeyValueStorageWorldStateStorage;
+import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
+import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.bytes.BytesValues;
+import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.List;
 
+import com.google.common.base.Stopwatch;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -27,6 +64,7 @@ import picocli.CommandLine.Option;
   description = "This command evaluates EVM transactions.",
   abbreviateSynopsis = true,
   name = "evm",
+  mixinStandardHelpOptions = true,
   sortOptions = false,
   // TODO: pull out of main   versionProvider = VersionProvider.class,
   header = "Usage:",
@@ -38,12 +76,14 @@ import picocli.CommandLine.Option;
 )
 public class EVMToolCommand implements Runnable {
 
+  private static final Logger LOG = LogManager.getLogger();
+
   @Option(
     names = {"--code"},
     paramLabel = "<code>",
     description = "code to be executed"
   )
-  String codeHexString = "";
+  BytesValue codeHexString = BytesValue.EMPTY;
 
   @Option(
     names = {"--codefile"},
@@ -56,7 +96,7 @@ public class EVMToolCommand implements Runnable {
     names = {"--gas"},
     paramLabel = "<int>"
   )
-  int gas = 0;
+  Gas gas = Gas.of(10_000_000_000L);
 
   @Option(
     names = {"--price"},
@@ -83,13 +123,13 @@ public class EVMToolCommand implements Runnable {
     paramLabel = "<code>",
     description = "CALLDATA"
   )
-  BytesValue callData = BytesValue.of();
+  BytesValue callData = BytesValue.EMPTY;
 
   @Option(
     names = {"--value"},
     paramLabel = "<int>"
   )
-  int ethValue = 0;
+  Wei ethValue = Wei.ZERO;
 
   @Option(
     names = {"--json"},
@@ -110,10 +150,10 @@ public class EVMToolCommand implements Runnable {
   BytesValue createCode = BytesValue.of();
 
   @Option(
-    names = {"--prestate"},
+    names = {"--prestate", "--genesis"},
     description = "a chain specification, the same one that the client normally would use"
   )
-  File prestate;
+  File genesisFile;
 
   public void parse(
       final CommandLine.AbstractParseResultHandler<List<Object>> resultHandler,
@@ -126,6 +166,7 @@ public class EVMToolCommand implements Runnable {
 
     commandLine.registerConverter(Address.class, Address::fromHexString);
     commandLine.registerConverter(BytesValue.class, BytesValue::fromHexString);
+    commandLine.registerConverter(Gas.class, (arg) -> Gas.of(Long.parseUnsignedLong(arg)));
     commandLine.registerConverter(Wei.class, (arg) -> Wei.of(Long.parseUnsignedLong(arg)));
 
     commandLine.parseWithHandlers(resultHandler, exceptionHandler, args);
@@ -133,6 +174,123 @@ public class EVMToolCommand implements Runnable {
 
   @Override
   public void run() {
-    // TODO: something useful
+    try {
+      final String genesisConfig =
+          new String(Files.readAllBytes(genesisFile.toPath()), Charset.defaultCharset());
+      final GenesisConfigFile config = GenesisConfigFile.fromConfig(genesisConfig);
+      final GenesisConfigOptions configOptions = config.getConfigOptions();
+      final ProtocolSchedule<Void> protocolSchedule = MainnetProtocolSchedule.fromConfig(configOptions);
+
+      final GenesisState genesisState =
+          GenesisState.fromConfig(GenesisConfigFile.mainnet(), protocolSchedule);
+      final KeyValueStorage keyValueStorage = new InMemoryKeyValueStorage();
+
+      final BlockchainStorage blockchainStorage =
+          new KeyValueStoragePrefixedKeyBlockchainStorage(
+              keyValueStorage, MainnetBlockHashFunction::createHash);
+
+      final Blockchain blockchain =
+          new DefaultMutableBlockchain(genesisState.getBlock(), blockchainStorage);
+
+      final DefaultMutableWorldState worldState =
+          new DefaultMutableWorldState(new KeyValueStorageWorldStateStorage(keyValueStorage));
+
+      final ProtocolSpec<Void> protocolSpec = protocolSchedule.getByBlockNumber(0);
+      final EVM evm = protocolSpec.getEvm();
+
+      final Address zeroAddress = Address.fromHexString(String.format("%020x", 0));
+
+      final BlockHeader blockHeader =
+          BlockHeaderBuilder.create()
+              .parentHash(Hash.EMPTY)
+              .coinbase(zeroAddress)
+              .difficulty(UInt256.ONE)
+              .number(1)
+              .gasLimit(5000)
+              .timestamp(Instant.now().toEpochMilli())
+              .ommersHash(Hash.EMPTY_LIST_HASH)
+              .stateRoot(Hash.EMPTY_TRIE_HASH)
+              .transactionsRoot(Hash.EMPTY)
+              .receiptsRoot(Hash.EMPTY)
+              .logsBloom(LogsBloomFilter.empty())
+              .gasUsed(0)
+              .extraData(BytesValue.EMPTY)
+              .mixHash(Hash.EMPTY)
+              .nonce(0)
+              .blockHashFunction(MainnetBlockHashFunction::createHash)
+              .buildBlockHeader();
+
+      final MessageFrame messageFrame =
+          MessageFrame.builder()
+              .type(MessageFrame.Type.MESSAGE_CALL)
+              .messageFrameStack(new ArrayDeque<>())
+              .blockchain(blockchain)
+              .worldState(worldState.updater())
+              .initialGas(gas)
+              .contract(zeroAddress)
+              .address(receiver)
+              .originator(sender)
+              .gasPrice(gasPriceGWei)
+              .inputData(callData)
+              .sender(zeroAddress)
+              .value(ethValue)
+              .apparentValue(ethValue)
+              .code(new Code(codeHexString))
+              .blockHeader(blockHeader)
+              .depth(0)
+              .completer(c -> {})
+              .miningBeneficiary(blockHeader.getCoinbase())
+              .blockHashLookup(new BlockHashLookup(blockHeader, blockchain))
+              .build();
+
+      messageFrame.setState(MessageFrame.State.CODE_EXECUTING);
+      final Stopwatch stopwatch = Stopwatch.createStarted();
+      evm.runToHalt(
+          messageFrame,
+          (frame, currentGasCost, executeOperation) -> {
+            if (showJsonResults) {
+              System.out.println(createEvmTraceOperation(messageFrame));
+            }
+            executeOperation.execute();
+          });
+      stopwatch.stop();
+
+      System.out.println(
+          new JsonObject()
+              .put(
+                  "gasUser",
+                  gas.minus(messageFrame.getRemainingGas()).asUInt256().toShortHexString())
+              .put("timens", stopwatch.elapsed().toNanos())
+              .put("time", stopwatch.elapsed().toNanos() / 1000));
+
+    } catch (final IOException | ExceptionalHaltException e) {
+      LOG.fatal(e);
+    }
+  }
+
+  JsonObject createEvmTraceOperation(final MessageFrame messageFrame) {
+    final JsonArray stack = new JsonArray();
+    for (int i = 0; i < messageFrame.stackSize(); i++) {
+      stack.add(messageFrame.getStackItem(i).asUInt256().toShortHexString());
+    }
+
+    return new JsonObject()
+        .put("pc", messageFrame.getPC())
+        .put("op", messageFrame.getCurrentOperation().getOpcode())
+        .put("gas", messageFrame.getRemainingGas().asUInt256().toShortHexString())
+        .put(
+            "gasCost",
+            messageFrame.getCurrentOperation().cost(messageFrame).asUInt256().toShortHexString())
+        .put(
+            "memory",
+            "0x"
+                + BytesValues.asUnsignedBigInteger(
+                        messageFrame.readMemory(UInt256.ZERO, messageFrame.memoryWordSize()))
+                    .toString(16))
+        .put("memSize", messageFrame.memoryByteSize())
+        .put("depth", messageFrame.getMessageStackDepth() + 1)
+        .put("stack", stack)
+        .put("error", (JsonObject) null) // FIXME
+        .put("opName", messageFrame.getCurrentOperation().getName());
   }
 }

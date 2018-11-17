@@ -22,8 +22,7 @@ public final class EVMTool {
 
   public static void main(final String... args) {
 
-    final EVMToolCommand evmToolCommand =
-        new EVMToolCommand();
+    final EVMToolCommand evmToolCommand = new EVMToolCommand();
 
     evmToolCommand.parse(
         new CommandLine.RunLast().andExit(SUCCESS_EXIT_CODE),

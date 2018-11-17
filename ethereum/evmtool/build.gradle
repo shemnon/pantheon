@@ -14,16 +14,24 @@ jar {
 }
 
 dependencies {
-  implementation('info.picocli:picocli')
+  implementation project(':config')
   implementation project(':ethereum:core')
+  implementation project(':services:kvstore')
   implementation project(':util')
+
+  implementation 'com.google.guava:guava'
+  implementation 'info.picocli:picocli'
+  implementation 'io.vertx:vertx-core'
+  implementation 'org.apache.logging.log4j:log4j-api'
+  implementation 'org.apache.logging.log4j:log4j-core'
 }
 
+mainClassName = 'tech.pegasys.pantheon.evmtool.EVMTool'
+
 startScripts {
-  outputDir = startScripts.outputDir
-  mainClassName = 'tech.pegasys.pantheon.evmtool.EVMTool'
+  //  outputDir = startScripts.outputDir
   applicationName = 'evm'
-  classpath = startScripts.classpath
+  //  classpath = startScripts.classpath
   doLast {
     unixScript.text = unixScript.text.replace('PANTHEON_HOME', '\$APP_HOME')
     windowsScript.text = windowsScript.text.replace('PANTHEON_HOME', '%~dp0..')
