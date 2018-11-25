@@ -14,14 +14,9 @@ package tech.pegasys.pantheon.evmtool;
 
 import tech.pegasys.pantheon.config.GenesisConfigFile;
 import tech.pegasys.pantheon.config.GenesisConfigOptions;
-import tech.pegasys.pantheon.consensus.clique.CliqueProtocolSchedule;
-import tech.pegasys.pantheon.consensus.ibft.IbftBlockHashing;
-import tech.pegasys.pantheon.consensus.ibft.IbftProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHashFunction;
-import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHashFunction;
-import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 
 import java.io.File;
@@ -33,18 +28,19 @@ import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
+import io.vertx.core.json.JsonObject;
 
 @Module
 public class GenesisFileModule {
 
   final String genesisConfig;
 
-  public GenesisFileModule(final File genesisFile) throws IOException {
+  protected GenesisFileModule(final File genesisFile) throws IOException {
     this.genesisConfig =
         new String(Files.readAllBytes(genesisFile.toPath()), Charset.defaultCharset());
   }
 
-  public GenesisFileModule(final String genesisConfig) {
+  protected GenesisFileModule(final String genesisConfig) {
     this.genesisConfig = genesisConfig;
   }
 
@@ -63,16 +59,7 @@ public class GenesisFileModule {
   @Singleton
   @Provides
   ProtocolSchedule<?> provideProtocolSchedule(final GenesisConfigOptions configOptions) {
-    if (configOptions.isEthHash()) {
-      return MainnetProtocolSchedule.fromConfig(configOptions);
-    } else if (configOptions.isClique()) {
-      return CliqueProtocolSchedule.create(configOptions, null); // FIXME node keys
-    } else if (configOptions.isIbft()) {
-      return IbftProtocolSchedule.create(configOptions);
-    } else {
-      // LOGME default to mainnet
-      return MainnetProtocolSchedule.fromConfig(configOptions);
-    }
+    throw new RuntimeException("Abstract");
   }
 
   @Singleton
@@ -84,12 +71,8 @@ public class GenesisFileModule {
 
   @Singleton
   @Provides
-  BlockHashFunction blockHashFunction(final GenesisConfigOptions configOptions) {
-    if (configOptions.isIbft()) {
-      return IbftBlockHashing::calculateHashOfIbftBlockOnChain;
-    } else {
-      return MainnetBlockHashFunction::createHash;
-    }
+  BlockHashFunction blockHashFunction() {
+    throw new RuntimeException("Abstract");
   }
 
   @Singleton
@@ -97,5 +80,26 @@ public class GenesisFileModule {
   @Named("GenesisBlock")
   Block provideGenesisBlock(final GenesisState genesisState) {
     return genesisState.getBlock();
+  }
+
+  static GenesisFileModule creteGenesisModule(final File genesisFile) throws IOException {
+    return createGenesisModule(
+        new String(Files.readAllBytes(genesisFile.toPath()), Charset.defaultCharset()));
+  }
+
+  private static GenesisFileModule createGenesisModule(final String genesisConfig) {
+    // duplicating work from JsonGenesisConfigOptions, but in a refactoring this goes away.
+    final JsonObject genesis = new JsonObject(genesisConfig);
+    final JsonObject config = genesis.getJsonObject("config");
+    if (config.containsKey("ethash")) {
+      return new MainnetGenesisFileModule(genesisConfig);
+    } else if (config.containsKey("ibft")) {
+      return new IBFTGenesisFileModule(genesisConfig);
+    } else if (config.containsKey("clique")) {
+      return new CliqueGenesisFileModule(genesisConfig);
+    } else {
+      // default is mainnet
+      return new MainnetGenesisFileModule(genesisConfig);
+    }
   }
 }

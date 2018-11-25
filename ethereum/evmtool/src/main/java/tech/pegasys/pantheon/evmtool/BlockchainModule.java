@@ -29,7 +29,7 @@ import javax.inject.Singleton;
 import dagger.Module;
 import dagger.Provides;
 
-@Module(includes = {GenesisFileModule.class, InMemoryDataStoreModule.class})
+@Module(includes = {GenesisFileModule.class, DataStoreModule.class})
 public class BlockchainModule {
 
   @Singleton

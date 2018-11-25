@@ -12,13 +12,25 @@
  */
 package tech.pegasys.pantheon.evmtool;
 
-import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
+import tech.pegasys.pantheon.ethereum.core.BlockHashFunction;
+import tech.pegasys.pantheon.ethereum.db.BlockchainStorage;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStoragePrefixedKeyBlockchainStorage;
 import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 
-public class InMemoryDataStoreModule extends DataStoreModule {
+import dagger.Module;
+import dagger.Provides;
 
-  @Override
+@Module(includes = GenesisFileModule.class)
+public class DataStoreModule {
+
+  @Provides
   KeyValueStorage provideKeyValueStorage() {
-    return new InMemoryKeyValueStorage();
+    throw new RuntimeException("Abstract");
+  }
+
+  @Provides
+  static BlockchainStorage provideBlockchainStorage(
+      final KeyValueStorage keyValueStorage, final BlockHashFunction blockHashFunction) {
+    return new KeyValueStoragePrefixedKeyBlockchainStorage(keyValueStorage, blockHashFunction);
   }
 }

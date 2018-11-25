@@ -26,7 +26,7 @@ import dagger.Component;
   modules = {
     ProtocolModule.class,
     GenesisFileModule.class,
-    InMemoryDataStoreModule.class,
+    DataStoreModule.class,
     BlockchainModule.class
   }
 )

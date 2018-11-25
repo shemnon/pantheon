@@ -161,8 +161,8 @@ public class EvmToolCommand implements Runnable {
     try {
       final EvmToolComponent component =
           DaggerEvmToolComponent.builder()
-              .protocolModule(new ProtocolModule())
-              .genesisFileModule(new GenesisFileModule(genesisFile))
+              .dataStoreModule(new InMemoryDataStoreModule())
+              .genesisFileModule(GenesisFileModule.creteGenesisModule(genesisFile))
               .build();
 
       final Address zeroAddress = Address.fromHexString(String.format("%020x", 0));
