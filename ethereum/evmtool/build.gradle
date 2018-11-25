@@ -15,10 +15,14 @@ jar {
 
 dependencies {
   implementation project(':config')
+  implementation project(':crypto')
+  implementation project(':consensus:clique')
+  implementation project(':consensus:ibft')
   implementation project(':ethereum:core')
   implementation project(':services:kvstore')
   implementation project(':util')
 
+  implementation 'com.google.dagger:dagger:2.19'
   implementation 'com.google.guava:guava'
   implementation 'info.picocli:picocli'
   implementation 'io.vertx:vertx-core'

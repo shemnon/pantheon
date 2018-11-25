@@ -12,8 +12,6 @@
  */
 package tech.pegasys.pantheon.evmtool;
 
-import tech.pegasys.pantheon.config.GenesisConfigFile;
-import tech.pegasys.pantheon.config.GenesisConfigOptions;
 import tech.pegasys.pantheon.ethereum.chain.Blockchain;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
 import tech.pegasys.pantheon.ethereum.core.Address;
@@ -25,18 +23,15 @@ import tech.pegasys.pantheon.ethereum.core.LogsBloomFilter;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.db.BlockchainStorage;
 import tech.pegasys.pantheon.ethereum.db.DefaultMutableBlockchain;
-import tech.pegasys.pantheon.ethereum.db.KeyValueStoragePrefixedKeyBlockchainStorage;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHashFunction;
-import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
-import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
-import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStoragePrefixedKeyBlockchainStorage;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStorageWorldStateStorage;
 import tech.pegasys.pantheon.ethereum.vm.BlockHashLookup;
 import tech.pegasys.pantheon.ethereum.vm.Code;
 import tech.pegasys.pantheon.ethereum.vm.EVM;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
 import tech.pegasys.pantheon.ethereum.vm.ehalt.ExceptionalHaltException;
 import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
-import tech.pegasys.pantheon.ethereum.worldstate.KeyValueStorageWorldStateStorage;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
 import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -45,8 +40,6 @@ import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -74,7 +67,7 @@ import picocli.CommandLine.Option;
   footerHeading = "%n",
   footer = "Pantheon is licensed under the Apache License 2.0"
 )
-public class EVMToolCommand implements Runnable {
+public class EvmToolCommand implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger();
 
@@ -175,16 +168,15 @@ public class EVMToolCommand implements Runnable {
   @Override
   public void run() {
     try {
-      final String genesisConfig =
-          new String(Files.readAllBytes(genesisFile.toPath()), Charset.defaultCharset());
-      final GenesisConfigFile config = GenesisConfigFile.fromConfig(genesisConfig);
-      final GenesisConfigOptions configOptions = config.getConfigOptions();
-      final ProtocolSchedule<Void> protocolSchedule = MainnetProtocolSchedule.fromConfig(configOptions);
+      final EvmToolComponent component =
+          DaggerEvmToolComponent.builder()
+              .protocolModule(new ProtocolModule())
+              .genesisFileModule(new GenesisFileModule(genesisFile))
+              .build();
 
-      final GenesisState genesisState =
-          GenesisState.fromConfig(GenesisConfigFile.mainnet(), protocolSchedule);
+      final GenesisState genesisState = component.getGenesisState();
+
       final KeyValueStorage keyValueStorage = new InMemoryKeyValueStorage();
-
       final BlockchainStorage blockchainStorage =
           new KeyValueStoragePrefixedKeyBlockchainStorage(
               keyValueStorage, MainnetBlockHashFunction::createHash);
@@ -195,8 +187,7 @@ public class EVMToolCommand implements Runnable {
       final DefaultMutableWorldState worldState =
           new DefaultMutableWorldState(new KeyValueStorageWorldStateStorage(keyValueStorage));
 
-      final ProtocolSpec<Void> protocolSpec = protocolSchedule.getByBlockNumber(0);
-      final EVM evm = protocolSpec.getEvm();
+      final EVM evm = component.getEvmAtBlock().apply(0);
 
       final Address zeroAddress = Address.fromHexString(String.format("%020x", 0));
 

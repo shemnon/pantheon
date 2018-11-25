@@ -16,13 +16,13 @@ import static picocli.CommandLine.defaultExceptionHandler;
 
 import picocli.CommandLine;
 
-public final class EVMTool {
+public final class EvmTool {
   private static final int SUCCESS_EXIT_CODE = 0;
   private static final int ERROR_EXIT_CODE = 1;
 
   public static void main(final String... args) {
 
-    final EVMToolCommand evmToolCommand = new EVMToolCommand();
+    final EvmToolCommand evmToolCommand = new EvmToolCommand();
 
     evmToolCommand.parse(
         new CommandLine.RunLast().andExit(SUCCESS_EXIT_CODE),

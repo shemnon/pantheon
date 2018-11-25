@@ -106,6 +106,7 @@ allprojects {
         exclude '**/blockchain/BlockchainReferenceTest*.java'
         exclude '**/pantheon/PantheonInfo.java'
         exclude '**/.gradle/**'
+        exclude '**/generated/**'
       }
       removeUnusedImports()
       googleJavaFormat()
@@ -154,7 +155,7 @@ allprojects {
     ]
 
     options.errorprone {
-      excludedPaths '.*/(generated/*.*|.*ReferenceTest_.*)'
+      excludedPaths '.*/(generated/.*|.*ReferenceTest_.*)'
       check('FutureReturnValueIgnored', CheckSeverity.OFF)
       check('InsecureCryptoUsage', CheckSeverity.WARN)
       check('FieldCanBeFinal', CheckSeverity.WARN)
@@ -385,12 +386,17 @@ configurations { annotationProcessor }
 // Prevent errorprone-checks being dependent upon errorprone-checks!
 // However, ensure all subprojects comply with the custom rules.
 configure(subprojects.findAll {it.name != 'errorprone-checks'}) {
-  dependencies { annotationProcessor project(":errorprone-checks") }
+  dependencies {
+    annotationProcessor project(":errorprone-checks")
+    annotationProcessor 'com.google.dagger:dagger-compiler:2.19'
+  }
 
   tasks.withType(JavaCompile) {
     options.compilerArgs += [
       '-processorpath',
-      configurations.annotationProcessor.asPath
+      configurations.annotationProcessor.asPath,
+      '-s',
+      "${project.projectDir}/build/generated/main/java"
     ]
   }
 }
