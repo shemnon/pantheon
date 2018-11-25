@@ -15,8 +15,12 @@ package tech.pegasys.pantheon.evmtool;
 import tech.pegasys.pantheon.config.GenesisConfigFile;
 import tech.pegasys.pantheon.config.GenesisConfigOptions;
 import tech.pegasys.pantheon.consensus.clique.CliqueProtocolSchedule;
+import tech.pegasys.pantheon.consensus.ibft.IbftBlockHashing;
 import tech.pegasys.pantheon.consensus.ibft.IbftProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
+import tech.pegasys.pantheon.ethereum.core.Block;
+import tech.pegasys.pantheon.ethereum.core.BlockHashFunction;
+import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHashFunction;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 
@@ -24,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import dagger.Module;
@@ -75,5 +80,22 @@ public class GenesisFileModule {
   GenesisState provideGenesisState(
       final GenesisConfigFile genesisConfigFile, final ProtocolSchedule<?> protocolSchedule) {
     return GenesisState.fromConfig(genesisConfigFile, protocolSchedule);
+  }
+
+  @Singleton
+  @Provides
+  BlockHashFunction blockHashFunction(final GenesisConfigOptions configOptions) {
+    if (configOptions.isIbft()) {
+      return IbftBlockHashing::calculateHashOfIbftBlockOnChain;
+    } else {
+      return MainnetBlockHashFunction::createHash;
+    }
+  }
+
+  @Singleton
+  @Provides
+  @Named("GenesisBlock")
+  Block provideGenesisBlock(final GenesisState genesisState) {
+    return genesisState.getBlock();
   }
 }

@@ -12,8 +12,6 @@
  */
 package tech.pegasys.pantheon.evmtool;
 
-import tech.pegasys.pantheon.ethereum.chain.Blockchain;
-import tech.pegasys.pantheon.ethereum.chain.GenesisState;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.BlockHeaderBuilder;
@@ -21,19 +19,12 @@ import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.LogsBloomFilter;
 import tech.pegasys.pantheon.ethereum.core.Wei;
-import tech.pegasys.pantheon.ethereum.db.BlockchainStorage;
-import tech.pegasys.pantheon.ethereum.db.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHashFunction;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStoragePrefixedKeyBlockchainStorage;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStorageWorldStateStorage;
 import tech.pegasys.pantheon.ethereum.vm.BlockHashLookup;
 import tech.pegasys.pantheon.ethereum.vm.Code;
 import tech.pegasys.pantheon.ethereum.vm.EVM;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
 import tech.pegasys.pantheon.ethereum.vm.ehalt.ExceptionalHaltException;
-import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
-import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
-import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.bytes.BytesValues;
 import tech.pegasys.pantheon.util.uint.UInt256;
@@ -174,21 +165,6 @@ public class EvmToolCommand implements Runnable {
               .genesisFileModule(new GenesisFileModule(genesisFile))
               .build();
 
-      final GenesisState genesisState = component.getGenesisState();
-
-      final KeyValueStorage keyValueStorage = new InMemoryKeyValueStorage();
-      final BlockchainStorage blockchainStorage =
-          new KeyValueStoragePrefixedKeyBlockchainStorage(
-              keyValueStorage, MainnetBlockHashFunction::createHash);
-
-      final Blockchain blockchain =
-          new DefaultMutableBlockchain(genesisState.getBlock(), blockchainStorage);
-
-      final DefaultMutableWorldState worldState =
-          new DefaultMutableWorldState(new KeyValueStorageWorldStateStorage(keyValueStorage));
-
-      final EVM evm = component.getEvmAtBlock().apply(0);
-
       final Address zeroAddress = Address.fromHexString(String.format("%020x", 0));
 
       final BlockHeader blockHeader =
@@ -215,8 +191,8 @@ public class EvmToolCommand implements Runnable {
           MessageFrame.builder()
               .type(MessageFrame.Type.MESSAGE_CALL)
               .messageFrameStack(new ArrayDeque<>())
-              .blockchain(blockchain)
-              .worldState(worldState.updater())
+              .blockchain(component.getBlockchain())
+              .worldState(component.getWorldUpdater())
               .initialGas(gas)
               .contract(zeroAddress)
               .address(receiver)
@@ -231,10 +207,12 @@ public class EvmToolCommand implements Runnable {
               .depth(0)
               .completer(c -> {})
               .miningBeneficiary(blockHeader.getCoinbase())
-              .blockHashLookup(new BlockHashLookup(blockHeader, blockchain))
+              .blockHashLookup(new BlockHashLookup(blockHeader, component.getBlockchain()))
               .build();
 
       messageFrame.setState(MessageFrame.State.CODE_EXECUTING);
+      final EVM evm = component.getEvmAtBlock().apply(0);
+
       final Stopwatch stopwatch = Stopwatch.createStarted();
       evm.runToHalt(
           messageFrame,

@@ -12,7 +12,8 @@
  */
 package tech.pegasys.pantheon.evmtool;
 
-import tech.pegasys.pantheon.ethereum.chain.GenesisState;
+import tech.pegasys.pantheon.ethereum.chain.Blockchain;
+import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
 import tech.pegasys.pantheon.ethereum.vm.EVM;
 
 import java.util.function.Function;
@@ -21,10 +22,19 @@ import javax.inject.Singleton;
 import dagger.Component;
 
 @Singleton
-@Component(modules = {ProtocolModule.class, GenesisFileModule.class})
+@Component(
+  modules = {
+    ProtocolModule.class,
+    GenesisFileModule.class,
+    InMemoryDataStoreModule.class,
+    BlockchainModule.class
+  }
+)
 public interface EvmToolComponent {
 
   Function<Integer, EVM> getEvmAtBlock();
 
-  GenesisState getGenesisState();
+  WorldUpdater getWorldUpdater();
+
+  Blockchain getBlockchain();
 }
