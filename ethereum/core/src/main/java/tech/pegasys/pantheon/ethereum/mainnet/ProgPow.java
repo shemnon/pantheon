@@ -12,7 +12,88 @@
  */
 package tech.pegasys.pantheon.ethereum.mainnet;
 
-public class ProgPow {
+import static com.google.common.base.Preconditions.checkArgument;
+
+import java.util.function.BiConsumer;
+
+import com.google.common.primitives.UnsignedInteger;
+
+class ProgPow {
+
+  /** Number of blocks before changing the random program. */
+  private static final int PROGPOW_PERIOD = 50;
+
+  /** The number of parallel lanes that coordinate to calculate a single hash instance. */
+  private static final int PROGPOW_LANES = 16;
+
+  /** The register file usage size */
+  private static final int PROGPOW_REGS = 32;
+
+  /** Number of uint32 loads from the DAG per lane. */
+  private static final int PROGPOW_DAG_LOADS = 4;
+
+  /** The size of the cache. */
+  private static final int PROGPOW_CACHE_BYTES = 16 * 1024;
+
+  /** The number of DAG accesses, defined as the outer loop of the algorithm. */
+  private static final int PROGPOW_CNT_DAG = 64;
+
+  /** The number of cache accesses per loop. */
+  private static final int PROGPOW_CNT_CACHE = 12;
+
+  /** The number of math operations per loop. */
+  private static final int PROGPOW_CNT_MATH = 20;
+
+  /** FNV 32-bit prime. */
+  private static final int FNV_PRIME = 0x01000193;
+
+  /** FNV 32-bit offset basis. */
+  private static final int FNV_OFFSET_BASIS = 0x811c9dc5;
+
+  private static int fnv1a(final int h, final int d) {
+    return (h ^ d) * FNV_PRIME;
+  }
+
+  static class Kiss99 {
+    int z, w, jsr, jcong;
+
+    Kiss99(final int z, final int w, final int jsr, final int jcong) {
+      this.z = z;
+      this.w = w;
+      this.jsr = jsr;
+      this.jcong = jcong;
+    }
+
+    // KISS99 is simple, fast, and passes the TestU01 suite
+    // https://en.wikipedia.org/wiki/KISS_(algorithm)
+    // http://www.cse.yorku.ca/~oz/marsaglia-rng.html
+    int next() {
+      z = 36969 * (z & 65535) + (z >> 16);
+      w = 18000 * (w & 65535) + (w >> 16);
+      final int MWC = ((z << 16) + w);
+      jsr ^= (jsr << 17);
+      jsr ^= (jsr >> 13);
+      jsr ^= (jsr << 5);
+      jcong = 69069 * jcong + 1234567;
+      return ((MWC ^ jcong) + jsr);
+    }
+  }
+
+  private static void fill_mix(final long seed, final int lane_id, final int[] mix) {
+    checkArgument(mix.length == PROGPOW_REGS);
+    // Use FNV to expand the per-warp seed to per-lane
+    // Use KISS to expand the per-lane seed to fill mix
+    final int fnv_hash = FNV_OFFSET_BASIS;
+    final Kiss99 kiss99 =
+        new Kiss99(
+            fnv1a(fnv_hash, (int) seed),
+            fnv1a(fnv_hash, (int) (seed >> 32)),
+            fnv1a(fnv_hash, lane_id),
+            fnv1a(fnv_hash, lane_id));
+    for (int i = 0; i < PROGPOW_REGS; i++) {
+      mix[i] = kiss99.next();
+    }
+  }
 
   private static final int[] keccakRoundConstants = {
     0x00000001, 0x00008082, 0x0000808A, 0x80008000,
@@ -25,10 +106,8 @@ public class ProgPow {
 
   /**
    * Derived from {#link org.bouncycastle.crypto.digests.KeccakDigest#KeccakPermutation()}.
-   * Copyright (c) 2000-2017 The Legion Of The Bouncy Castle Inc. (http://www.bouncycastle.org)
-   * The original source is licensed under a MIT license.
-   *
-   * @param state
+   * Copyright (c) 2000-2017 The Legion Of The Bouncy Castle Inc. (http://www.bouncycastle.org) The
+   * original source is licensed under a MIT license.
    */
   static void keccakf800(final int[] state) {
     int a00 = state[0], a01 = state[1], a02 = state[2], a03 = state[3], a04 = state[4];
@@ -174,5 +253,220 @@ public class ProgPow {
     state[22] = a22;
     state[23] = a23;
     state[24] = a24;
+  }
+
+  private static int[] keccakF800Progpow(final int[] header, final long seed, final int[] digest) {
+    final int[] state = new int[25];
+
+    System.arraycopy(header, 0, state, 0, 8);
+    state[8] = (int) seed;
+    state[9] = (int) (seed >> 32);
+    System.arraycopy(digest, 0, state, 10, 8);
+
+    keccakf800(state);
+
+    final int[] ret = new int[8];
+    System.arraycopy(state, 0, ret, 0, 8);
+    return ret;
+  }
+
+  public static int[] progpowHash(
+      final long blockNumber,
+//      final long prog_seed, // value is (block_number/PROGPOW_PERIOD)
+      final long nonce,
+      final int[] header,
+      final BiConsumer<byte[], Integer> datasetLookup) {
+    final int[][] mix = new int[PROGPOW_LANES][PROGPOW_REGS];
+    final int[] digest = new int[8];
+
+    // keccak(header..nonce)
+    final int[] seed_256 = keccakF800Progpow(header, nonce, digest);
+    // endian swap so byte 0 of the hash is the MSB of the value
+    final long seed = Long.reverseBytes(seed_256[0]) << 32 | Long.reverseBytes(seed_256[1]);
+
+    // initialize mix for all lanes
+    for (int l = 0; l < PROGPOW_LANES; l++) {
+      fill_mix(seed, l, mix[l]);
+    }
+
+    // execute the randomly generated inner loop
+    for (int i = 0; i < PROGPOW_CNT_DAG; i++) {
+      progPowLoop(blockNumber, i, mix, datasetLookup);
+    }
+
+    // Reduce mix data to a per-lane 32-bit digest
+    final int[] digest_lane = new int[PROGPOW_LANES];
+    for (int l = 0; l < PROGPOW_LANES; l++) {
+      digest_lane[l] = FNV_OFFSET_BASIS;
+      for (int i = 0; i < PROGPOW_REGS; i++) {
+        digest_lane[l] = fnv1a(digest_lane[l], mix[l][i]);
+      }
+    }
+    // Reduce all lanes to a single 256-bit digest
+    for (int i = 0; i < 8; i++) {
+      digest[i] = FNV_OFFSET_BASIS;
+    }
+    for (int l = 0; l < PROGPOW_LANES; l++) {
+      digest_lane[l] = fnv1a(digest[l % 8], digest_lane[l]);
+    }
+
+    return keccakF800Progpow(header, seed, digest);
+  }
+
+  private static Kiss99 progPowInit(final long prog_seed, final int[] mixSeqDst, final int[] mixSeqSrc) {
+    checkArgument(mixSeqDst.length == PROGPOW_REGS);
+    checkArgument(mixSeqSrc.length == PROGPOW_REGS);
+    final Kiss99 progRnd =
+        new Kiss99(
+            fnv1a(FNV_OFFSET_BASIS, (int) prog_seed),
+            fnv1a(FNV_OFFSET_BASIS, (int) (prog_seed >> 32)),
+            fnv1a(FNV_OFFSET_BASIS, (int) prog_seed),
+            fnv1a(FNV_OFFSET_BASIS, (int) (prog_seed >> 32)));
+    // Create a random sequence of mix destinations for merge() and mix sources for cache reads
+    // guarantees every destination merged once
+    // guarantees no duplicate cache reads, which could be optimized away
+    // Uses Fisher-Yates shuffle
+    for (int i = 0; i < PROGPOW_REGS; i++) {
+      mixSeqDst[i] = i;
+      mixSeqSrc[i] = i;
+    }
+    for (int i = PROGPOW_REGS - 1; i > 0; i--) {
+      int j;
+      j = Integer.remainderUnsigned(progRnd.next(), (i + 1));
+      int tmp = mixSeqDst[i];
+      mixSeqDst[i] = mixSeqDst[j];
+      mixSeqDst[j] = tmp;
+      j = Integer.remainderUnsigned(progRnd.next(), (i + 1));
+      tmp = mixSeqSrc[i];
+      mixSeqSrc[i] = mixSeqSrc[j];
+      mixSeqSrc[j] = tmp;
+    }
+    return progRnd;
+  }
+
+  // Merge new data from b into the value in a
+  // Assuming A has high entropy only do ops that retain entropy
+  // even if B is low entropy
+  // (IE don't do A&B)
+  private static int merge(final int a, final int b, final int r) {
+    switch (Integer.remainderUnsigned(r,  4)) {
+      case 0:
+        return (a * 33) + b;
+      case 1:
+        return (a ^ b) * 33;
+        // prevent rotate by 0 which is a NOP
+      case 2:
+        return Integer.rotateLeft(a, ((r >> 16) % 31) + 1) ^ b;
+      case 3:
+        return Integer.rotateLeft(a, ((r >> 16) % 31) + 1) ^ b;
+    }
+    throw new RuntimeException("This should be impossible.");
+  }
+
+  // Random math between two input values
+  private static int math(final int a, final int b, final int r) {
+    switch (Integer.remainderUnsigned(r , 11)) {
+      case 0:
+        return a + b;
+      case 1:
+        return a * b;
+      case 2:
+        return (int) ((Integer.toUnsignedLong(a) * Integer.toUnsignedLong(b)) >> 32);
+      case 3:
+        return Integer.min(a, b);
+      case 4:
+        return Integer.rotateLeft(a, b);
+      case 5:
+        return Integer.rotateRight(a, b);
+      case 6:
+        return a & b;
+      case 7:
+        return a | b;
+      case 8:
+        return a ^ b;
+      case 9:
+        return Integer.numberOfLeadingZeros(a) + Integer.numberOfLeadingZeros(b);
+      case 10:
+        return Integer.bitCount(a) + Integer.bitCount(b);
+    }
+    throw new RuntimeException("This should be impossible.");
+  }
+
+  private static void progPowLoop(final long blockNum,
+                           final int loop,
+                           final int[][] mix,
+                           final BiConsumer<byte[], Integer> datasetLookup)
+  {
+    // All lanes share a base address for the global load
+    // Global offset uses mix[0] to guarantee it depends on the load result
+    final int[][] data_g = new int[PROGPOW_LANES][PROGPOW_DAG_LOADS];
+    final int offset_g = (int) (mix[loop%PROGPOW_LANES][0] % (EthHash.datasetSize(blockNum / EthHash.EPOCH_LENGTH) / (PROGPOW_LANES*PROGPOW_DAG_LOADS*32)));
+
+    final byte[] dagResults = new byte[4];
+    for (int l = 0; l < PROGPOW_LANES; l++)
+    {
+      // global load to the 256 byte DAG entry
+      // every lane can access every part of the entry
+      final int offset_l = offset_g * PROGPOW_LANES + (l ^ loop) % PROGPOW_LANES;
+      for (int i = 0; i < PROGPOW_DAG_LOADS; i++) {
+
+        datasetLookup.accept(dagResults, offset_l * PROGPOW_DAG_LOADS + i);
+        data_g[l][i] = 0;
+        //        data_g[l][i] = dag[offset_l * PROGPOW_DAG_LOADS + i];
+      }
+    }
+
+    // Initialize the program seed and sequences
+    // When mining these are evaluated on the CPU and compiled away
+    final int[] mix_seq_dst = new int[PROGPOW_REGS];
+    final int[] mix_seq_src = new int[PROGPOW_REGS];
+    int mix_seq_dst_cnt = 0;
+    int mix_seq_src_cnt = 0;
+    final Kiss99 prog_rnd = progPowInit(blockNum / PROGPOW_PERIOD, mix_seq_dst, mix_seq_src);
+
+    final int max_i = Integer.max(PROGPOW_CNT_CACHE, PROGPOW_CNT_MATH);
+    for (int i = 0; i < max_i; i++)
+    {
+      if (i < PROGPOW_CNT_CACHE)
+      {
+        // Cached memory access
+        // lanes access random 32-bit locations within the first portion of the DAG
+        final int src = mix_seq_src[(mix_seq_src_cnt++)%PROGPOW_REGS];
+        final int dst = mix_seq_dst[(mix_seq_dst_cnt++)%PROGPOW_REGS];
+        final int sel = prog_rnd.next();
+        for (int l = 0; l < PROGPOW_LANES; l++)
+        {
+          final int offset = mix[l][src] % (PROGPOW_CACHE_BYTES/Integer.BYTES);
+          mix[l][dst] = merge(mix[l][dst], offset, sel);
+//          merge(mix[l][dst], dag[offset], sel);
+        }
+      }
+      if (i < PROGPOW_CNT_MATH)
+      {
+        // Random Math
+        // Generate 2 unique sources
+        final int src_rnd = Integer.remainderUnsigned(prog_rnd.next(), (PROGPOW_REGS * (PROGPOW_REGS-1)));
+        final int src1 = Integer.remainderUnsigned(src_rnd, PROGPOW_REGS); // 0 <= src1 < PROGPOW_REGS
+        int src2 = src_rnd / PROGPOW_REGS; // 0 <= src2 < PROGPOW_REGS - 1
+        if (src2 >= src1) ++src2; // src2 is now any reg other than src1
+        final int sel1 = prog_rnd.next();
+        final int dst  = mix_seq_dst[(mix_seq_dst_cnt++)%PROGPOW_REGS];
+        final int sel2 = prog_rnd.next();
+        for (int l = 0; l < PROGPOW_LANES; l++)
+        {
+          final int data = math(mix[l][src1], mix[l][src2], sel1);
+          merge(mix[l][dst], data, sel2);
+        }
+      }
+    }
+    // Consume the global load data at the very end of the loop to allow full latency hiding
+    // Always merge into mix[0] to feed the offset calculation
+    for (int i = 0; i < PROGPOW_DAG_LOADS; i++)
+    {
+      final int dst = (i==0) ? 0 : mix_seq_dst[(mix_seq_dst_cnt++)%PROGPOW_REGS];
+      final int sel = prog_rnd.next();
+      for (int l = 0; l < PROGPOW_LANES; l++)
+        merge(mix[l][dst], data_g[l][i], sel);
+    }
   }
 }
