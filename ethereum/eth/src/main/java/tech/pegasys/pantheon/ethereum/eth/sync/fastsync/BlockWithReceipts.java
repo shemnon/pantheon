@@ -46,5 +46,4 @@ class BlockWithReceipts implements BlockParts {
   public List<TransactionReceipt> getReceipts() {
     return receipts;
   }
-
 }
