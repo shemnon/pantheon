@@ -12,7 +12,9 @@
  */
 package tech.pegasys.pantheon.ethereum.core;
 
-public interface NumberedBlock {
+public interface BlockParts {
 
-  long getBlockNumber();
+  BlockHeader getHeader();
+
+  BlockBody getBody();
 }

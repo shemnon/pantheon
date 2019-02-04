@@ -13,13 +13,14 @@
 package tech.pegasys.pantheon.ethereum.eth.sync.fastsync;
 
 import tech.pegasys.pantheon.ethereum.core.Block;
+import tech.pegasys.pantheon.ethereum.core.BlockBody;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.core.NumberedBlock;
+import tech.pegasys.pantheon.ethereum.core.BlockParts;
 import tech.pegasys.pantheon.ethereum.core.TransactionReceipt;
 
 import java.util.List;
 
-class BlockWithReceipts implements NumberedBlock {
+class BlockWithReceipts implements BlockParts {
   private final Block block;
   private final List<TransactionReceipt> receipts;
 
@@ -32,6 +33,10 @@ class BlockWithReceipts implements NumberedBlock {
     return block.getHeader();
   }
 
+  public BlockBody getBody() {
+    return block.getBody();
+  }
+
   public Block getBlock() {
     return block;
   }
@@ -40,8 +45,4 @@ class BlockWithReceipts implements NumberedBlock {
     return receipts;
   }
 
-  @Override
-  public long getBlockNumber() {
-    return getHeader().getNumber();
-  }
 }

@@ -20,7 +20,7 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
 import java.util.List;
 import java.util.Objects;
 
-public class Block implements NumberedBlock {
+public class Block implements BlockParts {
 
   private final BlockHeader header;
   private final BlockBody body;
@@ -94,10 +94,5 @@ public class Block implements NumberedBlock {
     sb.append("header=").append(header).append(", ");
     sb.append("body=").append(body);
     return sb.append("}").toString();
-  }
-
-  @Override
-  public long getBlockNumber() {
-    return getHeader().getNumber();
   }
 }
