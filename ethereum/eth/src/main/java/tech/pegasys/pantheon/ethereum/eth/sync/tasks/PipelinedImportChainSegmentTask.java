@@ -40,7 +40,8 @@ import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PipelinedImportChainSegmentTask<C, B extends NumberedBlock> extends AbstractEthTask<List<B>> {
+public class PipelinedImportChainSegmentTask<C, B extends NumberedBlock>
+    extends AbstractEthTask<List<B>> {
   private static final Logger LOG = LogManager.getLogger();
 
   private final EthContext ethContext;
@@ -296,5 +297,4 @@ public class PipelinedImportChainSegmentTask<C, B extends NumberedBlock> extends
       return validateAndImportBlocksTasks.getLast();
     }
   }
-
 }
