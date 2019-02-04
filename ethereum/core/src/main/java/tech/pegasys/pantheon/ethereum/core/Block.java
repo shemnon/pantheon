@@ -30,10 +30,12 @@ public class Block implements BlockParts {
     this.body = body;
   }
 
+  @Override
   public BlockHeader getHeader() {
     return header;
   }
 
+  @Override
   public BlockBody getBody() {
     return body;
   }

@@ -29,10 +29,12 @@ class BlockWithReceipts implements BlockParts {
     this.receipts = receipts;
   }
 
+  @Override
   public BlockHeader getHeader() {
     return block.getHeader();
   }
 
+  @Override
   public BlockBody getBody() {
     return block.getBody();
   }
