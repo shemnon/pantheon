@@ -14,8 +14,10 @@ package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
+import tech.pegasys.pantheon.ethereum.core.NumberedBlock;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractEthTask;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
+import tech.pegasys.pantheon.ethereum.eth.sync.BlockHandler;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.exceptions.InvalidBlockException;
 import tech.pegasys.pantheon.ethereum.mainnet.BlockHeaderValidator;
 import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
@@ -38,7 +40,7 @@ import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PipelinedImportChainSegmentTask<C, B> extends AbstractEthTask<List<B>> {
+public class PipelinedImportChainSegmentTask<C, B extends NumberedBlock> extends AbstractEthTask<List<B>> {
   private static final Logger LOG = LogManager.getLogger();
 
   private final EthContext ethContext;
@@ -86,7 +88,7 @@ public class PipelinedImportChainSegmentTask<C, B> extends AbstractEthTask<List<
     this.headerValidationMode = headerValidationMode;
   }
 
-  public static <C, B> PipelinedImportChainSegmentTask<C, B> forCheckpoints(
+  public static <C, B extends NumberedBlock> PipelinedImportChainSegmentTask<C, B> forCheckpoints(
       final ProtocolSchedule<C> protocolSchedule,
       final ProtocolContext<C> protocolContext,
       final EthContext ethContext,
@@ -106,7 +108,7 @@ public class PipelinedImportChainSegmentTask<C, B> extends AbstractEthTask<List<
         Arrays.asList(checkpointHeaders));
   }
 
-  public static <C, B> PipelinedImportChainSegmentTask<C, B> forCheckpoints(
+  public static <C, B extends NumberedBlock> PipelinedImportChainSegmentTask<C, B> forCheckpoints(
       final ProtocolSchedule<C> protocolSchedule,
       final ProtocolContext<C> protocolContext,
       final EthContext ethContext,
@@ -295,9 +297,4 @@ public class PipelinedImportChainSegmentTask<C, B> extends AbstractEthTask<List<
     }
   }
 
-  public interface BlockHandler<B> {
-    CompletableFuture<List<B>> downloadBlocks(final List<BlockHeader> headers);
-
-    CompletableFuture<List<B>> validateAndImportBlocks(final List<B> blocks);
-  }
 }
