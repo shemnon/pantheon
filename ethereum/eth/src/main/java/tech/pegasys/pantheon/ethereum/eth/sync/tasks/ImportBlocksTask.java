@@ -13,7 +13,6 @@
 package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
-import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPeerTask;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
@@ -37,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @param <C> the consensus algorithm context
  */
-public class ImportBlocksTask<C> extends AbstractPeerTask<List<Block>> {
+public class ImportBlocksTask<C> extends AbstractPeerTask<List<BlockWithReceipts>> {
   private static final Logger LOG = LogManager.getLogger();
 
   private final ProtocolContext<C> protocolContext;
@@ -109,7 +108,7 @@ public class ImportBlocksTask<C> extends AbstractPeerTask<List<Block>> {
     return executeSubTask(task::run);
   }
 
-  private CompletableFuture<List<Block>> completeBlocks(
+  private CompletableFuture<List<BlockWithReceipts>> completeBlocks(
       final PeerTaskResult<List<BlockHeader>> headers) {
     if (headers.getResult().isEmpty()) {
       return CompletableFuture.completedFuture(Collections.emptyList());
@@ -121,15 +120,16 @@ public class ImportBlocksTask<C> extends AbstractPeerTask<List<Block>> {
     return executeSubTask(() -> ethContext.getScheduler().timeout(task));
   }
 
-  private CompletableFuture<List<Block>> importBlocks(final List<Block> blocks) {
+  private CompletableFuture<List<BlockWithReceipts>> importBlocks(
+      final List<BlockWithReceipts> blocks) {
     // Don't import reference block if we already know about it
     if (protocolContext.getBlockchain().contains(referenceHeader.getHash())) {
-      blocks.removeIf(b -> b.getHash().equals(referenceHeader.getHash()));
+      blocks.removeIf(b -> b.getBlock().getHash().equals(referenceHeader.getHash()));
     }
     if (blocks.isEmpty()) {
       return CompletableFuture.completedFuture(Collections.emptyList());
     }
-    final Supplier<CompletableFuture<List<Block>>> task =
+    final Supplier<CompletableFuture<List<BlockWithReceipts>>> task =
         PersistBlockTask.forSequentialBlocks(
             protocolSchedule, protocolContext, blocks, HeaderValidationMode.FULL, ethTasksTimer);
     return executeWorkerSubTask(ethContext.getScheduler(), task);

@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @param <C> the consensus algorithm context
  */
-public class GetBodiesFromPeerTask<C> extends AbstractPeerRequestTask<List<Block>> {
+public class GetBodiesFromPeerTask<C> extends AbstractPeerRequestTask<List<BlockWithReceipts>> {
   private static final Logger LOG = LogManager.getLogger();
 
   private final ProtocolSchedule<C> protocolSchedule;
@@ -92,7 +92,7 @@ public class GetBodiesFromPeerTask<C> extends AbstractPeerRequestTask<List<Block
   }
 
   @Override
-  protected Optional<List<Block>> processResponse(
+  protected Optional<List<BlockWithReceipts>> processResponse(
       final boolean streamClosed, final MessageData message, final EthPeer peer) {
     if (streamClosed) {
       // All outstanding requests have been responded to and we still haven't found the response
@@ -111,14 +111,14 @@ public class GetBodiesFromPeerTask<C> extends AbstractPeerRequestTask<List<Block
       return Optional.empty();
     }
 
-    final List<Block> blocks = new ArrayList<>();
+    final List<BlockWithReceipts> blocks = new ArrayList<>();
     for (final BlockBody body : bodies) {
       final List<BlockHeader> headers = bodyToHeaders.get(new BodyIdentifier(body));
       if (headers == null) {
         // This message contains unrelated bodies - exit
         return Optional.empty();
       }
-      headers.forEach(h -> blocks.add(new Block(h, body)));
+      headers.forEach(h -> blocks.add(new BlockWithReceipts(new Block(h, body), null)));
       // Clear processed headers
       headers.clear();
     }

@@ -15,12 +15,12 @@ package tech.pegasys.pantheon.ethereum.eth.sync.fastsync;
 import static java.util.Collections.emptyList;
 
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
-import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.sync.ChainDownloader;
 import tech.pegasys.pantheon.ethereum.eth.sync.SynchronizerConfiguration;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncState;
+import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockWithReceipts;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.PipelinedImportChainSegmentTask;
 import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
@@ -29,7 +29,6 @@ import tech.pegasys.pantheon.metrics.OperationTimer;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class FastSyncChainDownloader<C> {
   private final ChainDownloader<C> chainDownloader;
@@ -81,12 +80,12 @@ public class FastSyncChainDownloader<C> {
     return chainDownloader.start();
   }
 
-  private CompletableFuture<List<Block>> importBlocksForCheckpoints(
+  private CompletableFuture<List<BlockWithReceipts>> importBlocksForCheckpoints(
       final List<BlockHeader> checkpointHeaders) {
     if (checkpointHeaders.size() < 2) {
       return CompletableFuture.completedFuture(emptyList());
     }
-    final PipelinedImportChainSegmentTask<C, BlockWithReceipts> importTask =
+    final PipelinedImportChainSegmentTask<C> importTask =
         PipelinedImportChainSegmentTask.forCheckpoints(
             protocolSchedule,
             protocolContext,
@@ -97,10 +96,6 @@ public class FastSyncChainDownloader<C> {
                 protocolSchedule, protocolContext, ethContext, ethTasksTimer),
             HeaderValidationMode.LIGHT_DETACHED_ONLY,
             checkpointHeaders);
-    return importTask
-        .run()
-        .thenApply(
-            results ->
-                results.stream().map(BlockWithReceipts::getBlock).collect(Collectors.toList()));
+    return importTask.run();
   }
 }

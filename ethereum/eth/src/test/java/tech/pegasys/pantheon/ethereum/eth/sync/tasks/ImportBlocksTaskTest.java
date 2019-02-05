@@ -46,25 +46,27 @@ import com.google.common.collect.Lists;
 import org.junit.Test;
 
 public class ImportBlocksTaskTest
-    extends AbstractMessageTaskTest<List<Block>, PeerTaskResult<List<Block>>> {
+    extends AbstractMessageTaskTest<
+        List<BlockWithReceipts>, PeerTaskResult<List<BlockWithReceipts>>> {
 
   @Override
-  protected List<Block> generateDataToBeRequested() {
+  protected List<BlockWithReceipts> generateDataToBeRequested() {
     final long chainHead = blockchain.getChainHeadBlockNumber();
     final long importSize = 5;
     final long startNumber = chainHead - importSize + 1;
-    final List<Block> blocksToImport = new ArrayList<>();
+    final List<BlockWithReceipts> blocksToImport = new ArrayList<>();
     for (long i = 0; i < importSize; i++) {
       final BlockHeader header = blockchain.getBlockHeader(startNumber + i).get();
       final BlockBody body = blockchain.getBlockBody(header.getHash()).get();
-      blocksToImport.add(new Block(header, body));
+      blocksToImport.add(new BlockWithReceipts(new Block(header, body), null));
     }
     return blocksToImport;
   }
 
   @Override
-  protected EthTask<PeerTaskResult<List<Block>>> createTask(final List<Block> requestedData) {
-    final Block firstBlock = requestedData.get(0);
+  protected EthTask<PeerTaskResult<List<BlockWithReceipts>>> createTask(
+      final List<BlockWithReceipts> requestedData) {
+    final BlockWithReceipts firstBlock = requestedData.get(0);
     final MutableBlockchain shortBlockchain =
         createShortChain(firstBlock.getHeader().getNumber() - 1);
     final ProtocolContext<Void> modifiedContext =
@@ -83,8 +85,8 @@ public class ImportBlocksTaskTest
 
   @Override
   protected void assertResultMatchesExpectation(
-      final List<Block> requestedData,
-      final PeerTaskResult<List<Block>> response,
+      final List<BlockWithReceipts> requestedData,
+      final PeerTaskResult<List<BlockWithReceipts>> response,
       final EthPeer respondingPeer) {
     assertThat(response.getResult()).isEqualTo(requestedData);
     assertThat(response.getPeer()).isEqualTo(respondingPeer);
@@ -115,12 +117,12 @@ public class ImportBlocksTaskTest
     final RespondingEthPeer peer = EthProtocolManagerTestUtil.createPeer(ethProtocolManager);
 
     // Execute task
-    final AtomicReference<List<Block>> actualResult = new AtomicReference<>();
+    final AtomicReference<List<BlockWithReceipts>> actualResult = new AtomicReference<>();
     final AtomicReference<EthPeer> actualPeer = new AtomicReference<>();
     final AtomicBoolean done = new AtomicBoolean(false);
-    final List<Block> requestedData = generateDataToBeRequested();
-    final EthTask<PeerTaskResult<List<Block>>> task = createTask(requestedData);
-    final CompletableFuture<PeerTaskResult<List<Block>>> future = task.run();
+    final List<BlockWithReceipts> requestedData = generateDataToBeRequested();
+    final EthTask<PeerTaskResult<List<BlockWithReceipts>>> task = createTask(requestedData);
+    final CompletableFuture<PeerTaskResult<List<BlockWithReceipts>>> future = task.run();
     future.whenComplete(
         (response, error) -> {
           actualResult.set(response.getResult());
@@ -134,9 +136,9 @@ public class ImportBlocksTaskTest
     assertThat(done).isTrue();
     assertThat(actualPeer.get()).isEqualTo(peer.getEthPeer());
     assertThat(actualResult.get().size()).isLessThan(requestedData.size());
-    for (final Block block : actualResult.get()) {
+    for (final BlockWithReceipts block : actualResult.get()) {
       assertThat(requestedData).contains(block);
-      assertThat(blockchain.contains(block.getHash())).isTrue();
+      assertThat(blockchain.contains(block.getBlock().getHash())).isTrue();
     }
   }
 
@@ -150,9 +152,9 @@ public class ImportBlocksTaskTest
 
     // Execute task and wait for response
     final AtomicBoolean done = new AtomicBoolean(false);
-    final List<Block> requestedData = generateDataToBeRequested();
-    final EthTask<PeerTaskResult<List<Block>>> task = createTask(requestedData);
-    final CompletableFuture<PeerTaskResult<List<Block>>> future = task.run();
+    final List<BlockWithReceipts> requestedData = generateDataToBeRequested();
+    final EthTask<PeerTaskResult<List<BlockWithReceipts>>> task = createTask(requestedData);
+    final CompletableFuture<PeerTaskResult<List<BlockWithReceipts>>> future = task.run();
     respondingEthPeer.respondWhile(responder, () -> !future.isDone());
     future.whenComplete(
         (response, error) -> {

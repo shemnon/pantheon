@@ -14,12 +14,12 @@ package tech.pegasys.pantheon.ethereum.eth.sync;
 
 import static java.util.Collections.emptyList;
 
-import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncState;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncTarget;
+import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockWithReceipts;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.WaitForPeersTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.exceptions.InvalidBlockException;
 import tech.pegasys.pantheon.ethereum.p2p.wire.messages.DisconnectMessage.DisconnectReason;
@@ -179,13 +179,14 @@ public class ChainDownloader<C> {
     syncState.clearSyncTarget();
   }
 
-  private CompletableFuture<List<Block>> importBlocks(final List<BlockHeader> checkpointHeaders) {
+  private CompletableFuture<List<BlockWithReceipts>> importBlocks(
+      final List<BlockHeader> checkpointHeaders) {
     if (checkpointHeaders.isEmpty()) {
       // No checkpoints to download
       return CompletableFuture.completedFuture(emptyList());
     }
 
-    final CompletableFuture<List<Block>> importedBlocks =
+    final CompletableFuture<List<BlockWithReceipts>> importedBlocks =
         blockImportTaskFactory.importBlocksForCheckpoints(checkpointHeaders);
 
     return importedBlocks.whenComplete(
@@ -228,7 +229,7 @@ public class ChainDownloader<C> {
   }
 
   public interface BlockImportTaskFactory {
-    CompletableFuture<List<Block>> importBlocksForCheckpoints(
+    CompletableFuture<List<BlockWithReceipts>> importBlocksForCheckpoints(
         final List<BlockHeader> checkpointHeaders);
   }
 }

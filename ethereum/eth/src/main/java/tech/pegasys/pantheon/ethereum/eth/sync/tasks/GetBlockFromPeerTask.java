@@ -12,7 +12,6 @@
  */
 package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
-import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPeerTask;
@@ -31,7 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /** Downloads a block from a peer. Will complete exceptionally if block cannot be downloaded. */
-public class GetBlockFromPeerTask extends AbstractPeerTask<Block> {
+public class GetBlockFromPeerTask extends AbstractPeerTask<BlockWithReceipts> {
   private static final Logger LOG = LogManager.getLogger();
 
   private final ProtocolSchedule<?> protocolSchedule;
@@ -86,10 +85,11 @@ public class GetBlockFromPeerTask extends AbstractPeerTask<Block> {
                 .run());
   }
 
-  private CompletableFuture<PeerTaskResult<List<Block>>> completeBlock(
+  private CompletableFuture<PeerTaskResult<List<BlockWithReceipts>>> completeBlock(
       final PeerTaskResult<List<BlockHeader>> headerResult) {
     if (headerResult.getResult().isEmpty()) {
-      final CompletableFuture<PeerTaskResult<List<Block>>> future = new CompletableFuture<>();
+      final CompletableFuture<PeerTaskResult<List<BlockWithReceipts>>> future =
+          new CompletableFuture<>();
       future.completeExceptionally(new IncompleteResultsException());
       return future;
     }

@@ -23,24 +23,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CompleteBlocksTaskTest extends RetryingMessageTaskTest<List<Block>> {
+public class CompleteBlocksTaskTest extends RetryingMessageTaskTest<List<BlockWithReceipts>> {
 
   @Override
-  protected List<Block> generateDataToBeRequested() {
+  protected List<BlockWithReceipts> generateDataToBeRequested() {
     // Setup data to be requested and expected response
-    final List<Block> blocks = new ArrayList<>();
+    final List<BlockWithReceipts> blocks = new ArrayList<>();
     for (long i = 0; i < 3; i++) {
       final BlockHeader header = blockchain.getBlockHeader(10 + i).get();
       final BlockBody body = blockchain.getBlockBody(header.getHash()).get();
-      blocks.add(new Block(header, body));
+      blocks.add(new BlockWithReceipts(new Block(header, body), null));
     }
     return blocks;
   }
 
   @Override
-  protected EthTask<List<Block>> createTask(final List<Block> requestedData) {
+  protected EthTask<List<BlockWithReceipts>> createTask(
+      final List<BlockWithReceipts> requestedData) {
     final List<BlockHeader> headersToComplete =
-        requestedData.stream().map(Block::getHeader).collect(Collectors.toList());
+        requestedData.stream().map(BlockWithReceipts::getHeader).collect(Collectors.toList());
     return CompleteBlocksTask.forHeaders(
         protocolSchedule,
         ethContext,

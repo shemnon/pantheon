@@ -50,27 +50,28 @@ import java.util.stream.LongStream;
 import org.junit.Test;
 
 public class PipelinedImportChainSegmentTaskTest
-    extends AbstractMessageTaskTest<List<Block>, List<Block>> {
+    extends AbstractMessageTaskTest<List<BlockWithReceipts>, List<BlockWithReceipts>> {
 
   @Override
-  protected List<Block> generateDataToBeRequested() {
+  protected List<BlockWithReceipts> generateDataToBeRequested() {
     final long chainHead = blockchain.getChainHeadBlockNumber();
     final long importSize = 5;
     final long startNumber = chainHead - importSize + 1;
-    final List<Block> blocksToImport = new ArrayList<>();
+    final List<BlockWithReceipts> blocksToImport = new ArrayList<>();
     for (long i = 0; i < importSize; i++) {
       blocksToImport.add(getBlockAtNumber(startNumber + i));
     }
     return blocksToImport;
   }
 
-  private Block getBlockAtNumber(final long number) {
+  private BlockWithReceipts getBlockAtNumber(final long number) {
     final BlockHeader header = blockchain.getBlockHeader(number).get();
     final BlockBody body = blockchain.getBlockBody(header.getHash()).get();
-    return new Block(header, body);
+    return new BlockWithReceipts(new Block(header, body), null);
   }
 
-  private CompletableFuture<List<Block>> validateAndImportBlocks(final List<Block> blocks) {
+  private CompletableFuture<List<BlockWithReceipts>> validateAndImportBlocks(
+      final List<BlockWithReceipts> blocks) {
     return PersistBlockTask.forSequentialBlocks(
             protocolSchedule,
             protocolContext,
@@ -81,10 +82,12 @@ public class PipelinedImportChainSegmentTaskTest
   }
 
   @Override
-  protected EthTask<List<Block>> createTask(final List<Block> requestedData) {
-    final Block firstBlock = requestedData.get(0);
-    final Block lastBlock = requestedData.get(requestedData.size() - 1);
-    final Block previousBlock = getBlockAtNumber(firstBlock.getHeader().getNumber() - 1);
+  protected EthTask<List<BlockWithReceipts>> createTask(
+      final List<BlockWithReceipts> requestedData) {
+    final BlockWithReceipts firstBlock = requestedData.get(0);
+    final BlockWithReceipts lastBlock = requestedData.get(requestedData.size() - 1);
+    final BlockWithReceipts previousBlock =
+        getBlockAtNumber(firstBlock.getHeader().getNumber() - 1);
     final MutableBlockchain shortBlockchain = createShortChain(firstBlock.getHeader().getNumber());
     final ProtocolContext<Void> modifiedContext =
         new ProtocolContext<>(
@@ -105,7 +108,9 @@ public class PipelinedImportChainSegmentTaskTest
 
   @Override
   protected void assertResultMatchesExpectation(
-      final List<Block> requestedData, final List<Block> response, final EthPeer respondingPeer) {
+      final List<BlockWithReceipts> requestedData,
+      final List<BlockWithReceipts> response,
+      final EthPeer respondingPeer) {
     assertThat(response).isEqualTo(requestedData);
   }
 
@@ -117,16 +122,16 @@ public class PipelinedImportChainSegmentTaskTest
         EthProtocolManagerTestUtil.createPeer(ethProtocolManager);
 
     // Setup task and expectations
-    final Block firstBlock = getBlockAtNumber(5L);
-    final Block secondBlock = getBlockAtNumber(6L);
-    final List<Block> expectedResult = Collections.singletonList(secondBlock);
+    final BlockWithReceipts firstBlock = getBlockAtNumber(5L);
+    final BlockWithReceipts secondBlock = getBlockAtNumber(6L);
+    final List<BlockWithReceipts> expectedResult = Collections.singletonList(secondBlock);
     final MutableBlockchain shortBlockchain = createShortChain(firstBlock.getHeader().getNumber());
     final ProtocolContext<Void> modifiedContext =
         new ProtocolContext<>(
             shortBlockchain,
             protocolContext.getWorldStateArchive(),
             protocolContext.getConsensusState());
-    final EthTask<List<Block>> task =
+    final EthTask<List<BlockWithReceipts>> task =
         PipelinedImportChainSegmentTask.forCheckpoints(
             protocolSchedule,
             modifiedContext,
@@ -139,13 +144,13 @@ public class PipelinedImportChainSegmentTaskTest
             secondBlock.getHeader());
 
     // Sanity check
-    assertThat(shortBlockchain.contains(secondBlock.getHash())).isFalse();
+    assertThat(shortBlockchain.contains(secondBlock.getBlock().getHash())).isFalse();
 
     // Execute task and wait for response
-    final AtomicReference<List<Block>> actualResult = new AtomicReference<>();
+    final AtomicReference<List<BlockWithReceipts>> actualResult = new AtomicReference<>();
     final AtomicBoolean done = new AtomicBoolean(false);
 
-    final CompletableFuture<List<Block>> future = task.run();
+    final CompletableFuture<List<BlockWithReceipts>> future = task.run();
     respondingPeer.respond(responder);
     future.whenComplete(
         (result, error) -> {
@@ -166,10 +171,11 @@ public class PipelinedImportChainSegmentTaskTest
         EthProtocolManagerTestUtil.createPeer(ethProtocolManager);
 
     // Setup data
-    final Block fakeFirstBlock = gen.block(BlockOptions.create().setBlockNumber(5L));
-    final Block firstBlock = getBlockAtNumber(5L);
-    final Block secondBlock = getBlockAtNumber(6L);
-    final Block thirdBlock = getBlockAtNumber(7L);
+    final BlockWithReceipts fakeFirstBlock =
+        new BlockWithReceipts(gen.block(BlockOptions.create().setBlockNumber(5L)), null);
+    final BlockWithReceipts firstBlock = getBlockAtNumber(5L);
+    final BlockWithReceipts secondBlock = getBlockAtNumber(6L);
+    final BlockWithReceipts thirdBlock = getBlockAtNumber(7L);
 
     // Setup task
     final MutableBlockchain shortBlockchain = createShortChain(firstBlock.getHeader().getNumber());
@@ -178,7 +184,7 @@ public class PipelinedImportChainSegmentTaskTest
             shortBlockchain,
             protocolContext.getWorldStateArchive(),
             protocolContext.getConsensusState());
-    final EthTask<List<Block>> task =
+    final EthTask<List<BlockWithReceipts>> task =
         PipelinedImportChainSegmentTask.forCheckpoints(
             protocolSchedule,
             modifiedContext,
@@ -191,14 +197,14 @@ public class PipelinedImportChainSegmentTaskTest
             thirdBlock.getHeader());
 
     // Sanity check
-    assertThat(shortBlockchain.contains(secondBlock.getHash())).isFalse();
+    assertThat(shortBlockchain.contains(secondBlock.getBlock().getHash())).isFalse();
 
     // Execute task and wait for response
     final AtomicReference<Throwable> actualError = new AtomicReference<>();
-    final AtomicReference<List<Block>> actualResult = new AtomicReference<>();
+    final AtomicReference<List<BlockWithReceipts>> actualResult = new AtomicReference<>();
     final AtomicBoolean done = new AtomicBoolean(false);
 
-    final CompletableFuture<List<Block>> future = task.run();
+    final CompletableFuture<List<BlockWithReceipts>> future = task.run();
     respondingPeer.respond(responder);
     future.whenComplete(
         (result, error) -> {
@@ -224,9 +230,9 @@ public class PipelinedImportChainSegmentTaskTest
         LongStream.range(0, 13)
             .filter(n -> n % 4 == 0)
             .mapToObj(this::getBlockAtNumber)
-            .map(Block::getHeader)
+            .map(BlockWithReceipts::getHeader)
             .collect(Collectors.toList());
-    final List<Block> expectedResult =
+    final List<BlockWithReceipts> expectedResult =
         LongStream.range(1, 13).mapToObj(this::getBlockAtNumber).collect(Collectors.toList());
     final MutableBlockchain shortBlockchain = createShortChain(0);
     final ProtocolContext<Void> modifiedContext =
@@ -234,7 +240,7 @@ public class PipelinedImportChainSegmentTaskTest
             shortBlockchain,
             protocolContext.getWorldStateArchive(),
             protocolContext.getConsensusState());
-    final EthTask<List<Block>> task =
+    final EthTask<List<BlockWithReceipts>> task =
         PipelinedImportChainSegmentTask.forCheckpoints(
             protocolSchedule,
             modifiedContext,
@@ -246,10 +252,10 @@ public class PipelinedImportChainSegmentTaskTest
             checkpointHeaders);
 
     // Execute task and wait for response
-    final AtomicReference<List<Block>> actualResult = new AtomicReference<>();
+    final AtomicReference<List<BlockWithReceipts>> actualResult = new AtomicReference<>();
     final AtomicBoolean done = new AtomicBoolean(false);
 
-    final CompletableFuture<List<Block>> future = task.run();
+    final CompletableFuture<List<BlockWithReceipts>> future = task.run();
     final CountingResponder countingResponder = CountingResponder.wrap(responder);
 
     // Import first segment's headers and bodies
@@ -287,9 +293,9 @@ public class PipelinedImportChainSegmentTaskTest
         LongStream.range(0, 13)
             .filter(n -> n % 4 == 0)
             .mapToObj(this::getBlockAtNumber)
-            .map(Block::getHeader)
+            .map(BlockWithReceipts::getHeader)
             .collect(Collectors.toList());
-    final List<Block> expectedResult =
+    final List<BlockWithReceipts> expectedResult =
         LongStream.range(1, 13).mapToObj(this::getBlockAtNumber).collect(Collectors.toList());
     final MutableBlockchain shortBlockchain = createShortChain(0);
     final ProtocolContext<Void> modifiedContext =
@@ -297,7 +303,7 @@ public class PipelinedImportChainSegmentTaskTest
             shortBlockchain,
             protocolContext.getWorldStateArchive(),
             protocolContext.getConsensusState());
-    final EthTask<List<Block>> task =
+    final EthTask<List<BlockWithReceipts>> task =
         PipelinedImportChainSegmentTask.forCheckpoints(
             protocolSchedule,
             modifiedContext,
@@ -309,10 +315,10 @@ public class PipelinedImportChainSegmentTaskTest
             checkpointHeaders);
 
     // Execute task and wait for response
-    final AtomicReference<List<Block>> actualResult = new AtomicReference<>();
+    final AtomicReference<List<BlockWithReceipts>> actualResult = new AtomicReference<>();
     final AtomicBoolean done = new AtomicBoolean(false);
 
-    final CompletableFuture<List<Block>> future = task.run();
+    final CompletableFuture<List<BlockWithReceipts>> future = task.run();
     final CountingResponder countingResponder = CountingResponder.wrap(responder);
 
     // Import first segment's header
@@ -354,9 +360,9 @@ public class PipelinedImportChainSegmentTaskTest
         LongStream.range(0, 13)
             .filter(n -> n % 4 == 0)
             .mapToObj(this::getBlockAtNumber)
-            .map(Block::getHeader)
+            .map(BlockWithReceipts::getHeader)
             .collect(Collectors.toList());
-    final List<Block> expectedResult =
+    final List<BlockWithReceipts> expectedResult =
         LongStream.range(1, 13).mapToObj(this::getBlockAtNumber).collect(Collectors.toList());
     final MutableBlockchain shortBlockchain = createShortChain(0);
     final ProtocolContext<Void> modifiedContext =
@@ -364,7 +370,7 @@ public class PipelinedImportChainSegmentTaskTest
             shortBlockchain,
             protocolContext.getWorldStateArchive(),
             protocolContext.getConsensusState());
-    final EthTask<List<Block>> task =
+    final EthTask<List<BlockWithReceipts>> task =
         PipelinedImportChainSegmentTask.forCheckpoints(
             protocolSchedule,
             modifiedContext,
@@ -376,10 +382,10 @@ public class PipelinedImportChainSegmentTaskTest
             checkpointHeaders);
 
     // Execute task and wait for response
-    final AtomicReference<List<Block>> actualResult = new AtomicReference<>();
+    final AtomicReference<List<BlockWithReceipts>> actualResult = new AtomicReference<>();
     final AtomicBoolean done = new AtomicBoolean(false);
 
-    final CompletableFuture<List<Block>> future = task.run();
+    final CompletableFuture<List<BlockWithReceipts>> future = task.run();
     final CountingResponder countingResponder = CountingResponder.wrap(responder);
 
     // Import first segment's header

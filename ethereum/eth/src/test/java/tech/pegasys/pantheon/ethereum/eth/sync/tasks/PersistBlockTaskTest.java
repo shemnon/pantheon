@@ -67,12 +67,12 @@ public class PersistBlockTaskTest {
     final PersistBlockTask<Void> task =
         PersistBlockTask.create(
             protocolSchedule, protocolContext, nextBlock, HeaderValidationMode.FULL, ethTasksTimer);
-    final CompletableFuture<Block> result = task.run();
+    final CompletableFuture<BlockWithReceipts> result = task.run();
 
     Awaitility.await().atMost(30, SECONDS).until(result::isDone);
 
     assertThat(result.isCompletedExceptionally()).isFalse();
-    assertThat(result.get()).isEqualTo(nextBlock);
+    assertThat(result.get().getBlock()).isEqualTo(nextBlock);
     assertThat(blockchain.contains(nextBlock.getHash())).isTrue();
   }
 
@@ -89,7 +89,7 @@ public class PersistBlockTaskTest {
     final PersistBlockTask<Void> task =
         PersistBlockTask.create(
             protocolSchedule, protocolContext, nextBlock, HeaderValidationMode.FULL, ethTasksTimer);
-    final CompletableFuture<Block> result = task.run();
+    final CompletableFuture<BlockWithReceipts> result = task.run();
 
     Awaitility.await().atMost(30, SECONDS).until(result::isDone);
 
@@ -101,16 +101,18 @@ public class PersistBlockTaskTest {
   @Test
   public void importsValidBlockSequence() throws Exception {
     blockchainUtil.importFirstBlocks(3);
-    final List<Block> nextBlocks =
-        Arrays.asList(blockchainUtil.getBlock(3), blockchainUtil.getBlock(4));
+    final List<BlockWithReceipts> nextBlocks =
+        Arrays.asList(
+            new BlockWithReceipts(blockchainUtil.getBlock(3), null),
+            new BlockWithReceipts(blockchainUtil.getBlock(4), null));
 
     // Sanity check
-    for (final Block nextBlock : nextBlocks) {
-      assertThat(blockchain.contains(nextBlock.getHash())).isFalse();
+    for (final BlockWithReceipts nextBlock : nextBlocks) {
+      assertThat(blockchain.contains(nextBlock.getBlock().getHash())).isFalse();
     }
 
     // Create task
-    final CompletableFuture<List<Block>> task =
+    final CompletableFuture<List<BlockWithReceipts>> task =
         PersistBlockTask.forSequentialBlocks(
                 protocolSchedule,
                 protocolContext,
@@ -123,8 +125,8 @@ public class PersistBlockTaskTest {
 
     assertThat(task.isCompletedExceptionally()).isFalse();
     assertThat(task.get()).isEqualTo(nextBlocks);
-    for (final Block nextBlock : nextBlocks) {
-      assertThat(blockchain.contains(nextBlock.getHash())).isTrue();
+    for (final BlockWithReceipts nextBlock : nextBlocks) {
+      assertThat(blockchain.contains(nextBlock.getBlock().getHash())).isTrue();
     }
   }
 
@@ -132,15 +134,18 @@ public class PersistBlockTaskTest {
   public void failsToImportInvalidBlockSequenceWhereSecondBlockFails() throws Exception {
     final BlockDataGenerator gen = new BlockDataGenerator();
     blockchainUtil.importFirstBlocks(3);
-    final List<Block> nextBlocks = Arrays.asList(blockchainUtil.getBlock(3), gen.block());
+    final List<BlockWithReceipts> nextBlocks =
+        Arrays.asList(
+            new BlockWithReceipts(blockchainUtil.getBlock(3), null),
+            new BlockWithReceipts(gen.block(), null));
 
     // Sanity check
-    for (final Block nextBlock : nextBlocks) {
-      assertThat(blockchain.contains(nextBlock.getHash())).isFalse();
+    for (final BlockWithReceipts nextBlock : nextBlocks) {
+      assertThat(blockchain.contains(nextBlock.getBlock().getHash())).isFalse();
     }
 
     // Create task
-    final CompletableFuture<List<Block>> task =
+    final CompletableFuture<List<BlockWithReceipts>> task =
         PersistBlockTask.forSequentialBlocks(
                 protocolSchedule,
                 protocolContext,
@@ -153,23 +158,26 @@ public class PersistBlockTaskTest {
 
     assertThat(task.isCompletedExceptionally()).isTrue();
     assertThatThrownBy(task::get).hasCauseInstanceOf(InvalidBlockException.class);
-    assertThat(blockchain.contains(nextBlocks.get(0).getHash())).isTrue();
-    assertThat(blockchain.contains(nextBlocks.get(1).getHash())).isFalse();
+    assertThat(blockchain.contains(nextBlocks.get(0).getBlock().getHash())).isTrue();
+    assertThat(blockchain.contains(nextBlocks.get(1).getBlock().getHash())).isFalse();
   }
 
   @Test
   public void failsToImportInvalidBlockSequenceWhereFirstBlockFails() throws Exception {
     final BlockDataGenerator gen = new BlockDataGenerator();
     blockchainUtil.importFirstBlocks(3);
-    final List<Block> nextBlocks = Arrays.asList(gen.block(), blockchainUtil.getBlock(3));
+    final List<BlockWithReceipts> nextBlocks =
+        Arrays.asList(
+            new BlockWithReceipts(gen.block(), null),
+            new BlockWithReceipts(blockchainUtil.getBlock(3), null));
 
     // Sanity check
-    for (final Block nextBlock : nextBlocks) {
-      assertThat(blockchain.contains(nextBlock.getHash())).isFalse();
+    for (final BlockWithReceipts nextBlock : nextBlocks) {
+      assertThat(blockchain.contains(nextBlock.getBlock().getHash())).isFalse();
     }
 
     // Create task
-    final CompletableFuture<List<Block>> task =
+    final CompletableFuture<List<BlockWithReceipts>> task =
         PersistBlockTask.forSequentialBlocks(
                 protocolSchedule,
                 protocolContext,
@@ -182,14 +190,15 @@ public class PersistBlockTaskTest {
 
     assertThat(task.isCompletedExceptionally()).isTrue();
     assertThatThrownBy(task::get).hasCauseInstanceOf(InvalidBlockException.class);
-    assertThat(blockchain.contains(nextBlocks.get(0).getHash())).isFalse();
-    assertThat(blockchain.contains(nextBlocks.get(1).getHash())).isFalse();
+    assertThat(blockchain.contains(nextBlocks.get(0).getBlock().getHash())).isFalse();
+    assertThat(blockchain.contains(nextBlocks.get(1).getBlock().getHash())).isFalse();
   }
 
   @Test
   public void importsValidUnorderedBlocks() throws Exception {
     blockchainUtil.importFirstBlocks(3);
     final Block valid = blockchainUtil.getBlock(3);
+    final BlockWithReceipts validWithReceipts = new BlockWithReceipts(valid, null);
     final List<Block> nextBlocks = Collections.singletonList(valid);
 
     // Sanity check
@@ -198,7 +207,7 @@ public class PersistBlockTaskTest {
     }
 
     // Create task
-    final CompletableFuture<List<Block>> task =
+    final CompletableFuture<List<BlockWithReceipts>> task =
         PersistBlockTask.forUnorderedBlocks(
                 protocolSchedule,
                 protocolContext,
@@ -211,7 +220,7 @@ public class PersistBlockTaskTest {
 
     assertThat(task.isCompletedExceptionally()).isFalse();
     assertThat(task.get().size()).isEqualTo(1);
-    assertThat(task.get().contains(valid)).isTrue();
+    assertThat(task.get().contains(validWithReceipts)).isTrue();
     for (final Block nextBlock : nextBlocks) {
       assertThat(blockchain.contains(nextBlock.getHash())).isTrue();
     }
@@ -230,7 +239,7 @@ public class PersistBlockTaskTest {
     }
 
     // Create task
-    final CompletableFuture<List<Block>> task =
+    final CompletableFuture<List<BlockWithReceipts>> task =
         PersistBlockTask.forUnorderedBlocks(
                 protocolSchedule,
                 protocolContext,
@@ -259,7 +268,7 @@ public class PersistBlockTaskTest {
     }
 
     // Create task
-    final CompletableFuture<List<Block>> task =
+    final CompletableFuture<List<BlockWithReceipts>> task =
         PersistBlockTask.forUnorderedBlocks(
                 protocolSchedule,
                 protocolContext,
@@ -281,6 +290,7 @@ public class PersistBlockTaskTest {
     final BlockDataGenerator gen = new BlockDataGenerator();
     blockchainUtil.importFirstBlocks(3);
     final Block valid = blockchainUtil.getBlock(3);
+    final BlockWithReceipts validWithReceipt = new BlockWithReceipts(valid, null);
     final Block invalid = gen.block();
     final List<Block> nextBlocks = Arrays.asList(invalid, valid);
 
@@ -290,7 +300,7 @@ public class PersistBlockTaskTest {
     }
 
     // Create task
-    final CompletableFuture<List<Block>> task =
+    final CompletableFuture<List<BlockWithReceipts>> task =
         PersistBlockTask.forUnorderedBlocks(
                 protocolSchedule,
                 protocolContext,
@@ -303,7 +313,7 @@ public class PersistBlockTaskTest {
 
     assertThat(task.isCompletedExceptionally()).isFalse();
     assertThat(task.get().size()).isEqualTo(1);
-    assertThat(task.get().contains(valid)).isTrue();
+    assertThat(task.get().contains(validWithReceipt)).isTrue();
     assertThat(blockchain.contains(valid.getHash())).isTrue();
     assertThat(blockchain.contains(invalid.getHash())).isFalse();
   }
@@ -322,7 +332,7 @@ public class PersistBlockTaskTest {
             protocolSchedule, protocolContext, nextBlock, HeaderValidationMode.FULL, ethTasksTimer);
 
     task.cancel();
-    final CompletableFuture<Block> result = task.run();
+    final CompletableFuture<BlockWithReceipts> result = task.run();
 
     assertThat(result.isCancelled()).isTrue();
     assertThat(blockchain.contains(nextBlock.getHash())).isFalse();
@@ -343,7 +353,7 @@ public class PersistBlockTaskTest {
     final PersistBlockTask<Void> taskSpy = Mockito.spy(task);
     Mockito.doNothing().when(taskSpy).executeTaskTimed();
 
-    final CompletableFuture<Block> result = taskSpy.run();
+    final CompletableFuture<BlockWithReceipts> result = taskSpy.run();
     taskSpy.cancel();
 
     assertThat(result.isCancelled()).isTrue();

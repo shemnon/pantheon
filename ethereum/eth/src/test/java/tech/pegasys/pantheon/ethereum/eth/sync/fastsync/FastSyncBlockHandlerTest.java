@@ -36,6 +36,7 @@ import tech.pegasys.pantheon.ethereum.eth.manager.DeterministicEthScheduler;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthMessages;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthPeers;
+import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockWithReceipts;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;

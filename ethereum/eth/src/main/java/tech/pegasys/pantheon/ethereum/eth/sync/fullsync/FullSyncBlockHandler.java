@@ -13,11 +13,11 @@
 package tech.pegasys.pantheon.ethereum.eth.sync.fullsync;
 
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
-import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockHandler;
+import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockWithReceipts;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.CompleteBlocksTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.PersistBlockTask;
 import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
@@ -27,11 +27,12 @@ import tech.pegasys.pantheon.metrics.OperationTimer;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FullSyncBlockHandler<C> implements BlockHandler<Block> {
+public class FullSyncBlockHandler<C> implements BlockHandler {
   private static final Logger LOG = LogManager.getLogger();
 
   private final ProtocolSchedule<C> protocolSchedule;
@@ -51,34 +52,44 @@ public class FullSyncBlockHandler<C> implements BlockHandler<Block> {
   }
 
   @Override
-  public CompletableFuture<List<Block>> validateAndImportBlocks(final List<Block> blocks) {
+  public CompletableFuture<List<BlockWithReceipts>> validateAndImportBlocks(
+      final List<BlockWithReceipts> blocksWithReceipts) {
     LOG.debug(
         "Validating and importing {} to {}",
-        blocks.get(0).getHeader().getNumber(),
-        blocks.get(blocks.size() - 1).getHeader().getNumber());
+        blocksWithReceipts.get(0).getHeader().getNumber(),
+        blocksWithReceipts.get(blocksWithReceipts.size() - 1).getHeader().getNumber());
     return PersistBlockTask.forSequentialBlocks(
             protocolSchedule,
             protocolContext,
-            blocks,
+            blocksWithReceipts,
             HeaderValidationMode.SKIP_DETACHED,
             ethTasksTimer)
-        .get();
+        .get()
+        .thenCompose(
+            blocks ->
+                CompletableFuture.completedFuture(
+                    blocks
+                        .stream()
+                        .map(block -> new BlockWithReceipts(block.getBlock(), null))
+                        .collect(Collectors.toList())));
   }
 
   @Override
-  public CompletableFuture<List<Block>> downloadBlocks(final List<BlockHeader> headers) {
+  public CompletableFuture<List<BlockWithReceipts>> downloadBlocks(
+      final List<BlockHeader> headers) {
     return CompleteBlocksTask.forHeaders(protocolSchedule, ethContext, headers, ethTasksTimer)
         .run()
         .thenCompose(this::extractTransactionSenders);
   }
 
-  private CompletableFuture<List<Block>> extractTransactionSenders(final List<Block> blocks) {
+  private CompletableFuture<List<BlockWithReceipts>> extractTransactionSenders(
+      final List<BlockWithReceipts> blocks) {
     LOG.debug(
         "Extracting sender {} to {}",
         blocks.get(0).getHeader().getNumber(),
         blocks.get(blocks.size() - 1).getHeader().getNumber());
-    for (final Block block : blocks) {
-      for (final Transaction transaction : block.getBody().getTransactions()) {
+    for (final BlockWithReceipts block : blocks) {
+      for (final Transaction transaction : block.getBlock().getBody().getTransactions()) {
         // This method internally performs the transaction sender extraction.
         transaction.getSender();
       }

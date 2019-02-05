@@ -20,7 +20,7 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
 import java.util.List;
 import java.util.Objects;
 
-public class Block implements BlockParts {
+public class Block {
 
   private final BlockHeader header;
   private final BlockBody body;
@@ -30,12 +30,10 @@ public class Block implements BlockParts {
     this.body = body;
   }
 
-  @Override
   public BlockHeader getHeader() {
     return header;
   }
 
-  @Override
   public BlockBody getBody() {
     return body;
   }

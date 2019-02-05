@@ -13,7 +13,6 @@
 package tech.pegasys.pantheon.ethereum.eth.sync.fullsync;
 
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
-import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPeerTask.PeerTaskResult;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
@@ -21,6 +20,7 @@ import tech.pegasys.pantheon.ethereum.eth.sync.ChainDownloader;
 import tech.pegasys.pantheon.ethereum.eth.sync.CheckpointHeaderManager;
 import tech.pegasys.pantheon.ethereum.eth.sync.SynchronizerConfiguration;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncState;
+import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockWithReceipts;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.ImportBlocksTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.PipelinedImportChainSegmentTask;
 import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
@@ -78,9 +78,9 @@ public class FullSyncDownloader<C> {
     return chainDownloader.getCurrentTask();
   }
 
-  private CompletableFuture<List<Block>> importBlocksForCheckpoints(
+  private CompletableFuture<List<BlockWithReceipts>> importBlocksForCheckpoints(
       final List<BlockHeader> checkpointHeaders) {
-    final CompletableFuture<List<Block>> importedBlocks;
+    final CompletableFuture<List<BlockWithReceipts>> importedBlocks;
     if (checkpointHeaders.size() < 2) {
       // Download blocks without constraining the end block
       final ImportBlocksTask<C> importTask =
@@ -93,7 +93,7 @@ public class FullSyncDownloader<C> {
               ethTasksTimer);
       importedBlocks = importTask.run().thenApply(PeerTaskResult::getResult);
     } else {
-      final PipelinedImportChainSegmentTask<C, Block> importTask =
+      final PipelinedImportChainSegmentTask<C> importTask =
           PipelinedImportChainSegmentTask.forCheckpoints(
               protocolSchedule,
               protocolContext,

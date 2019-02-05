@@ -14,7 +14,6 @@ package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPeerTask.PeerTaskResult;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractRetryingPeerTask;
@@ -40,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  *
  * @param <C> the consensus algorithm context
  */
-public class CompleteBlocksTask<C> extends AbstractRetryingPeerTask<List<Block>> {
+public class CompleteBlocksTask<C> extends AbstractRetryingPeerTask<List<BlockWithReceipts>> {
   private static final Logger LOG = LogManager.getLogger();
   private static final int DEFAULT_RETRIES = 3;
 
@@ -49,7 +48,7 @@ public class CompleteBlocksTask<C> extends AbstractRetryingPeerTask<List<Block>>
   private final LabelledMetric<OperationTimer> ethTasksTimer;
 
   private final List<BlockHeader> headers;
-  private final Map<Long, Block> blocks;
+  private final Map<Long, BlockWithReceipts> blocks;
 
   private CompleteBlocksTask(
       final ProtocolSchedule<C> protocolSchedule,
@@ -87,11 +86,12 @@ public class CompleteBlocksTask<C> extends AbstractRetryingPeerTask<List<Block>>
   }
 
   @Override
-  protected CompletableFuture<List<Block>> executePeerTask(final Optional<EthPeer> assignedPeer) {
+  protected CompletableFuture<List<BlockWithReceipts>> executePeerTask(
+      final Optional<EthPeer> assignedPeer) {
     return requestBodies(assignedPeer).thenCompose(this::processBodiesResult);
   }
 
-  private CompletableFuture<PeerTaskResult<List<Block>>> requestBodies(
+  private CompletableFuture<PeerTaskResult<List<BlockWithReceipts>>> requestBodies(
       final Optional<EthPeer> assignedPeer) {
     final List<BlockHeader> incompleteHeaders = incompleteHeaders();
     LOG.debug(
@@ -108,8 +108,8 @@ public class CompleteBlocksTask<C> extends AbstractRetryingPeerTask<List<Block>>
         });
   }
 
-  private CompletableFuture<List<Block>> processBodiesResult(
-      final PeerTaskResult<List<Block>> blocksResult) {
+  private CompletableFuture<List<BlockWithReceipts>> processBodiesResult(
+      final PeerTaskResult<List<BlockWithReceipts>> blocksResult) {
     blocksResult.getResult().forEach((block) -> blocks.put(block.getHeader().getNumber(), block));
 
     if (incompleteHeaders().size() == 0) {

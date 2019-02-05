@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 public class GetBlockFromPeerTaskTest
-    extends AbstractMessageTaskTest<Block, PeerTaskResult<Block>> {
+    extends AbstractMessageTaskTest<Block, PeerTaskResult<BlockWithReceipts>> {
 
   @Override
   protected Block generateDataToBeRequested() {
@@ -46,7 +46,7 @@ public class GetBlockFromPeerTaskTest
   }
 
   @Override
-  protected EthTask<PeerTaskResult<Block>> createTask(final Block requestedData) {
+  protected EthTask<PeerTaskResult<BlockWithReceipts>> createTask(final Block requestedData) {
     return GetBlockFromPeerTask.create(
         protocolSchedule, ethContext, requestedData.getHash(), ethTasksTimer);
   }
@@ -54,9 +54,9 @@ public class GetBlockFromPeerTaskTest
   @Override
   protected void assertResultMatchesExpectation(
       final Block requestedData,
-      final PeerTaskResult<Block> response,
+      final PeerTaskResult<BlockWithReceipts> response,
       final EthPeer respondingPeer) {
-    assertThat(response.getResult()).isEqualTo(requestedData);
+    assertThat(response.getResult().getBlock()).isEqualTo(requestedData);
     assertThat(response.getPeer()).isEqualTo(respondingPeer);
   }
 
@@ -66,8 +66,8 @@ public class GetBlockFromPeerTaskTest
     final Block requestedData = generateDataToBeRequested();
 
     // Execute task
-    final EthTask<PeerTaskResult<Block>> task = createTask(requestedData);
-    final CompletableFuture<PeerTaskResult<Block>> future = task.run();
+    final EthTask<PeerTaskResult<BlockWithReceipts>> task = createTask(requestedData);
+    final CompletableFuture<PeerTaskResult<BlockWithReceipts>> future = task.run();
     final AtomicReference<Throwable> failure = new AtomicReference<>();
     future.whenComplete(
         (r, t) -> {
@@ -99,8 +99,8 @@ public class GetBlockFromPeerTaskTest
 
     // Execute task and wait for response
     final AtomicBoolean done = new AtomicBoolean(false);
-    final EthTask<PeerTaskResult<Block>> task = createTask(requestedData);
-    final CompletableFuture<PeerTaskResult<Block>> future = task.run();
+    final EthTask<PeerTaskResult<BlockWithReceipts>> task = createTask(requestedData);
+    final CompletableFuture<PeerTaskResult<BlockWithReceipts>> future = task.run();
     respondingEthPeer.respondWhile(responder, () -> !future.isDone());
     final AtomicReference<Throwable> failure = new AtomicReference<>();
     future.whenComplete(

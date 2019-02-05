@@ -22,6 +22,7 @@ import tech.pegasys.pantheon.ethereum.core.TransactionReceipt;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPeerTask.PeerTaskResult;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockHandler;
+import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockWithReceipts;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.CompleteBlocksTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.GetReceiptsFromPeerTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.exceptions.InvalidBlockException;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FastSyncBlockHandler<C> implements BlockHandler<BlockWithReceipts> {
+public class FastSyncBlockHandler<C> implements BlockHandler {
   private static final Logger LOG = LogManager.getLogger();
 
   private final ProtocolSchedule<C> protocolSchedule;
@@ -65,7 +66,8 @@ public class FastSyncBlockHandler<C> implements BlockHandler<BlockWithReceipts> 
         .thenCombine(downloadReceipts(headers), this::combineBlocksAndReceipts);
   }
 
-  private CompletableFuture<List<Block>> downloadBodies(final List<BlockHeader> headers) {
+  private CompletableFuture<List<BlockWithReceipts>> downloadBodies(
+      final List<BlockHeader> headers) {
     return CompleteBlocksTask.forHeaders(protocolSchedule, ethContext, headers, ethTasksTimer)
         .run();
   }
@@ -78,14 +80,15 @@ public class FastSyncBlockHandler<C> implements BlockHandler<BlockWithReceipts> 
   }
 
   private List<BlockWithReceipts> combineBlocksAndReceipts(
-      final List<Block> blocks, final Map<BlockHeader, List<TransactionReceipt>> receiptsByHeader) {
+      final List<BlockWithReceipts> blocks,
+      final Map<BlockHeader, List<TransactionReceipt>> receiptsByHeader) {
     return blocks
         .stream()
         .map(
             block -> {
               final List<TransactionReceipt> receipts =
                   receiptsByHeader.getOrDefault(block.getHeader(), emptyList());
-              return new BlockWithReceipts(block, receipts);
+              return new BlockWithReceipts(block.getBlock(), receipts);
             })
         .collect(Collectors.toList());
   }

@@ -28,6 +28,7 @@ import tech.pegasys.pantheon.ethereum.eth.messages.NewBlockHashesMessage.NewBloc
 import tech.pegasys.pantheon.ethereum.eth.messages.NewBlockMessage;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.PendingBlocks;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncState;
+import tech.pegasys.pantheon.ethereum.eth.sync.tasks.BlockWithReceipts;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.GetBlockFromPeerTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.PersistBlockTask;
 import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
@@ -119,7 +120,7 @@ public class BlockPropagationManager<C> {
     }
 
     if (!readyForImport.isEmpty()) {
-      final Supplier<CompletableFuture<List<Block>>> importBlocksTask =
+      final Supplier<CompletableFuture<List<BlockWithReceipts>>> importBlocksTask =
           PersistBlockTask.forUnorderedBlocks(
               protocolSchedule,
               protocolContext,
@@ -225,17 +226,19 @@ public class BlockPropagationManager<C> {
     }
   }
 
-  private CompletableFuture<Block> processAnnouncedBlock(
+  private CompletableFuture<BlockWithReceipts> processAnnouncedBlock(
       final EthPeer peer, final NewBlockHash newBlock) {
-    final AbstractPeerTask<Block> getBlockTask =
+    final AbstractPeerTask<BlockWithReceipts> getBlockTask =
         GetBlockFromPeerTask.create(protocolSchedule, ethContext, newBlock.hash(), ethTasksTimer)
             .assignPeer(peer);
 
-    return getBlockTask.run().thenCompose((r) -> importOrSavePendingBlock(r.getResult()));
+    return getBlockTask
+        .run()
+        .thenCompose((r) -> importOrSavePendingBlock(r.getResult().getBlock()));
   }
 
   @VisibleForTesting
-  CompletableFuture<Block> importOrSavePendingBlock(final Block block) {
+  CompletableFuture<BlockWithReceipts> importOrSavePendingBlock(final Block block) {
     // Synchronize to avoid race condition where block import event fires after the
     // blockchain.contains() check and before the block is registered, causing onBlockAdded() to be
     // invoked for the parent of this block before we are able to register it.
@@ -248,19 +251,19 @@ public class BlockPropagationManager<C> {
               block.getHeader().getNumber(),
               block.getHash());
         }
-        return CompletableFuture.completedFuture(block);
+        return CompletableFuture.completedFuture(new BlockWithReceipts(block, null));
       }
     }
 
     if (!importingBlocks.add(block.getHash())) {
       // We're already importing this block.
-      return CompletableFuture.completedFuture(block);
+      return CompletableFuture.completedFuture(new BlockWithReceipts(block, null));
     }
 
     if (protocolContext.getBlockchain().contains(block.getHash())) {
       // We've already imported this block.
       importingBlocks.remove(block.getHash());
-      return CompletableFuture.completedFuture(block);
+      return CompletableFuture.completedFuture(new BlockWithReceipts(block, null));
     }
 
     // Import block

@@ -10,33 +10,26 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.pantheon.ethereum.eth.sync.fastsync;
+package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.core.Block;
-import tech.pegasys.pantheon.ethereum.core.BlockBody;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.core.BlockParts;
 import tech.pegasys.pantheon.ethereum.core.TransactionReceipt;
 
 import java.util.List;
+import java.util.Objects;
 
-class BlockWithReceipts implements BlockParts {
+public class BlockWithReceipts {
   private final Block block;
   private final List<TransactionReceipt> receipts;
 
-  BlockWithReceipts(final Block block, final List<TransactionReceipt> receipts) {
+  public BlockWithReceipts(final Block block, final List<TransactionReceipt> receipts) {
     this.block = block;
     this.receipts = receipts;
   }
 
-  @Override
   public BlockHeader getHeader() {
     return block.getHeader();
-  }
-
-  @Override
-  public BlockBody getBody() {
-    return block.getBody();
   }
 
   public Block getBlock() {
@@ -45,5 +38,18 @@ class BlockWithReceipts implements BlockParts {
 
   public List<TransactionReceipt> getReceipts() {
     return receipts;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    final BlockWithReceipts that = (BlockWithReceipts) o;
+    return block.equals(that.block) && Objects.equals(receipts, that.receipts);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(block, receipts);
   }
 }
