@@ -25,6 +25,14 @@ public class ProgPowHashTest {
         "b946ea7d74e3c619",
       },
       {
+        "chfast hash_3000",
+        30000,
+        "ffeeddccbbaa9988776655443322110000112233445566778899aabbccddeeff",
+        "123456789abcdef0",
+        "11f19805c58ab46610ff9c719dcf0a5f18fa2f1605798eef770c47219274767d",
+        "5b7ccd472dbefdd95b895cac8ece67ff0deb5a6bd2ecc6e162383d00c3728ece",
+      },
+      {
         "chfast block 0",
         0,
         "0000000000000000000000000000000000000000000000000000000000000000",
@@ -33,7 +41,7 @@ public class ProgPowHashTest {
         "63155f732f2bf556967f906155b510c917e48e99685ead76ea83f4eca03ab12b"
       },
       {
-          "chfast block 49",
+        "chfast block 49",
         49,
         "63155f732f2bf556967f906155b510c917e48e99685ead76ea83f4eca03ab12b",
         "0000000006ff2c47",
@@ -41,7 +49,7 @@ public class ProgPowHashTest {
         "9e7248f20914913a73d80a70174c331b1d34f260535ac3631d770e656b5dd922"
       },
       {
-          "chfast block 50",
+        "chfast block 50",
         50,
         "9e7248f20914913a73d80a70174c331b1d34f260535ac3631d770e656b5dd922",
         "00000000076e482e",
@@ -49,7 +57,7 @@ public class ProgPowHashTest {
         "de37e1824c86d35d154cf65a88de6d9286aec4f7f10c3fc9f0fa1bcc2687188d"
       },
       {
-          "chfast block 99",
+        "chfast block 99",
         99,
         "de37e1824c86d35d154cf65a88de6d9286aec4f7f10c3fc9f0fa1bcc2687188d",
         "000000003917afab",
@@ -57,7 +65,7 @@ public class ProgPowHashTest {
         "ac7b55e801511b77e11d52e9599206101550144525b5679f2dab19386f23dcce"
       },
       {
-          "chfast block 29950",
+        "chfast block 29950",
         29950,
         "ac7b55e801511b77e11d52e9599206101550144525b5679f2dab19386f23dcce",
         "005d409dbc23a62a",
@@ -65,7 +73,7 @@ public class ProgPowHashTest {
         "e43d7e0bdc8a4a3f6e291a5ed790b9fa1a0948a2b9e33c844888690847de19f5"
       },
       {
-          "chfast block 29999",
+        "chfast block 29999",
         29999,
         "e43d7e0bdc8a4a3f6e291a5ed790b9fa1a0948a2b9e33c844888690847de19f5",
         "005db5fa4c2a3d03",
@@ -73,7 +81,7 @@ public class ProgPowHashTest {
         "d34519f72c97cae8892c277776259db3320820cb5279a299d0ef1e155e5c6454"
       },
       {
-          "chfast block 300000",
+        "chfast block 300000",
         30000,
         "d34519f72c97cae8892c277776259db3320820cb5279a299d0ef1e155e5c6454",
         "005db8607994ff30",
@@ -81,7 +89,7 @@ public class ProgPowHashTest {
         "8b6ce5da0b06d18db7bd8492d9e5717f8b53e7e098d9fef7886d58a6e913ef64"
       },
       {
-          "chfast block 30049",
+        "chfast block 30049",
         30049,
         "8b6ce5da0b06d18db7bd8492d9e5717f8b53e7e098d9fef7886d58a6e913ef64",
         "005e2e215a8ca2e7",
@@ -89,7 +97,7 @@ public class ProgPowHashTest {
         "c2c46173481b9ced61123d2e293b42ede5a1b323210eb2a684df0874ffe09047"
       },
       {
-          "chfast block 30050",
+        "chfast block 30050",
         30050,
         "c2c46173481b9ced61123d2e293b42ede5a1b323210eb2a684df0874ffe09047",
         "005e30899481055e",
@@ -97,7 +105,7 @@ public class ProgPowHashTest {
         "ea42197eb2ba79c63cb5e655b8b1f612c5f08aae1a49ff236795a3516d87bc71"
       },
       {
-          "chfast block 30099",
+        "chfast block 30099",
         30099,
         "ea42197eb2ba79c63cb5e655b8b1f612c5f08aae1a49ff236795a3516d87bc71",
         "005ea6aef136f88b",
@@ -105,7 +113,7 @@ public class ProgPowHashTest {
         "49e15ba4bf501ce8fe8876101c808e24c69a859be15de554bf85dbc095491bd6"
       },
       {
-          "chfast block 59950",
+        "chfast block 59950",
         59950,
         "49e15ba4bf501ce8fe8876101c808e24c69a859be15de554bf85dbc095491bd6",
         "02ebe0503bd7b1da",
@@ -113,7 +121,7 @@ public class ProgPowHashTest {
         "f5c50ba5c0d6210ddb16250ec3efda178de857b2b1703d8d5403bd0f848e19cf"
       },
       {
-          "chfast block 59999",
+        "chfast block 59999",
         59999,
         "f5c50ba5c0d6210ddb16250ec3efda178de857b2b1703d8d5403bd0f848e19cf",
         "02edb6275bd221e3",
@@ -145,26 +153,29 @@ public class ProgPowHashTest {
     this.resultHex = resultHex;
   }
 
+  private static final EthHashCacheFactory cacheFactory = new EthHashCacheFactory();
+
   @Test
   public void validateProPowHash() {
+    final EthHashCacheFactory.EthHashDescriptor cache = cacheFactory.ethHashCacheFor(blockNumber);
 
     final int[] result =
         ProgPow.progpowHash(
             blockNumber,
             BytesValue.fromHexString(nonceHex).getLong(0),
             toIntArray(BytesValue.fromHexString(headerHex)),
-            (a, b) -> {});
+            (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     assertThat(fromIntArray(result)).isEqualTo(BytesValue.fromHexString(resultHex));
   }
 
-  private static int[] toIntArray(final BytesValue bytesValue) {
+  static int[] toIntArray(final BytesValue bytesValue) {
     Preconditions.checkArgument(
         bytesValue.size() % 4 == 0, "BytesValue length must be divisible by 4.");
 
     final int[] result = new int[bytesValue.size() / 4];
     for (int i = 0; i < result.length; i++) {
-      result[i] = bytesValue.getInt(i * 4);
+      result[i] = Integer.reverseBytes(bytesValue.getInt(i * 4));
     }
     return result;
   }
@@ -174,10 +185,10 @@ public class ProgPowHashTest {
     for (int i = 0; i < array.length; i++) {
       final int val = array[i];
       int bIndex = i * 4;
-      resultArray[bIndex++] = (byte) (val >> 24);
-      resultArray[bIndex++] = (byte) (val >> 16);
+      resultArray[bIndex++] = (byte) (val);
       resultArray[bIndex++] = (byte) (val >> 8);
-      resultArray[bIndex] = (byte) (val);
+      resultArray[bIndex++] = (byte) (val >> 16);
+      resultArray[bIndex] = (byte) (val >> 24);
     }
     return BytesValue.wrap(resultArray);
   }
