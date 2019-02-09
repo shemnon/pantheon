@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class AbstractPipelinedPeerTask<I, O> extends AbstractPeerTask<List<O>> {
+public abstract class AbstractPipelinedTask<I, O> extends AbstractEthTask<List<O>> {
   private static final Logger LOG = LogManager.getLogger();
 
   static final int TIMEOUT_MS = 1000;
@@ -38,49 +38,52 @@ public abstract class AbstractPipelinedPeerTask<I, O> extends AbstractPeerTask<L
   private boolean shuttingDown = false;
   private AtomicReference<Throwable> processingException = new AtomicReference<>(null);
 
-  protected AbstractPipelinedPeerTask(
+  protected AbstractPipelinedTask(
       final BlockingQueue<I> inboundQueue,
       final int outboundBacklogSize,
-      final EthContext ethContext,
       final LabelledMetric<OperationTimer> ethTasksTimer) {
-    super(ethContext, ethTasksTimer);
+    super(ethTasksTimer);
     this.inboundQueue = inboundQueue;
     outboundQueue = new LinkedBlockingQueue<>(outboundBacklogSize);
     results = new ArrayList<>();
   }
 
   @Override
-  protected void executeTaskWithPeer(final EthPeer peer) {
+  protected void executeTask() {
     Optional<I> previousInput = Optional.empty();
-    while (!isDone() && processingException.get() == null) {
-      if (shuttingDown && inboundQueue.isEmpty()) {
-        break;
-      }
-      final I input;
-      try {
-        input = inboundQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        if (input == null) {
-          // timed out waiting for a result
+    try {
+      while (!isDone() && processingException.get() == null) {
+        if (shuttingDown && inboundQueue.isEmpty()) {
+          break;
+        }
+        final I input;
+        try {
+          input = inboundQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+          if (input == null) {
+            // timed out waiting for a result
+            continue;
+          }
+        } catch (final InterruptedException e) {
+          // this is expected
           continue;
         }
-      } catch (final InterruptedException e) {
-        // this is expected
-        continue;
+        final Optional<O> output = processStep(input, previousInput);
+        output.ifPresent(
+            o -> {
+              try {
+                outboundQueue.put(o);
+              } catch (final InterruptedException e) {
+                processingException.compareAndSet(null, e);
+              }
+              results.add(o);
+            });
+        previousInput = Optional.of(input);
       }
-      final Optional<O> output = processStep(input, previousInput, peer);
-      output.ifPresent(
-          o -> {
-            try {
-              outboundQueue.put(o);
-            } catch (final InterruptedException e) {
-              processingException.compareAndSet(null, e);
-            }
-            results.add(o);
-          });
-      previousInput = Optional.of(input);
+    } catch (final RuntimeException e) {
+      processingException.compareAndSet(null, e);
     }
     if (processingException.get() == null) {
-      result.get().complete(new PeerTaskResult<>(peer, results));
+      result.get().complete(results);
     } else {
       result.get().completeExceptionally(processingException.get());
     }
@@ -101,5 +104,5 @@ public abstract class AbstractPipelinedPeerTask<I, O> extends AbstractPeerTask<L
     cancel();
   }
 
-  protected abstract Optional<O> processStep(I input, Optional<I> previousInput, EthPeer peer);
+  protected abstract Optional<O> processStep(I input, Optional<I> previousInput);
 }

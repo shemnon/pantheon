@@ -13,9 +13,7 @@
 package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPipelinedPeerTask;
-import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
-import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
+import tech.pegasys.pantheon.ethereum.eth.manager.AbstractFanOutTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockHandler;
 import tech.pegasys.pantheon.metrics.LabelledMetric;
 import tech.pegasys.pantheon.metrics.OperationTimer;
@@ -23,13 +21,12 @@ import tech.pegasys.pantheon.metrics.OperationTimer;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ParallelDownloadBodiesTask<B>
-    extends AbstractPipelinedPeerTask<List<BlockHeader>, List<B>> {
+public class ParallelDownloadBodiesTask<B> extends AbstractFanOutTask<List<BlockHeader>, List<B>> {
   private static final Logger LOG = LogManager.getLogger();
 
   private final BlockHandler<B> blockHandler;
@@ -38,32 +35,31 @@ public class ParallelDownloadBodiesTask<B>
       final BlockHandler<B> blockHandler,
       final BlockingQueue<List<BlockHeader>> inboundQueue,
       final int outboundBacklogSize,
-      final EthContext ethContext,
       final LabelledMetric<OperationTimer> ethTasksTimer) {
-    super(inboundQueue, outboundBacklogSize, ethContext, ethTasksTimer);
+    super(inboundQueue, outboundBacklogSize, ethTasksTimer);
 
     this.blockHandler = blockHandler;
   }
 
   @Override
-  protected Optional<List<B>> processStep(
-      final List<BlockHeader> headers,
-      final Optional<List<BlockHeader>> previousHeaders,
-      final EthPeer peer) {
+  protected Optional<CompletableFuture<List<B>>> startProcessing(
+      final List<BlockHeader> headers, final Optional<List<BlockHeader>> ignored) {
     LOG.trace(
         "Downloading bodies {} to {}",
         headers.get(0).getNumber(),
         headers.get(headers.size() - 1).getNumber());
-    try {
-      final List<B> blocks = blockHandler.downloadBlocks(headers).get();
-      LOG.debug(
-          "Downloaded bodies {} to {}",
-          headers.get(0).getNumber(),
-          headers.get(headers.size() - 1).getNumber());
-      return Optional.of(blocks);
-    } catch (final InterruptedException | ExecutionException e) {
-      failExceptionally(e);
-      return Optional.empty();
-    }
+    return Optional.of(blockHandler.downloadBlocks(headers));
+  }
+
+  @Override
+  protected Optional<List<B>> finishProcessing(
+      final List<BlockHeader> headers,
+      final Optional<List<BlockHeader>> previousInput,
+      final List<B> blocks) {
+    LOG.debug(
+        "Downloaded bodies {} to {}",
+        headers.get(0).getNumber(),
+        headers.get(headers.size() - 1).getNumber());
+    return Optional.of(blocks);
   }
 }
