@@ -1,15 +1,34 @@
+/*
+ * Copyright 2019 ConsenSys AG.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package tech.pegasys.pantheon.ethereum.mainnet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import org.junit.Before;
 import org.junit.Test;
 
 public class ProgPowTest {
 
-
   private static final EthHashCacheFactory cacheFactory = new EthHashCacheFactory();
+
+  private ProgPow progPow;
+
+  @Before
+  public void setUp() {
+    progPow = new ProgPow();
+  }
 
   /**
    * Test vectors from
@@ -46,7 +65,7 @@ public class ProgPowTest {
 
   @Test
   public void kiss99TestVector() {
-    ProgPow.Kiss99 kiss99 = new ProgPow.Kiss99(362436069, 521288629, 123456789, 380116160);
+    final ProgPow.Kiss99 kiss99 = new ProgPow.Kiss99(362436069, 521288629, 123456789, 380116160);
 
     assertThat(kiss99.next()).isEqualTo(769445856);
     assertThat(kiss99.next()).isEqualTo(742012328);
@@ -63,18 +82,17 @@ public class ProgPowTest {
 
   @Test
   public void chfastHash30000() {
-    long blockNumber = 30000;
+    final long blockNumber = 30000;
     final EthHashCacheFactory.EthHashDescriptor cache = cacheFactory.ethHashCacheFor(blockNumber);
 
-    int[] result =
-        ProgPow.progpowHash(
+    final int[] result =
+        progPow.progPowHash(
             blockNumber,
             0x123456789abcdef0L,
             ProgPowHashTest.toIntArray(
                 BytesValue.fromHexString(
                     "ffeeddccbbaa9988776655443322110000112233445566778899aabbccddeeff")),
-            (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind)
-            );
+            (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     ProgPowHashTest.toIntArray(
         BytesValue.fromHexString(
