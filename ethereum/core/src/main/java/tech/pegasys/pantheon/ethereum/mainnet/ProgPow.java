@@ -81,7 +81,7 @@ class ProgPow {
     }
   }
 
-  private void fill_mix(final long seed, final int lane_id, final int[] mix) {
+  void fill_mix(final long seed, final int lane_id, final int[] mix) {
     checkArgument(mix.length == progPowRegs);
     // Use FNV to expand the per-warp seed to per-lane
     // Use KISS to expand the per-lane seed to fill mix
@@ -258,7 +258,7 @@ class ProgPow {
     state[24] = a24;
   }
 
-  private static int[] keccakF800Progpow(final int[] header, final long seed, final int[] digest) {
+  static int[] keccakF800Progpow(final int[] header, final long seed, final int[] digest) {
     final int[] state = new int[25];
 
     System.arraycopy(header, 0, state, 0, 8);
