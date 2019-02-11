@@ -153,6 +153,34 @@ public class ProgPowTest {
   }
 
   @Test
+  public void math_chfastHash30000() {
+    assertThat(ProgPow.math(0x8626BB1F, 0xBBDFBC4E, 0x883E5B49)).isEqualTo(0x4206776D); // add
+    assertThat(ProgPow.math(0x3F4BDFAC, 0xD79E414F, 0x36B71236)).isEqualTo(0x4C5CB214); // mul
+    assertThat(ProgPow.math(0x6D175B7E, 0xC4E89D4C, 0x944ECABB)).isEqualTo(0x53E9023F); // mul_hi32
+    assertThat(ProgPow.math(0x2EDDD94C, 0x7E70CB54, 0x3F472A85)).isEqualTo(0x2EDDD94C); // min
+    assertThat(ProgPow.math(0x8A81E396, 0x3F4BDFAC, 0xCEC46E67)).isEqualTo(0x1E3968A8); // rotl32
+    assertThat(ProgPow.math(0x8A81E396, 0x7E70CB54, 0xDBE71FF7)).isEqualTo(0x1E3968A8); // rotr32
+    assertThat(ProgPow.math(0xA7352F36, 0xA0EB7045, 0x59E7B9D8))
+        .isEqualTo(0xA0212004); // bitwise and
+    assertThat(ProgPow.math(0xC89805AF, 0x64291E2F, 0x1BDC84A9))
+        .isEqualTo(0xECB91FAF); // bitwise or
+    assertThat(ProgPow.math(0x760726D3, 0x79FC6A48, 0xC675CAC5))
+        .isEqualTo(0x0FFB4C9B); // bitwise xor
+    assertThat(ProgPow.math(0x75551D43, 0x3383BA34, 0x2863AD31))
+        .isEqualTo(0x00000003); // clz, leading zeros
+    assertThat(ProgPow.math(0xEA260841, 0xE92C44B7, 0xF83FFE7D))
+        .isEqualTo(0x0000001B); // popcount, number of 1s
+  }
+
+  @Test
+  public void merge_chfastHash30000() {
+    assertThat(ProgPow.merge(0x3B0BB37D, 0xA0212004, 0x9BD26AB0)).isEqualTo(0x3CA34321); // mul/add
+    assertThat(ProgPow.merge(0x10C02F0D, 0x870FA227, 0xD4F45515)).isEqualTo(0x91C1326A); // xor/mul
+    assertThat(ProgPow.merge(0x24D2BAE4, 0x0FFB4C9B, 0x7FDBC2F2)).isEqualTo(0x2EDDD94C); // rotl/xor
+    assertThat(ProgPow.merge(0xDA39E821, 0x089C4008, 0x8B6CD8C3)).isEqualTo(0x8A81E396); // rotr/xor
+  }
+
+  @Test
   public void chfastHash30000() {
     final long blockNumber = 30000;
     final EthHashCacheFactory.EthHashDescriptor cache = cacheFactory.ethHashCacheFor(blockNumber);

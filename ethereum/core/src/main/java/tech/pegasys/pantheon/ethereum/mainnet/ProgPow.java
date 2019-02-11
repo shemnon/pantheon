@@ -357,7 +357,7 @@ class ProgPow {
   // Assuming A has high entropy only do ops that retain entropy
   // even if B is low entropy
   // (IE don't do A&B)
-  private static int merge(final int a, final int b, final int r) {
+  static int merge(final int a, final int b, final int r) {
     switch (Integer.remainderUnsigned(r, 4)) {
       case 0:
         return (a * 33) + b;
@@ -367,13 +367,13 @@ class ProgPow {
       case 2:
         return Integer.rotateLeft(a, ((r >>> 16) % 31) + 1) ^ b;
       case 3:
-        return Integer.rotateLeft(a, ((r >>> 16) % 31) + 1) ^ b;
+        return Integer.rotateRight(a, ((r >>> 16) % 31) + 1) ^ b;
     }
     throw new RuntimeException("This should be impossible.");
   }
 
   // Random math between two input values
-  private static int math(final int a, final int b, final int r) {
+  static int math(final int a, final int b, final int r) {
     switch (Integer.remainderUnsigned(r, 11)) {
       case 0:
         return a + b;
