@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -92,11 +93,8 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
           }
           final O futureResult;
           try {
-            futureResult = inFlightData.future.get();
-          } catch (final InterruptedException e) {
-            // Try Again.
-            continue;
-          } catch (final ExecutionException e) {
+            futureResult = inFlightData.future.getNow(null);
+          } catch (final CompletionException e) {
             // Fail completely.
             result.get().completeExceptionally(e.getCause());
             return;
