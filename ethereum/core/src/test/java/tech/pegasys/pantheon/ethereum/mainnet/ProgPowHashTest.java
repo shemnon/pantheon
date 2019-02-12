@@ -30,14 +30,6 @@ public class ProgPowHashTest {
   public static Object[][] getParameters() {
     return new Object[][] {
       {
-        "IfDefElseTest",
-        30000,
-        "ffeeddccbbaa9988776655443322110000112233445566778899aabbccddeeff",
-        "123456789abcdef0",
-        "44fa88669c864aa30ba7da46e557593289c4d1fb143a1c43813d512b14fb4636",
-        "b946ea7d74e3c619",
-      },
-      {
         "chfast hash_3000",
         30000,
         "ffeeddccbbaa9988776655443322110000112233445566778899aabbccddeeff",

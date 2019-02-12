@@ -16,6 +16,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 class ProgPow {
@@ -24,10 +25,10 @@ class ProgPow {
   private final int progPowPeriod = 50;
 
   /** The number of parallel lanes that coordinate to calculate a single hash instance. */
-  private final int progPowLanes = 16;
+  final int progPowLanes = 16;
 
   /** The register file usage size */
-  private final int progPowRegs = 32;
+  final int progPowRegs = 32;
 
   /** Number of uint32 loads from the DAG per lane. */
   private final int progPowDagLoads = 4;
@@ -79,6 +80,19 @@ class ProgPow {
       jcong = 69069 * jcong + 1234567;
       return ((MWC ^ jcong) + jsr);
     }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      final Kiss99 kiss99 = (Kiss99) o;
+      return z == kiss99.z && w == kiss99.w && jsr == kiss99.jsr && jcong == kiss99.jcong;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(z, w, jsr, jcong);
+    }
   }
 
   void fill_mix(final long seed, final int lane_id, final int[] mix) {
@@ -90,12 +104,9 @@ class ProgPow {
     final int jsr = fnv1a(w, lane_id);
     final int jcong = fnv1a(jsr, lane_id);
     final Kiss99 kiss99 = new Kiss99(z, w, jsr, jcong);
-    System.out.printf(" mix[%d] -", lane_id);
     for (int i = 0; i < progPowRegs; i++) {
       mix[i] = kiss99.next();
-      System.out.printf(" %08X", mix[i]);
     }
-    System.out.println();
   }
 
   private static final int[] keccakRoundConstants = {
@@ -289,8 +300,6 @@ class ProgPow {
         (Integer.toUnsignedLong(Integer.reverseBytes(seed_256[0])) << 32)
             | Integer.toUnsignedLong(Integer.reverseBytes(seed_256[1]));
 
-    System.out.printf("seed - %016X\n", seed);
-
     // initialize mix for all lanes
     for (int l = 0; l < progPowLanes; l++) {
       fill_mix(seed, l, mix[l]);
@@ -316,14 +325,10 @@ class ProgPow {
     for (int l = 0; l < progPowLanes; l++) {
       digest[l % 8] = fnv1a(digest[l % 8], digest_lane[l]);
     }
-    System.out.printf(
-        "mixhash - %08X %08X %08X %08X %08X %08X %08X %08X\n",
-        digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7]);
-
     return keccakF800Progpow(header, seed, digest);
   }
 
-  private Kiss99 progPowInit(final long prog_seed, final int[] mixSeqDst, final int[] mixSeqSrc) {
+  Kiss99 progPowInit(final long prog_seed, final int[] mixSeqDst, final int[] mixSeqSrc) {
     checkArgument(mixSeqDst.length == progPowRegs);
     checkArgument(mixSeqSrc.length == progPowRegs);
     final int z = fnv1a(FNV_OFFSET_BASIS, (int) prog_seed);
@@ -382,7 +387,7 @@ class ProgPow {
       case 2:
         return (int) ((Integer.toUnsignedLong(a) * Integer.toUnsignedLong(b)) >> 32);
       case 3:
-        return Integer.min(a, b);
+        return Integer.compareUnsigned(a, b) > 0 ? b : a;
       case 4:
         return Integer.rotateLeft(a, b);
       case 5:
@@ -401,32 +406,28 @@ class ProgPow {
     throw new RuntimeException("This should be impossible.");
   }
 
-  private void progPowLoop(
+  void progPowLoop(
       final long blockNum,
       final int loop,
       final int[][] mix,
       final BiConsumer<byte[], Integer> datasetLookup) {
-    // All lanes share a base address for the global load
-    // Global offset uses mix[0] to guarantee it depends on the load result
-    final int[][] data_g = new int[progPowLanes][progPowDagLoads];
     final long datasetSize = EthHash.datasetSize(blockNum / EthHash.EPOCH_LENGTH);
-    final int modValue = (int) datasetSize / 256;
-    final int mixi = mix[loop % progPowLanes][0];
-
-    final int offset_g =
+    final int[][] dagEntry = new int[progPowLanes][progPowDagLoads];
+    final int dagAddrBase =
         Integer.remainderUnsigned(
             mix[loop % progPowLanes][0],
-            ((int) EthHash.datasetSize(blockNum / EthHash.EPOCH_LENGTH) / 256));
+            Math.toIntExact(datasetSize / (progPowLanes * progPowDagLoads * Integer.BYTES)));
 
-    final byte[] dagResults = new byte[64];
+    final byte[] lookupHolder = new byte[64];
     for (int l = 0; l < progPowLanes; l++) {
-      // global load to the 256 byte DAG entry
-      // every lane can access every part of the entry
-      final int offset_l = offset_g + ((l ^ loop) % progPowLanes) * numWordsPerLane;
-      datasetLookup.accept(dagResults, offset_l * 4);
+      final int dagAddrLane =
+          dagAddrBase * progPowLanes + Integer.remainderUnsigned(l ^ loop, progPowLanes);
+      final int offset = Integer.remainderUnsigned(l ^ loop, progPowLanes);
       for (int i = 0; i < progPowDagLoads; i++) {
-
-        data_g[l][i] = Integer.reverseBytes(BytesValue.wrap(dagResults).getInt(i * 4));
+        final int lookup = dagAddrLane / 4 + (offset >> 4);
+        datasetLookup.accept(lookupHolder, lookup);
+        final int lookupOffset = (i * 4 + ((offset & 0xf) << 4)) % 64;
+        dagEntry[l][i] = Integer.reverseBytes(BytesValue.wrap(lookupHolder).getInt(lookupOffset));
       }
     }
 
@@ -446,10 +447,15 @@ class ProgPow {
         final int src = mix_seq_src[(mix_seq_src_cnt++) % progPowRegs];
         final int dst = mix_seq_dst[(mix_seq_dst_cnt++) % progPowRegs];
         final int sel = prog_rnd.next();
+
         for (int l = 0; l < progPowLanes; l++) {
-          final int offset = mix[l][src] % (progPowCacheBytes / Integer.BYTES);
-          mix[l][dst] = merge(mix[l][dst], offset, sel);
-          //          merge(mix[l][dst], dag[offset], sel);
+          final int offset =
+              Integer.remainderUnsigned(mix[l][src], (progPowCacheBytes / Integer.BYTES));
+          final int old = mix[l][dst];
+          datasetLookup.accept(lookupHolder, offset >> 4);
+          final int dagValue =
+              Integer.reverseBytes(BytesValue.wrap(lookupHolder).getInt((offset & 0xf) << 2));
+          mix[l][dst] = merge(mix[l][dst], dagValue, sel);
         }
       }
       if (i < progPowCntMath) {
@@ -465,7 +471,8 @@ class ProgPow {
         final int sel2 = prog_rnd.next();
         for (int l = 0; l < progPowLanes; l++) {
           final int data = math(mix[l][src1], mix[l][src2], sel1);
-          merge(mix[l][dst], data, sel2);
+          final int old = mix[l][dst];
+          mix[l][dst] = merge(mix[l][dst], data, sel2);
         }
       }
     }
@@ -476,8 +483,7 @@ class ProgPow {
       final int dst = (i == 0) ? 0 : mix_seq_dst[(mix_seq_dst_cnt++) % progPowRegs];
       final int sel = prog_rnd.next();
       for (int l = 0; l < progPowLanes; l++) {
-        System.out.printf("merging mix[%d][%d] %8X %8X\n", l, i, data_g[l][i], sel);
-        mix[l][dst] = merge(mix[l][dst], data_g[l][i], sel);
+        mix[l][dst] = merge(mix[l][dst], dagEntry[l][i], sel);
       }
     }
   }
