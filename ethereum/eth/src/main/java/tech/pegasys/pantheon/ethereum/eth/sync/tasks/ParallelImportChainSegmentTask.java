@@ -122,7 +122,11 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
               ethTasksTimer);
       final ParallelDownloadBodiesTask<B> downloadBodiesTask =
           new ParallelDownloadBodiesTask<>(
-              blockHandler, validateHeadersTask.getOutboundQueue(), maxActiveChunks, ethTasksTimer);
+              blockHandler,
+              validateHeadersTask.getOutboundQueue(),
+              ethContext,
+              maxActiveChunks,
+              ethTasksTimer);
       final ParallelValidateAndImportBodiesTask<B> validateAndImportBodiesTask =
           new ParallelValidateAndImportBodiesTask<>(
               blockHandler,
@@ -140,9 +144,8 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
       registerSubTask(validateHeaderFuture);
       final CompletableFuture<?> downloadBodiesFuture =
           scheduler.scheduleServiceTask(downloadBodiesTask);
-      final CompletableFuture<List<List<B>>> validateBodiesFuture =
       registerSubTask(downloadBodiesFuture);
-      final CompletableFuture<AbstractPeerTask.PeerTaskResult<List<List<B>>>> validateBodiesFuture =
+      final CompletableFuture<List<List<B>>> validateBodiesFuture =
           scheduler.scheduleServiceTask(validateAndImportBodiesTask);
       registerSubTask(validateBodiesFuture);
 

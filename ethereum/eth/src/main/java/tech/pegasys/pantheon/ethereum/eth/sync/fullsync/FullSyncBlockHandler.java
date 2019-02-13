@@ -17,6 +17,7 @@ import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
+import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockHandler;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.CompleteBlocksTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.PersistBlockTask;
@@ -39,7 +40,7 @@ public class FullSyncBlockHandler<C> implements BlockHandler<Block> {
   private final EthContext ethContext;
   private final LabelledMetric<OperationTimer> ethTasksTimer;
 
-  public FullSyncBlockHandler(
+  FullSyncBlockHandler(
       final ProtocolSchedule<C> protocolSchedule,
       final ProtocolContext<C> protocolContext,
       final EthContext ethContext,
@@ -66,10 +67,12 @@ public class FullSyncBlockHandler<C> implements BlockHandler<Block> {
   }
 
   @Override
-  public CompletableFuture<List<Block>> downloadBlocks(final List<BlockHeader> headers) {
-    return CompleteBlocksTask.forHeaders(protocolSchedule, ethContext, headers, ethTasksTimer)
-        .run()
-        .thenCompose(this::extractTransactionSenders);
+  public CompletableFuture<List<Block>> downloadBlocks(
+      final List<BlockHeader> headers, final EthPeer peer) {
+    final CompleteBlocksTask<C> task =
+        CompleteBlocksTask.forHeaders(protocolSchedule, ethContext, headers, ethTasksTimer);
+    task.assignPeer(peer);
+    return task.run().thenCompose(this::extractTransactionSenders);
   }
 
   @Override

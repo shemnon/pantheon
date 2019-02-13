@@ -16,6 +16,7 @@ import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractFanOutTask;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
+import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.metrics.LabelledMetric;
 import tech.pegasys.pantheon.metrics.OperationTimer;
@@ -44,7 +45,7 @@ public class ParallelDownloadHeadersTask<C>
       final ProtocolContext<C> protocolContext,
       final EthContext ethContext,
       final LabelledMetric<OperationTimer> ethTasksTimer) {
-    super(inboundQueue, outboundBacklogSize, ethTasksTimer);
+    super(inboundQueue, outboundBacklogSize, ethContext, ethTasksTimer);
 
     this.protocolSchedule = protocolSchedule;
     this.protocolContext = protocolContext;
@@ -54,7 +55,7 @@ public class ParallelDownloadHeadersTask<C>
   @Override
   protected Optional<CompletableFuture<List<BlockHeader>>> startProcessing(
       final BlockHeader nextCheckpointHeader,
-      final Optional<BlockHeader> previousCheckpointHeader) {
+      final Optional<BlockHeader> previousCheckpointHeader, final EthPeer peer) {
     if (!previousCheckpointHeader.isPresent()) {
       return Optional.empty();
     }
@@ -72,6 +73,7 @@ public class ParallelDownloadHeadersTask<C>
             nextCheckpointHeader,
             segmentLength,
             ethTasksTimer);
+    downloadTask.assignPeer(peer);
     return Optional.of(executeSubTask(downloadTask::run));
   }
 

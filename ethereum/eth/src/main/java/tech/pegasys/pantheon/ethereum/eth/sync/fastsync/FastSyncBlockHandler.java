@@ -20,6 +20,7 @@ import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.BlockImporter;
 import tech.pegasys.pantheon.ethereum.core.TransactionReceipt;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
+import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockHandler;
 import tech.pegasys.pantheon.ethereum.eth.sync.ValidationPolicy;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.CompleteBlocksTask;
@@ -47,7 +48,7 @@ public class FastSyncBlockHandler<C> implements BlockHandler<BlockWithReceipts> 
   private final LabelledMetric<OperationTimer> ethTasksTimer;
   private final ValidationPolicy validationPolicy;
 
-  public FastSyncBlockHandler(
+  FastSyncBlockHandler(
       final ProtocolSchedule<C> protocolSchedule,
       final ProtocolContext<C> protocolContext,
       final EthContext ethContext,
@@ -62,9 +63,9 @@ public class FastSyncBlockHandler<C> implements BlockHandler<BlockWithReceipts> 
 
   @Override
   public CompletableFuture<List<BlockWithReceipts>> downloadBlocks(
-      final List<BlockHeader> headers) {
+      final List<BlockHeader> headers, final EthPeer peer) {
     return downloadBodies(headers)
-        .thenCombine(downloadReceipts(headers), this::combineBlocksAndReceipts);
+        .thenCombine(downloadReceipts(headers, peer), this::combineBlocksAndReceipts);
   }
 
   private CompletableFuture<List<Block>> downloadBodies(final List<BlockHeader> headers) {
@@ -73,8 +74,11 @@ public class FastSyncBlockHandler<C> implements BlockHandler<BlockWithReceipts> 
   }
 
   private CompletableFuture<Map<BlockHeader, List<TransactionReceipt>>> downloadReceipts(
-      final List<BlockHeader> headers) {
-    return GetReceiptsForHeadersTask.forHeaders(ethContext, headers, ethTasksTimer).run();
+      final List<BlockHeader> headers, final EthPeer peer) {
+    final GetReceiptsForHeadersTask task =
+        GetReceiptsForHeadersTask.forHeaders(ethContext, headers, ethTasksTimer);
+    task.assignPeer(peer);
+    return task.run();
   }
 
   private List<BlockWithReceipts> combineBlocksAndReceipts(

@@ -47,19 +47,22 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
 
   static final int WAIT_NS = 100_000;
 
-  private BlockingQueue<I> inboundQueue;
-  private BlockingQueue<O> outboundQueue;
-  private Queue<InFlightRequestData<I, O>> inFlightQueue;
-  private List<O> results;
+  private final EthContext ethContext;
+  private final BlockingQueue<I> inboundQueue;
+  private final BlockingQueue<O> outboundQueue;
+  private final Queue<InFlightRequestData<I, O>> inFlightQueue;
+  private final List<O> results;
 
   private boolean shuttingDown = false;
-  private AtomicReference<Throwable> processingException = new AtomicReference<>(null);
+  private final AtomicReference<Throwable> processingException = new AtomicReference<>(null);
 
   protected AbstractFanOutTask(
       final BlockingQueue<I> inboundQueue,
       final int outboundBacklogSize,
+      final EthContext ethContext,
       final LabelledMetric<OperationTimer> ethTasksTimer) {
     super(ethTasksTimer);
+    this.ethContext = ethContext;
     this.inboundQueue = inboundQueue;
     outboundQueue = new LinkedBlockingQueue<>(outboundBacklogSize);
     inFlightQueue = new ArrayDeque<>(outboundBacklogSize);
@@ -75,10 +78,16 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
       while ((processingException.get() == null)
           && !(inboundQueue.isEmpty() && inFlightQueue.isEmpty() && shuttingDown)) {
         // take all current inbound items and start them working
-        while (!inboundQueue.isEmpty()) {
+        final EthPeers ethPeers = ethContext.getEthPeers();
+        while (!inboundQueue.isEmpty() && !shuttingDown) {
           final I currentInput = inboundQueue.poll();
+          final Optional<EthPeer> peer = ethPeers.idlePeer();
+          if (!peer.isPresent()) {
+            // no more peers, check in flight tasks and maybe sleep
+            break;
+          }
           final Optional<CompletableFuture<O>> future =
-              startProcessing(currentInput, previousInput);
+              startProcessing(currentInput, previousInput, peer.get());
           if (future.isPresent()) {
             inFlightQueue.add(new InFlightRequestData<>(previousInput, currentInput, future.get()));
           }
@@ -86,7 +95,7 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
         }
 
         // read all in flight processes and post process them
-        while (!inFlightQueue.isEmpty()) {
+        while (!inFlightQueue.isEmpty() && !shuttingDown) {
           final InFlightRequestData<I, O> inFlightData = inFlightQueue.peek();
           if (!inFlightData.future.isDone()) {
             break;
@@ -114,8 +123,8 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
               });
         }
 
-        // Sleep if inbound queue is empty.
-        if (inboundQueue.isEmpty()) {
+        // Sleep if inbound queue is empty or we don't have idle peers.
+        if (!shuttingDown && (inboundQueue.isEmpty() || !ethPeers.idlePeer().isPresent())) {
           if (inFlightQueue.isEmpty()) {
             // If both queues are empty park it for a fixed time
             LockSupport.parkNanos(WAIT_NS);
@@ -152,7 +161,7 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
   }
 
   protected abstract Optional<CompletableFuture<O>> startProcessing(
-      I input, Optional<I> previousInput);
+      I input, Optional<I> previousInput, EthPeer peer);
 
   protected abstract Optional<O> finishProcessing(
       I input, Optional<I> previousInput, O futureResult);

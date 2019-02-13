@@ -14,6 +14,8 @@ package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.eth.manager.AbstractFanOutTask;
+import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
+import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockHandler;
 import tech.pegasys.pantheon.metrics.LabelledMetric;
 import tech.pegasys.pantheon.metrics.OperationTimer;
@@ -34,21 +36,22 @@ public class ParallelDownloadBodiesTask<B> extends AbstractFanOutTask<List<Block
   ParallelDownloadBodiesTask(
       final BlockHandler<B> blockHandler,
       final BlockingQueue<List<BlockHeader>> inboundQueue,
+      final EthContext ethContext,
       final int outboundBacklogSize,
       final LabelledMetric<OperationTimer> ethTasksTimer) {
-    super(inboundQueue, outboundBacklogSize, ethTasksTimer);
+    super(inboundQueue, outboundBacklogSize, ethContext, ethTasksTimer);
 
     this.blockHandler = blockHandler;
   }
 
   @Override
   protected Optional<CompletableFuture<List<B>>> startProcessing(
-      final List<BlockHeader> headers, final Optional<List<BlockHeader>> ignored) {
+      final List<BlockHeader> headers, final Optional<List<BlockHeader>> ignored, final EthPeer peer) {
     LOG.trace(
         "Downloading bodies {} to {}",
         headers.get(0).getNumber(),
         headers.get(headers.size() - 1).getNumber());
-    return Optional.of(blockHandler.downloadBlocks(headers));
+    return Optional.of(blockHandler.downloadBlocks(headers, peer));
   }
 
   @Override
