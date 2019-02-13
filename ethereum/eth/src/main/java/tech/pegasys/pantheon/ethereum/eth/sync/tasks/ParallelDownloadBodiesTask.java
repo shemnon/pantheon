@@ -46,7 +46,9 @@ public class ParallelDownloadBodiesTask<B> extends AbstractFanOutTask<List<Block
 
   @Override
   protected Optional<CompletableFuture<List<B>>> startProcessing(
-      final List<BlockHeader> headers, final Optional<List<BlockHeader>> ignored, final EthPeer peer) {
+      final List<BlockHeader> headers,
+      final Optional<List<BlockHeader>> ignored,
+      final EthPeer peer) {
     LOG.trace(
         "Downloading bodies {} to {}",
         headers.get(0).getNumber(),

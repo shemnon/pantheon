@@ -55,7 +55,8 @@ public class ParallelDownloadHeadersTask<C>
   @Override
   protected Optional<CompletableFuture<List<BlockHeader>>> startProcessing(
       final BlockHeader nextCheckpointHeader,
-      final Optional<BlockHeader> previousCheckpointHeader, final EthPeer peer) {
+      final Optional<BlockHeader> previousCheckpointHeader,
+      final EthPeer peer) {
     if (!previousCheckpointHeader.isPresent()) {
       return Optional.empty();
     }
