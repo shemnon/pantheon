@@ -98,7 +98,9 @@ public abstract class AbstractPipelinedTask<I, O> extends AbstractEthTask<List<O
   }
 
   protected void failExceptionally(final Throwable t) {
-    LOG.error("Task Failure", t);
+    if (!(t instanceof InterruptedException)) {
+      LOG.error("Task Failure", t);
+    }
     processingException.compareAndSet(null, t);
     result.get().completeExceptionally(t);
     cancel();
