@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 class ProgPow {
 
   /** Number of blocks before changing the random program. */
+  @SuppressWarnings("FieldCanBeLocal")
   private final int progPowPeriod = 50;
 
   /** The number of parallel lanes that coordinate to calculate a single hash instance. */
@@ -31,18 +32,23 @@ class ProgPow {
   final int progPowRegs = 32;
 
   /** Number of uint32 loads from the DAG per lane. */
+  @SuppressWarnings("FieldCanBeLocal")
   private final int progPowDagLoads = 4;
 
   /** The size of the cache. */
+  @SuppressWarnings("FieldCanBeLocal")
   private final int progPowCacheBytes = 16 * 1024;
 
   /** The number of DAG accesses, defined as the outer loop of the algorithm. */
+  @SuppressWarnings("FieldCanBeLocal")
   private final int progPowCntDag = 64;
 
   /** The number of cache accesses per loop. */
+  @SuppressWarnings("FieldCanBeLocal")
   private final int progPowCntCache = 12;
 
   /** The number of math operations per loop. */
+  @SuppressWarnings("FieldCanBeLocal")
   private final int progPowCntMath = 20;
 
   /** FNV 32-bit prime. */
@@ -50,8 +56,6 @@ class ProgPow {
 
   /** FNV 32-bit offset basis. */
   private static final int FNV_OFFSET_BASIS = 0x811c9dc5;
-
-  private final int numWordsPerLane = 2048 / 4 / progPowLanes;
 
   static int fnv1a(final int h, final int d) {
     return (h ^ d) * FNV_PRIME;
@@ -451,7 +455,6 @@ class ProgPow {
         for (int l = 0; l < progPowLanes; l++) {
           final int offset =
               Integer.remainderUnsigned(mix[l][src], (progPowCacheBytes / Integer.BYTES));
-          final int old = mix[l][dst];
           datasetLookup.accept(lookupHolder, offset >> 4);
           final int dagValue =
               Integer.reverseBytes(BytesValue.wrap(lookupHolder).getInt((offset & 0xf) << 2));
@@ -471,7 +474,6 @@ class ProgPow {
         final int sel2 = prog_rnd.next();
         for (int l = 0; l < progPowLanes; l++) {
           final int data = math(mix[l][src1], mix[l][src2], sel1);
-          final int old = mix[l][dst];
           mix[l][dst] = merge(mix[l][dst], data, sel2);
         }
       }
