@@ -12,6 +12,8 @@
  */
 package tech.pegasys.pantheon.ethereum.eth.manager;
 
+import static tech.pegasys.pantheon.util.FutureUtils.completedExceptionally;
+
 import tech.pegasys.pantheon.metrics.LabelledMetric;
 import tech.pegasys.pantheon.metrics.OperationTimer;
 
@@ -110,9 +112,30 @@ public abstract class AbstractEthTask<T> implements EthTask<T> {
             });
         return subTaskFuture;
       } else {
-        final CompletableFuture<S> future = new CompletableFuture<>();
-        future.completeExceptionally(new CancellationException());
-        return future;
+        return completedExceptionally(new CancellationException());
+      }
+    }
+  }
+
+  /**
+   * Utility for registring completable futures for cleanup if this EthTask is cancelled.
+   *
+   * @param subTaskFuture the future to be reigstered.
+   * @param <S> the type of data returned from the CompletableFuture
+   * @return The completableFuture that was executed
+   */
+  protected final <S> CompletableFuture<S> registerSubTask(
+      final CompletableFuture<S> subTaskFuture) {
+    synchronized (result) {
+      if (!isCancelled()) {
+        subTaskFutures.add(subTaskFuture);
+        subTaskFuture.whenComplete(
+            (r, t) -> {
+              subTaskFutures.remove(subTaskFuture);
+            });
+        return subTaskFuture;
+      } else {
+        return completedExceptionally(new CancellationException());
       }
     }
   }
