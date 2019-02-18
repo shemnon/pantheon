@@ -31,11 +31,107 @@ public class ProgPowTest {
     progPow = new ProgPow();
   }
 
+  @Test
+  public void fnv1a() {
+    assertThat(ProgPow.fnv1a(0x811C9DC5, 0xDDD0A47B)).isEqualTo(0xD37EE61A);
+    assertThat(ProgPow.fnv1a(0xD37EE61A, 0xEE304846)).isEqualTo(0xDEDC7AD4);
+    assertThat(ProgPow.fnv1a(0xDEDC7AD4, 0x00000000)).isEqualTo(0xA9155BBC);
+  }
+
+  @Test
+  public void kiss99() {
+    final ProgPow.Kiss99 kiss99 = new ProgPow.Kiss99(362436069, 521288629, 123456789, 380116160);
+
+    assertThat(kiss99.next()).isEqualTo(769445856);
+    assertThat(kiss99.next()).isEqualTo(742012328);
+    assertThat(kiss99.next()).isEqualTo(2121196314);
+    assertThat(kiss99.next()).isEqualTo(-1489346354);
+
+    for (int i = 0; i < 100000 - 5; ++i) {
+      kiss99.next();
+    }
+
+    // The 100000th number.
+    assertThat(kiss99.next()).isEqualTo(941074834);
+  }
+
+
+  @Test
+  public void fill_mix() {
+    final int[] result = new int[32];
+    progPow.fill_mix(0xEE304846DDD0A47BL, 0, result);
+
+    assertThat(result)
+        .containsExactly(
+            new int[] {
+                0x10C02F0D, 0x99891C9E, 0xC59649A0, 0x43F0394D,
+                0x24D2BAE4, 0xC4E89D4C, 0x398AD25C, 0xF5C0E467,
+                0x7A3302D6, 0xE6245C6C, 0x760726D3, 0x1F322EE7,
+                0x85405811, 0xC2F1E765, 0xA0EB7045, 0xDA39E821,
+                0x79FC6A48, 0x089E401F, 0x8488779F, 0xD79E414F,
+                0x041A826B, 0x313C0D79, 0x10125A3C, 0x3F4BDFAC,
+                0xA7352F36, 0x7E70CB54, 0x3B0BB37D, 0x74A3E24A,
+                0xCC37236A, 0xA442B311, 0x955AB27A, 0x6D175B7E
+            });
+
+    progPow.fill_mix(0xEE304846DDD0A47BL, 13, result);
+    assertThat(result)
+        .containsExactly(
+            new int[] {
+                0x4E46D05D, 0x2E77E734, 0x2C479399, 0x70712177,
+                0xA75D7FF5, 0xBEF18D17, 0x8D42252E, 0x35B4FA0E,
+                0x462C850A, 0x2DD2B5D5, 0x5F32B5EC, 0xED5D9EED,
+                0xF9E2685E, 0x1F29DC8E, 0xA78F098B, 0x86A8687B,
+                0xEA7A10E7, 0xBE732B9D, 0x4EEBCB60, 0x94DD7D97,
+                0x39A425E9, 0xC0E782BF, 0xBA7B870F, 0x4823FF60,
+                0xF97A5A1C, 0xB00BCAF4, 0x02D0F8C4, 0x28399214,
+                0xB4CCB32D, 0x83A09132, 0x27EA8279, 0x3837DDA3
+            });
+  }
+
+  @Test
+  public void keccac_f800_progpow() {
+    int[] result =
+        ProgPow.keccakF800Progpow(
+            new int[] {
+                0xCCDDEEFF, 0x8899AABB, 0x44556677, 0x00112233,
+                0x33221100, 0x77665544, 0xBBAA9988, 0xFFEEDDCC
+            },
+            0x123456789ABCDEF0L,
+            new int[] {
+                0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                0x00000000, 0x00000000, 0x00000000, 0x00000000
+            });
+    assertThat(result)
+        .containsExactly(
+            new int[] {
+                0x464830EE, 0x7BA4D0DD, 0x969E1798, 0xCEC50EB6,
+                0x7872E2EA, 0x597E3634, 0xE380E73D, 0x2F89D1E6
+            });
+    result =
+        ProgPow.keccakF800Progpow(
+            new int[] {
+                0xCCDDEEFF, 0x8899AABB, 0x44556677, 0x00112233,
+                0x33221100, 0x77665544, 0xBBAA9988, 0xFFEEDDCC
+            },
+            0xEE304846DDD0A47BL,
+            new int[] {
+                0x0598F111, 0x66B48AC5, 0x719CFF10, 0x5F0ACF9D,
+                0x162FFA18, 0xEF8E7905, 0x21470C77, 0x7D767492
+            });
+    assertThat(result)
+        .containsExactly(
+            new int[] {
+                0x47CD7C5B, 0xD9FDBE2D, 0xAC5C895B, 0xFF67CE8E,
+                0x6B5AEB0D, 0xE1C6ECD2, 0x003D3862, 0xCE8E72C3
+            });
+  }
+
   /**
    * Test vectors from
    * https://github.com/XKCP/XKCP/blob/master/tests/TestVectors/KeccakF-800-IntermediateValues.txt.
    */
-  // Either redundant array creation or super long autoformatted methods.
+  // Redundant arrays format nicer in google-java-format
   @SuppressWarnings("RedundantArrayCreation")
   @Test
   public void XkcpTestVectorsForKeccakF800() {
@@ -65,95 +161,42 @@ public class ProgPowTest {
   }
 
   @Test
-  public void kiss99TestVector() {
-    final ProgPow.Kiss99 kiss99 = new ProgPow.Kiss99(362436069, 521288629, 123456789, 380116160);
+  public void progPowInit() {
+    final int[] src = new int[progPow.progPowRegs];
+    final int[] dst = new int[progPow.progPowRegs];
 
-    assertThat(kiss99.next()).isEqualTo(769445856);
-    assertThat(kiss99.next()).isEqualTo(742012328);
-    assertThat(kiss99.next()).isEqualTo(2121196314);
-    assertThat(kiss99.next()).isEqualTo(-1489346354);
+    final ProgPow.Kiss99 kiss99 = progPow.progPowInit(600, dst, src);
 
-    for (int i = 0; i < 100000 - 5; ++i) {
-      kiss99.next();
-    }
-
-    // The 100000th number.
-    assertThat(kiss99.next()).isEqualTo(941074834);
+    assertThat(src)
+        .containsExactly(
+            new int[] {
+                0x1A, 0x1E, 0x01, 0x13, 0x0B, 0x15, 0x0F, 0x12,
+                0x03, 0x11, 0x1F, 0x10, 0x1C, 0x04, 0x16, 0x17,
+                0x02, 0x0D, 0x1D, 0x18, 0x0A, 0x0C, 0x05, 0x14,
+                0x07, 0x08, 0x0E, 0x1B, 0x06, 0x19, 0x09, 0x00
+            });
+    assertThat(dst)
+        .containsExactly(
+            new int[] {
+                0x00, 0x04, 0x1B, 0x1A, 0x0D, 0x0F, 0x11, 0x07,
+                0x0E, 0x08, 0x09, 0x0C, 0x03, 0x0A, 0x01, 0x0B,
+                0x06, 0x10, 0x1C, 0x1F, 0x02, 0x13, 0x1E, 0x16,
+                0x1D, 0x05, 0x18, 0x12, 0x19, 0x17, 0x15, 0x14
+            });
+    assertThat(kiss99)
+        .isEqualTo(new ProgPow.Kiss99(0x6535921C, 0x29345B16, 0xC0DD7F78, 0x1165D7EB));
   }
 
   @Test
-  public void fillMix3000() {
-    final int[] result = new int[32];
-    progPow.fill_mix(0xEE304846DDD0A47BL, 0, result);
-
-    assertThat(result)
-        .containsExactly(
-            new int[] {
-              0x10C02F0D, 0x99891C9E, 0xC59649A0, 0x43F0394D,
-              0x24D2BAE4, 0xC4E89D4C, 0x398AD25C, 0xF5C0E467,
-              0x7A3302D6, 0xE6245C6C, 0x760726D3, 0x1F322EE7,
-              0x85405811, 0xC2F1E765, 0xA0EB7045, 0xDA39E821,
-              0x79FC6A48, 0x089E401F, 0x8488779F, 0xD79E414F,
-              0x041A826B, 0x313C0D79, 0x10125A3C, 0x3F4BDFAC,
-              0xA7352F36, 0x7E70CB54, 0x3B0BB37D, 0x74A3E24A,
-              0xCC37236A, 0xA442B311, 0x955AB27A, 0x6D175B7E
-            });
-
-    progPow.fill_mix(0xEE304846DDD0A47BL, 13, result);
-    assertThat(result)
-        .containsExactly(
-            new int[] {
-              0x4E46D05D, 0x2E77E734, 0x2C479399, 0x70712177,
-              0xA75D7FF5, 0xBEF18D17, 0x8D42252E, 0x35B4FA0E,
-              0x462C850A, 0x2DD2B5D5, 0x5F32B5EC, 0xED5D9EED,
-              0xF9E2685E, 0x1F29DC8E, 0xA78F098B, 0x86A8687B,
-              0xEA7A10E7, 0xBE732B9D, 0x4EEBCB60, 0x94DD7D97,
-              0x39A425E9, 0xC0E782BF, 0xBA7B870F, 0x4823FF60,
-              0xF97A5A1C, 0xB00BCAF4, 0x02D0F8C4, 0x28399214,
-              0xB4CCB32D, 0x83A09132, 0x27EA8279, 0x3837DDA3
-            });
+  public void merge() {
+    assertThat(ProgPow.merge(0x3B0BB37D, 0xA0212004, 0x9BD26AB0)).isEqualTo(0x3CA34321); // mul/add
+    assertThat(ProgPow.merge(0x10C02F0D, 0x870FA227, 0xD4F45515)).isEqualTo(0x91C1326A); // xor/mul
+    assertThat(ProgPow.merge(0x24D2BAE4, 0x0FFB4C9B, 0x7FDBC2F2)).isEqualTo(0x2EDDD94C); // rotl/xor
+    assertThat(ProgPow.merge(0xDA39E821, 0x089C4008, 0x8B6CD8C3)).isEqualTo(0x8A81E396); // rotr/xor
   }
 
   @Test
-  public void keccakF800Progpow3000() {
-    int[] result =
-        ProgPow.keccakF800Progpow(
-            new int[] {
-              0xCCDDEEFF, 0x8899AABB, 0x44556677, 0x00112233,
-              0x33221100, 0x77665544, 0xBBAA9988, 0xFFEEDDCC
-            },
-            0x123456789ABCDEF0L,
-            new int[] {
-              0x00000000, 0x00000000, 0x00000000, 0x00000000,
-              0x00000000, 0x00000000, 0x00000000, 0x00000000
-            });
-    assertThat(result)
-        .containsExactly(
-            new int[] {
-              0x464830EE, 0x7BA4D0DD, 0x969E1798, 0xCEC50EB6,
-              0x7872E2EA, 0x597E3634, 0xE380E73D, 0x2F89D1E6
-            });
-    result =
-        ProgPow.keccakF800Progpow(
-            new int[] {
-              0xCCDDEEFF, 0x8899AABB, 0x44556677, 0x00112233,
-              0x33221100, 0x77665544, 0xBBAA9988, 0xFFEEDDCC
-            },
-            0xEE304846DDD0A47BL,
-            new int[] {
-              0x0598F111, 0x66B48AC5, 0x719CFF10, 0x5F0ACF9D,
-              0x162FFA18, 0xEF8E7905, 0x21470C77, 0x7D767492
-            });
-    assertThat(result)
-        .containsExactly(
-            new int[] {
-              0x47CD7C5B, 0xD9FDBE2D, 0xAC5C895B, 0xFF67CE8E,
-              0x6B5AEB0D, 0xE1C6ECD2, 0x003D3862, 0xCE8E72C3
-            });
-  }
-
-  @Test
-  public void math_chfastHash30000() {
+  public void math() {
     assertThat(ProgPow.math(0x8626BB1F, 0xBBDFBC4E, 0x883E5B49)).isEqualTo(0x4206776D); // add
     assertThat(ProgPow.math(0x3F4BDFAC, 0xD79E414F, 0x36B71236)).isEqualTo(0x4C5CB214); // mul
     assertThat(ProgPow.math(0x6D175B7E, 0xC4E89D4C, 0x944ECABB)).isEqualTo(0x53E9023F); // mul_hi32
@@ -175,42 +218,7 @@ public class ProgPowTest {
   }
 
   @Test
-  public void merge_chfastHash30000() {
-    assertThat(ProgPow.merge(0x3B0BB37D, 0xA0212004, 0x9BD26AB0)).isEqualTo(0x3CA34321); // mul/add
-    assertThat(ProgPow.merge(0x10C02F0D, 0x870FA227, 0xD4F45515)).isEqualTo(0x91C1326A); // xor/mul
-    assertThat(ProgPow.merge(0x24D2BAE4, 0x0FFB4C9B, 0x7FDBC2F2)).isEqualTo(0x2EDDD94C); // rotl/xor
-    assertThat(ProgPow.merge(0xDA39E821, 0x089C4008, 0x8B6CD8C3)).isEqualTo(0x8A81E396); // rotr/xor
-  }
-
-  @Test
-  public void progpow_init_chfastHash30000() {
-    final int[] src = new int[progPow.progPowRegs];
-    final int[] dst = new int[progPow.progPowRegs];
-
-    final ProgPow.Kiss99 kiss99 = progPow.progPowInit(600, dst, src);
-
-    assertThat(src)
-        .containsExactly(
-            new int[] {
-              0x1A, 0x1E, 0x01, 0x13, 0x0B, 0x15, 0x0F, 0x12,
-              0x03, 0x11, 0x1F, 0x10, 0x1C, 0x04, 0x16, 0x17,
-              0x02, 0x0D, 0x1D, 0x18, 0x0A, 0x0C, 0x05, 0x14,
-              0x07, 0x08, 0x0E, 0x1B, 0x06, 0x19, 0x09, 0x00
-            });
-    assertThat(dst)
-        .containsExactly(
-            new int[] {
-              0x00, 0x04, 0x1B, 0x1A, 0x0D, 0x0F, 0x11, 0x07,
-              0x0E, 0x08, 0x09, 0x0C, 0x03, 0x0A, 0x01, 0x0B,
-              0x06, 0x10, 0x1C, 0x1F, 0x02, 0x13, 0x1E, 0x16,
-              0x1D, 0x05, 0x18, 0x12, 0x19, 0x17, 0x15, 0x14
-            });
-    assertThat(kiss99)
-        .isEqualTo(new ProgPow.Kiss99(0x6535921C, 0x29345B16, 0xC0DD7F78, 0x1165D7EB));
-  }
-
-  @Test
-  public void progPowLoopChfastHash30000() {
+  public void progPowLoop() {
     final long seed = 0xEE304846DDD0A47BL;
     // initialize mix for all lanes
     final int[][] mix = new int[progPow.progPowLanes][progPow.progPowRegs];
@@ -435,9 +443,6 @@ public class ProgPowTest {
                     "ffeeddccbbaa9988776655443322110000112233445566778899aabbccddeeff")),
             (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
-    ProgPowHashTest.toIntArray(
-        BytesValue.fromHexString(
-            "11f19805c58ab46610ff9c719dcf0a5f18fa2f1605798eef770c47219274767d"));
     assertThat(result)
         .containsExactly(
             ProgPowHashTest.toIntArray(

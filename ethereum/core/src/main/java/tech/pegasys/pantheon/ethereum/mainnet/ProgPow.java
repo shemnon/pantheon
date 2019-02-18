@@ -53,7 +53,7 @@ class ProgPow {
 
   private final int numWordsPerLane = 2048 / 4 / progPowLanes;
 
-  private static int fnv1a(final int h, final int d) {
+  static int fnv1a(final int h, final int d) {
     return (h ^ d) * FNV_PRIME;
   }
 
