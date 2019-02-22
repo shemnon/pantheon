@@ -18,6 +18,7 @@ import tech.pegasys.pantheon.crypto.SECP256K1.Signature;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.rlp.BytesValueRLPInput;
 import tech.pegasys.pantheon.ethereum.rlp.BytesValueRLPOutput;
+import tech.pegasys.pantheon.ethereum.rlp.RLPEncodable;
 import tech.pegasys.pantheon.ethereum.rlp.RLPInput;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
@@ -27,11 +28,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.StringJoiner;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Represents the data structure stored in the extraData field of the BlockHeader used when
  * operating under an IBFT 2.0 consensus mechanism.
  */
-public class IbftExtraData {
+public class IbftExtraData implements RLPEncodable {
 
   public static final int EXTRA_VANITY_LENGTH = 32;
 
@@ -79,6 +83,7 @@ public class IbftExtraData {
     return new IbftExtraData(vanityData, seals, vote, round, validators);
   }
 
+  @Override
   public BytesValue encode() {
     return encode(EncodingType.ALL);
   }
@@ -120,15 +125,15 @@ public class IbftExtraData {
     return encoder.encoded();
   }
 
+  @JsonCreator
+  public static IbftExtraData createGenesisExtraData(
+      @JsonProperty("validators") final Collection<Address> validators) {
+    return new IbftExtraData(
+        BytesValue.wrap(new byte[32]), Collections.emptyList(), Optional.empty(), 0, validators);
+  }
+
   public static String createGenesisExtraDataString(final List<Address> validators) {
-    final IbftExtraData extraData =
-        new IbftExtraData(
-            BytesValue.wrap(new byte[32]),
-            Collections.emptyList(),
-            Optional.empty(),
-            0,
-            validators);
-    return extraData.encode().toString();
+    return createGenesisExtraData(validators).encode().toString();
   }
 
   // Accessors

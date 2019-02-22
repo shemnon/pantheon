@@ -13,40 +13,48 @@
 package tech.pegasys.pantheon.cli;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static tech.pegasys.pantheon.cli.DefaultCommandValues.MANDATORY_FILE_FORMAT_HELP;
-import static tech.pegasys.pantheon.cli.PasswordSubCommand.COMMAND_NAME;
 
-import io.vertx.core.Vertx;
+import tech.pegasys.pantheon.cli.RLPSubCommand.EncodeSubCommand;
+import tech.pegasys.pantheon.consensus.ibft.IbftExtraData;
+import tech.pegasys.pantheon.ethereum.rlp.RLPEncodable;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Optional;
-import org.springframework.security.crypto.bcrypt.BCrypt;
-import picocli.CommandLine;
+import java.util.Scanner;
+
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.JsonObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExecutionException;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
-import tech.pegasys.pantheon.cli.PasswordSubCommand.HashSubCommand;
-import tech.pegasys.pantheon.cli.RLPSubCommand.EncodeSubCommand;
-import tech.pegasys.pantheon.consensus.common.ConsensusHelpers;
-import tech.pegasys.pantheon.consensus.ibft.IbftExtraData;
-import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
-import tech.pegasys.pantheon.metrics.prometheus.MetricsService;
 
 @Command(
-    name = COMMAND_NAME,
-    description = "This command provides password related actions.",
+    name = RLPSubCommand.COMMAND_NAME,
+    description = "This command provides RLP data related actions.",
     mixinStandardHelpOptions = true,
     subcommands = {EncodeSubCommand.class})
 class RLPSubCommand implements Runnable {
 
   static final String COMMAND_NAME = "rlp";
+  private static final Logger LOG = LogManager.getLogger();
+
+  private final PrintStream out;
+  private final InputStream in;
 
   @SuppressWarnings("unused")
   @ParentCommand
@@ -56,10 +64,9 @@ class RLPSubCommand implements Runnable {
   @Spec
   private CommandSpec spec;
 
-  final PrintStream out;
-
-  RLPSubCommand(final PrintStream out) {
+  RLPSubCommand(final PrintStream out, final InputStream in) {
     this.out = out;
+    this.in = in;
   }
 
   @Override
@@ -74,59 +81,100 @@ class RLPSubCommand implements Runnable {
    */
   @Command(
       name = "encode",
-      description = "This command encodes a JSON typed data from a file into an RLP hex string.",
+      description = "This command encodes a JSON typed data into an RLP hex string.",
       mixinStandardHelpOptions = true)
   static class EncodeSubCommand implements Runnable {
+
     @SuppressWarnings("unused")
     @ParentCommand
-    private BlocksSubCommand parentCommand; // Picocli injects reference to parent command
+    private RLPSubCommand parentCommand; // Picocli injects reference to parent command
 
-    @Option(
-        names = "--type",
-        required = true,
-        description = "Type of the data, possible values are ${COMPLETION-CANDIDATES}. "
-            + "(default: ${DEFAULT-VALUE})" )
-    private final RLPType type = RLPType.IBFT_EXTRA_DATA;
+    @SuppressWarnings("unused")
+    @Spec
+    private CommandSpec spec;
 
     @Option(
         names = "--from",
-        required = true,
         paramLabel = MANDATORY_FILE_FORMAT_HELP,
-        description = "File containing blocks to import",
+        description = "File containing JSON object to encode",
         arity = "1..1")
-    private final File jsonSourceFile = null;
+    private File jsonSourceFile = null;
+
+    @Option(
+        names = "--to",
+        paramLabel = MANDATORY_FILE_FORMAT_HELP,
+        description = "File to write encoded RPL string to.",
+        arity = "1..1")
+    private File rlpTargetFile = null;
 
     @Override
     public void run() {
-
       checkNotNull(parentCommand);
+      readInput();
+    }
 
-      try {
-        // As jsonSourceFile even if initialized as null is injected by PicoCLI and param is
-        // mandatory
-        // So we are sure it's always not null, we can remove the warning
-        //noinspection ConstantConditions
-        final Path path = jsonSourceFile.toPath();
+    private void readInput() {
+      // if we have an output file defined, print to it
+      // otherwise print to defined output, usually standard output.
+      StringBuilder jsonData = new StringBuilder();
 
-        parentCommand.blockImporter.importBlockchain(
-            path, parentCommand.parentCommand.buildController());
+      if (jsonSourceFile != null) {
+        try {
+          BufferedReader reader = Files.newBufferedReader(jsonSourceFile.toPath(), UTF_8);
 
+          String line;
+          while ((line = reader.readLine()) != null) jsonData.append(line);
+        } catch (IOException e) {
+          throw new ExecutionException(spec.commandLine(), "Unable to read JSON file.");
+        }
+      } else {
+        // get JSON data from standard input
+        try (Scanner scanner = new Scanner(parentCommand.in, UTF_8.name())) {
+          while (scanner.hasNextLine()) {
+            jsonData.append(String.join("", scanner.nextLine().split("\\s")));
+          }
+        }
+      }
+      encode(jsonData.toString());
+    }
 
-        final IbftExtraData extraData =
-            new IbftExtraData(
-                ConsensusHelpers.zeroLeftPad(vanityData, IbftExtraData.EXTRA_VANITY_LENGTH),
-                Collections.emptyList(),
-                toVote(proposal),
-                round,
-                validators);
-
-        return extraData.encode();
-      } catch (final FileNotFoundException e) {
+    private void encode(final String jsonInput) {
+      // map the json to the object matching the type option
+      // the object must be an RLPEncodable object
+      if (jsonInput == null || jsonInput.isEmpty()) {
         throw new ExecutionException(
-            new CommandLine(this), "Could not find file to import: " + blocksImportFile);
-      } catch (final IOException e) {
-        throw new ExecutionException(
-            new CommandLine(this), "Unable to import blocks from " + blocksImportFile, e);
+            spec.commandLine(), "An error occurred while trying to read the JSON data.");
+      } else {
+        try {
+          JsonObject jsonObject = new JsonObject(jsonInput);
+          RLPEncodable objectToEncode = jsonObject.mapTo(IbftExtraData.class);
+          // encode and write the value
+          writeOutput(objectToEncode.encode());
+        } catch (DecodeException e) {
+          throw new ParameterException(
+              spec.commandLine(), "Unable to load the JSON data. Please check JSON input format.");
+        } catch (IllegalArgumentException e) {
+          throw new ParameterException(
+              spec.commandLine(),
+              "Unable to map the JSON data with IbftExtraData type. Please check JSON input format.");
+        }
+      }
+    }
+
+    private void writeOutput(final BytesValue rlpEncodedOutput) {
+      // write the encoded result to stdout or a file if the option is specified
+      if (rlpTargetFile != null) {
+        final Path targetPath = rlpTargetFile.toPath();
+
+        try (final BufferedWriter fileWriter = Files.newBufferedWriter(targetPath, UTF_8)) {
+          fileWriter.write(rlpEncodedOutput.toString());
+        } catch (final IOException e) {
+          throw new ParameterException(
+              spec.commandLine(), "An error occurred while trying to write the RLP string");
+        }
+      } else {
+        parentCommand.out.println(rlpEncodedOutput);
+      }
     }
   }
 }

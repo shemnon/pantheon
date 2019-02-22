@@ -58,6 +58,7 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.Path;
@@ -103,7 +104,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
 
   private final Logger logger;
 
-  private CommandLine commandLine;
+  CommandLine commandLine;
 
   public static class RpcApisConverter implements ITypeConverter<RpcApi> {
 
@@ -474,6 +475,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
   public void parse(
       final AbstractParseResultHandler<List<Object>> resultHandler,
       final DefaultExceptionHandler<List<Object>> exceptionHandler,
+      final InputStream in,
       final String... args) {
 
     commandLine = new CommandLine(this);
@@ -492,6 +494,8 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
         PublicKeySubCommand.COMMAND_NAME, new PublicKeySubCommand(resultHandler.out()));
     commandLine.addSubcommand(
         PasswordSubCommand.COMMAND_NAME, new PasswordSubCommand(resultHandler.out()));
+    commandLine.addSubcommand(
+        RLPSubCommand.COMMAND_NAME, new RLPSubCommand(resultHandler.out(), in));
 
     commandLine.registerConverter(Address.class, Address::fromHexString);
     commandLine.registerConverter(BytesValue.class, BytesValue::fromHexString);
