@@ -13,9 +13,9 @@
 package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.eth.manager.AbstractFanOutTask;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
+import tech.pegasys.pantheon.ethereum.eth.manager.task.AbstractFanOutTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockHandler;
 import tech.pegasys.pantheon.metrics.LabelledMetric;
 import tech.pegasys.pantheon.metrics.OperationTimer;
@@ -36,8 +36,8 @@ public class ParallelDownloadBodiesTask<B> extends AbstractFanOutTask<List<Block
   ParallelDownloadBodiesTask(
       final BlockHandler<B> blockHandler,
       final BlockingQueue<List<BlockHeader>> inboundQueue,
-      final EthContext ethContext,
       final int outboundBacklogSize,
+      final EthContext ethContext,
       final LabelledMetric<OperationTimer> ethTasksTimer) {
     super(inboundQueue, outboundBacklogSize, ethContext, ethTasksTimer);
 

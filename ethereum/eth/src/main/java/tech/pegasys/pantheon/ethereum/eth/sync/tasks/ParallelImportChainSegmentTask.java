@@ -14,9 +14,9 @@ package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.eth.manager.AbstractEthTask;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthScheduler;
+import tech.pegasys.pantheon.ethereum.eth.manager.task.AbstractEthTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockHandler;
 import tech.pegasys.pantheon.ethereum.eth.sync.ValidationPolicy;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
@@ -124,13 +124,16 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
           new ParallelDownloadBodiesTask<>(
               blockHandler,
               validateHeadersTask.getOutboundQueue(),
-              ethContext,
               maxActiveChunks,
+              ethContext,
               ethTasksTimer);
+      final ParallelExtractTxSignaturesTask<B> extractTxSignaturesTask =
+          new ParallelExtractTxSignaturesTask<>(
+              blockHandler, downloadBodiesTask.getOutboundQueue(), maxActiveChunks, ethTasksTimer);
       final ParallelValidateAndImportBodiesTask<B> validateAndImportBodiesTask =
           new ParallelValidateAndImportBodiesTask<>(
               blockHandler,
-              downloadBodiesTask.getOutboundQueue(),
+              extractTxSignaturesTask.getOutboundQueue(),
               Integer.MAX_VALUE,
               ethTasksTimer);
 
@@ -145,6 +148,9 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
       final CompletableFuture<?> downloadBodiesFuture =
           scheduler.scheduleServiceTask(downloadBodiesTask);
       registerSubTask(downloadBodiesFuture);
+      final CompletableFuture<?> extractTxSignaturesFuture =
+          scheduler.scheduleServiceTask(extractTxSignaturesTask);
+      registerSubTask(extractTxSignaturesFuture);
       final CompletableFuture<List<List<B>>> validateBodiesFuture =
           scheduler.scheduleServiceTask(validateAndImportBodiesTask);
       registerSubTask(validateBodiesFuture);
@@ -153,7 +159,8 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
       downloadHeadersTask.shutdown();
       downloadHeaderFuture.thenRun(validateHeadersTask::shutdown);
       validateHeaderFuture.thenRun(downloadBodiesTask::shutdown);
-      downloadBodiesFuture.thenRun(validateAndImportBodiesTask::shutdown);
+      downloadBodiesFuture.thenRun(extractTxSignaturesTask::shutdown);
+      extractTxSignaturesFuture.thenRun(validateAndImportBodiesTask::shutdown);
 
       final BiConsumer<? super Object, ? super Throwable> cancelOnException =
           (s, e) -> {
@@ -161,6 +168,7 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
               downloadHeadersTask.cancel();
               validateHeadersTask.cancel();
               downloadBodiesTask.cancel();
+              extractTxSignaturesTask.cancel();
               validateAndImportBodiesTask.cancel();
               result.get().completeExceptionally(e);
             }
@@ -169,6 +177,7 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
       downloadHeaderFuture.whenComplete(cancelOnException);
       validateHeaderFuture.whenComplete(cancelOnException);
       downloadBodiesFuture.whenComplete(cancelOnException);
+      extractTxSignaturesFuture.whenComplete(cancelOnException);
       validateBodiesFuture.whenComplete(
           (r, e) -> {
             if (e != null) {

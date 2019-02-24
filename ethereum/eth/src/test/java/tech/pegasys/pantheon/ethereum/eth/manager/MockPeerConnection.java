@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
 
-class MockPeerConnection implements PeerConnection {
+public class MockPeerConnection implements PeerConnection {
 
   private static final PeerSendHandler NOOP_ON_SEND = (cap, msg, conn) -> {};
   private static final AtomicLong ID_GENERATOR = new AtomicLong();
@@ -89,6 +89,7 @@ class MockPeerConnection implements PeerConnection {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean isDisconnected() {
     return disconnected;
   }

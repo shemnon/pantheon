@@ -14,7 +14,7 @@ package tech.pegasys.pantheon.ethereum.eth.sync.tasks;
 
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPipelinedTask;
+import tech.pegasys.pantheon.ethereum.eth.manager.task.AbstractPipelinedTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.ValidationPolicy;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.exceptions.InvalidBlockException;
 import tech.pegasys.pantheon.ethereum.mainnet.BlockHeaderValidator;

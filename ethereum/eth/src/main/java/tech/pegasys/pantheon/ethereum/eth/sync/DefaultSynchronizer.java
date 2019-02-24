@@ -56,14 +56,12 @@ public class DefaultSynchronizer<C> implements Synchronizer {
       final EthContext ethContext,
       final SyncState syncState,
       final Path dataDirectory,
-      final MetricsSystem metricsSystem) {
+      final MetricsSystem metricsSystem,
+      final LabelledMetric<OperationTimer> ethTasksTimer) {
     this.syncConfig = syncConfig;
     this.ethContext = ethContext;
     this.syncState = syncState;
 
-    final LabelledMetric<OperationTimer> ethTasksTimer =
-        metricsSystem.createLabelledTimer(
-            MetricCategory.SYNCHRONIZER, "task", "Internal processing tasks", "taskName");
     this.blockPropagationManager =
         new BlockPropagationManager<>(
             syncConfig,
@@ -72,7 +70,8 @@ public class DefaultSynchronizer<C> implements Synchronizer {
             ethContext,
             syncState,
             new PendingBlocks(),
-            ethTasksTimer);
+            ethTasksTimer,
+            new BlockBroadcaster(ethContext));
 
     ChainHeadTracker.trackChainHeadForPeers(
         ethContext, protocolSchedule, protocolContext.getBlockchain(), syncConfig, ethTasksTimer);
@@ -94,6 +93,28 @@ public class DefaultSynchronizer<C> implements Synchronizer {
             syncState);
   }
 
+  public DefaultSynchronizer(
+      final SynchronizerConfiguration syncConfig,
+      final ProtocolSchedule<C> protocolSchedule,
+      final ProtocolContext<C> protocolContext,
+      final WorldStateStorage worldStateStorage,
+      final EthContext ethContext,
+      final SyncState syncState,
+      final Path dataDirectory,
+      final MetricsSystem metricsSystem) {
+    this(
+        syncConfig,
+        protocolSchedule,
+        protocolContext,
+        worldStateStorage,
+        ethContext,
+        syncState,
+        dataDirectory,
+        metricsSystem,
+        metricsSystem.createLabelledTimer(
+            MetricCategory.SYNCHRONIZER, "task", "Internal processing tasks", "taskName"));
+  }
+
   @Override
   public void start() {
     if (started.compareAndSet(false, true)) {
@@ -107,13 +128,7 @@ public class DefaultSynchronizer<C> implements Synchronizer {
     }
   }
 
-  @Override
-  public void stop() {
-    fastSynchronizer.ifPresent(FastSynchronizer::deleteFastSyncState);
-  }
-
   private void handleFastSyncResult(final FastSyncState result, final Throwable error) {
-
     final Throwable rootCause = ExceptionUtils.rootCause(error);
     if (rootCause instanceof FastSyncException) {
       LOG.error(

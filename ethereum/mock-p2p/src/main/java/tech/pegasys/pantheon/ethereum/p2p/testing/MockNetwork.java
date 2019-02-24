@@ -18,11 +18,11 @@ import tech.pegasys.pantheon.ethereum.p2p.api.MessageData;
 import tech.pegasys.pantheon.ethereum.p2p.api.P2PNetwork;
 import tech.pegasys.pantheon.ethereum.p2p.api.PeerConnection;
 import tech.pegasys.pantheon.ethereum.p2p.peers.Peer;
-import tech.pegasys.pantheon.ethereum.p2p.permissioning.NodeWhitelistController;
 import tech.pegasys.pantheon.ethereum.p2p.wire.Capability;
 import tech.pegasys.pantheon.ethereum.p2p.wire.DefaultMessage;
 import tech.pegasys.pantheon.ethereum.p2p.wire.PeerInfo;
 import tech.pegasys.pantheon.ethereum.p2p.wire.messages.DisconnectMessage.DisconnectReason;
+import tech.pegasys.pantheon.ethereum.permissioning.NodeWhitelistController;
 import tech.pegasys.pantheon.util.Subscribers;
 
 import java.net.InetSocketAddress;
@@ -218,6 +218,8 @@ public final class MockNetwork {
     /** {@link Peer} that this connection originates from. */
     private final Peer from;
 
+    private boolean disconnected = false;
+
     /**
      * Peer that this connection targets and that will receive {@link Message}s sent via {@link
      * #send(Capability, MessageData)}.
@@ -267,12 +269,19 @@ public final class MockNetwork {
 
     @Override
     public void terminateConnection(final DisconnectReason reason, final boolean peerInitiated) {
+      disconnected = true;
       network.disconnect(this, reason);
     }
 
     @Override
     public void disconnect(final DisconnectReason reason) {
+      disconnected = true;
       network.disconnect(this, reason);
+    }
+
+    @Override
+    public boolean isDisconnected() {
+      return disconnected;
     }
 
     @Override
