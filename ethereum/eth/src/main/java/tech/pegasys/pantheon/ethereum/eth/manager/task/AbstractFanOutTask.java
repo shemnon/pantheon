@@ -57,7 +57,7 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
   private final List<O> results;
 
   private boolean shuttingDown = false;
-  private final AtomicReference<Throwable> processingException = new AtomicReference<>(null);
+  private final AtomicReference<Throwable> processingException = new AtomicReference<>();
 
   protected AbstractFanOutTask(
       final BlockingQueue<I> inboundQueue,
