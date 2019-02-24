@@ -49,6 +49,11 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
 
   private final BlockHandler<B> blockHandler;
   private final ValidationPolicy validationPolicy;
+  private ParallelDownloadHeadersTask<C> downloadHeadersTask;
+  private ParallelValidateHeadersTask<C> validateHeadersTask;
+  private ParallelDownloadBodiesTask<B> downloadBodiesTask;
+  private ParallelExtractTxSignaturesTask<B> extractTxSignaturesTask;
+  private ParallelValidateAndImportBodiesTask<B> validateAndImportBodiesTask;
 
   private ParallelImportChainSegmentTask(
       final ProtocolSchedule<C> protocolSchedule,
@@ -104,7 +109,7 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
       LOG.debug("Importing chain segment from {} to {}.", firstHeaderNumber, lastHeaderNumber);
 
       // build pipeline
-      final ParallelDownloadHeadersTask<C> downloadHeadersTask =
+      downloadHeadersTask =
           new ParallelDownloadHeadersTask<>(
               checkpointHeaders,
               maxActiveChunks,
@@ -112,7 +117,7 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
               protocolContext,
               ethContext,
               ethTasksTimer);
-      final ParallelValidateHeadersTask<C> validateHeadersTask =
+      validateHeadersTask =
           new ParallelValidateHeadersTask<>(
               validationPolicy,
               downloadHeadersTask.getOutboundQueue(),
@@ -120,17 +125,17 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
               protocolSchedule,
               protocolContext,
               ethTasksTimer);
-      final ParallelDownloadBodiesTask<B> downloadBodiesTask =
+      downloadBodiesTask =
           new ParallelDownloadBodiesTask<>(
               blockHandler,
               validateHeadersTask.getOutboundQueue(),
               maxActiveChunks,
               ethContext,
               ethTasksTimer);
-      final ParallelExtractTxSignaturesTask<B> extractTxSignaturesTask =
+      extractTxSignaturesTask =
           new ParallelExtractTxSignaturesTask<>(
               blockHandler, downloadBodiesTask.getOutboundQueue(), maxActiveChunks, ethTasksTimer);
-      final ParallelValidateAndImportBodiesTask<B> validateAndImportBodiesTask =
+      validateAndImportBodiesTask =
           new ParallelValidateAndImportBodiesTask<>(
               blockHandler,
               extractTxSignaturesTask.getOutboundQueue(),
@@ -198,5 +203,15 @@ public class ParallelImportChainSegmentTask<C, B> extends AbstractEthTask<List<B
     } else {
       LOG.warn("Import task requested with no checkpoint headers.");
     }
+  }
+
+  @Override
+  protected void cleanup() {
+    // calling cancel doesn't overwrite normally finished tasks.
+    downloadHeadersTask.cancel();
+    validateHeadersTask.cancel();
+    downloadBodiesTask.cancel();
+    extractTxSignaturesTask.cancel();
+    validateAndImportBodiesTask.cancel();
   }
 }

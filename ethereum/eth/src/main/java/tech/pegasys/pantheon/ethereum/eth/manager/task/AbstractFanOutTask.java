@@ -78,11 +78,12 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
 
     try {
       // Loop until an exception happened or we have no work and we are told to stop.
-      while ((processingException.get() == null)
+      while (!isDone()
+          && (processingException.get() == null)
           && !(inboundQueue.isEmpty() && inFlightQueue.isEmpty() && shuttingDown)) {
         // take all current inbound items and start them working
         final EthPeers ethPeers = ethContext.getEthPeers();
-        while (!inboundQueue.isEmpty() && !shuttingDown) {
+        while (!inboundQueue.isEmpty() && !isDone()) {
           final I currentInput = inboundQueue.poll();
           final Optional<EthPeer> peer = ethPeers.idlePeer();
           if (!peer.isPresent()) {
@@ -98,7 +99,7 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
         }
 
         // read all in flight processes and post process them
-        while (!inFlightQueue.isEmpty() && !shuttingDown) {
+        while (!inFlightQueue.isEmpty() && !isDone()) {
           final InFlightRequestData<I, O> inFlightData = inFlightQueue.peek();
           if (!inFlightData.future.isDone()) {
             break;
@@ -127,7 +128,7 @@ public abstract class AbstractFanOutTask<I, O> extends AbstractEthTask<List<O>> 
         }
 
         // Sleep if inbound queue is empty or we don't have idle peers.
-        if (!shuttingDown && (inboundQueue.isEmpty() || !ethPeers.idlePeer().isPresent())) {
+        if (!isDone() && (inboundQueue.isEmpty() || !ethPeers.idlePeer().isPresent())) {
           if (inFlightQueue.isEmpty()) {
             // If both queues are empty park it for a fixed time
             LockSupport.parkNanos(WAIT_NS);
