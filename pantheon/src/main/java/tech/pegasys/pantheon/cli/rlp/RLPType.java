@@ -12,19 +12,43 @@
  */
 package tech.pegasys.pantheon.cli.rlp;
 
-/** Type of the RLP data to encode/decode */
+import tech.pegasys.pantheon.consensus.ibft.IbftExtraData;
+import tech.pegasys.pantheon.ethereum.core.Address;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**
+ * Type of the RLP data to encode/decode. Enums are used by PicoCLI so that the values can be shown
+ * on the command line.
+ */
 public enum RLPType {
-  // Enum is used to enable the listing of the possible values in PicoCLI.
-  IBFT_EXTRA_DATA(new IbftExtraDataCLIAdapter());
+  IBFT_EXTRA_DATA {
+    @Override
+    public BytesValue encode(final String json) throws IOException {
+      ObjectMapper mapper = new ObjectMapper();
+      TypeReference<Collection<String>> typeRef = new TypeReference<Collection<String>>() {};
+      Collection<String> validatorAddresse = mapper.readValue(json, typeRef);
 
-  private final JSONToRLP adapter;
+      Collection<Address> addresses =
+          validatorAddresse.stream().map(Address::fromHexString).collect(Collectors.toList());
 
-  RLPType(final JSONToRLP adapter) {
+      return new IbftExtraData(
+              BytesValue.wrap(new byte[32]),
+              Collections.emptyList(),
+              Optional.empty(),
+              0,
+              addresses)
+          .encode();
+    }
+  };
 
-    this.adapter = adapter;
-  }
-
-  public JSONToRLP getAdapter() {
-    return adapter;
-  }
+  public abstract BytesValue encode(String json) throws IOException;
 }

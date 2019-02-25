@@ -162,7 +162,7 @@ public class RLPSubCommand implements Runnable {
       } else {
         try {
           // encode and write the value
-          writeOutput(type.getAdapter().encode(jsonInput));
+          writeOutput(type.encode(jsonInput));
         } catch (MismatchedInputException e) {
           throw new ParameterException(
               spec.commandLine(),
