@@ -148,7 +148,7 @@ public class RLPSubCommand implements Runnable {
       // map the json to the object matching the type option
       // the object must be an JSONToRLP object
       if (jsonInput == null || jsonInput.isEmpty()) {
-        throw new ExecutionException(
+        throw new ParameterException(
             spec.commandLine(), "An error occurred while trying to read the JSON data.");
       } else {
         try {

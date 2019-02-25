@@ -16,8 +16,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.nio.file.Files;
 
 import org.junit.After;
 import org.junit.Test;
@@ -61,7 +63,7 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   // RLP sub-command
   @Test
   public void rlpSubCommandExistAnbHaveSubCommands() {
-    CommandSpec spec = parseCommand();
+    final CommandSpec spec = parseCommand();
     assertThat(spec.subcommands()).containsKeys(RLP_SUBCOMMAND_NAME);
     assertThat(spec.subcommands().get(RLP_SUBCOMMAND_NAME).getSubcommands())
         .containsKeys(RLP_ENCODE_SUBCOMMAND_NAME);
@@ -94,16 +96,16 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   @Test
   public void callingRLPEncodeSubCommandWithoutPathMustWriteToStandardOutput() {
 
-    String jsonInput =
+    final String jsonInput =
         "{\"validators\":[\"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
             + "\"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\" ]}";
 
     // set stdin
-    ByteArrayInputStream stdIn = new ByteArrayInputStream(jsonInput.getBytes(UTF_8));
+    final ByteArrayInputStream stdIn = new ByteArrayInputStream(jsonInput.getBytes(UTF_8));
 
     parseCommand(stdIn, RLP_SUBCOMMAND_NAME, RLP_ENCODE_SUBCOMMAND_NAME);
 
-    String expectedRlpString =
+    final String expectedRlpString =
         "0xf853a00000000000000000000000000000000000000000000000000000000000000000ea94be068f726a13c8d"
             + "46c44be6ce9d275600e1735a4945ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193808400000000c0";
     assertThat(commandOutput.toString()).contains(expectedRlpString);
@@ -111,20 +113,20 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
-  public void callingRLPEncodeSubCommandWithFilePathMustWriteInThisFile() throws Exception {
+  public void callingRLPEncodeSubCommandWithOutputFileMustWriteInThisFile() throws Exception {
 
     final File file = File.createTempFile("ibftExtraData", "rlp");
 
-    String jsonInput =
+    final String jsonInput =
         "{\"validators\":[\"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
             + "\"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\" ]}";
 
     // set stdin
-    ByteArrayInputStream stdIn = new ByteArrayInputStream(jsonInput.getBytes(UTF_8));
+    final ByteArrayInputStream stdIn = new ByteArrayInputStream(jsonInput.getBytes(UTF_8));
 
     parseCommand(stdIn, RLP_SUBCOMMAND_NAME, RLP_ENCODE_SUBCOMMAND_NAME, "--to", file.getPath());
 
-    String expectedRlpString =
+    final String expectedRlpString =
         "0xf853a00000000000000000000000000000000000000000000000000000000000000000ea94be068f726a13c8d"
             + "46c44be6ce9d275600e1735a4945ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193808400000000c0";
 
@@ -134,10 +136,76 @@ public class RLPSubCommandTest extends CommandTestAbstract {
     assertThat(commandErrorOutput.toString()).isEmpty();
   }
 
-  // TODO
-  // - test with input from file
-  // - test with invalid inputs
-  // - test with no input
+  @Test
+  public void callingRLPEncodeSubCommandWithInputFilePathMustReadFromThisFile() throws Exception {
+
+    final File tempJsonFile = temp.newFile("test.json");
+    try (final BufferedWriter fileWriter = Files.newBufferedWriter(tempJsonFile.toPath(), UTF_8)) {
+
+      fileWriter.write(
+          "{\"validators\":[\n"
+              + "        \"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
+              + "            \"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\"\n"
+              + "]}");
+
+      fileWriter.flush();
+
+      parseCommand(
+          RLP_SUBCOMMAND_NAME, RLP_ENCODE_SUBCOMMAND_NAME, "--from", tempJsonFile.getPath());
+
+      final String expectedRlpString =
+          "0xf853a00000000000000000000000000000000000000000000000000000000000000000ea94be068f726a13c8d"
+              + "46c44be6ce9d275600e1735a4945ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193808400000000c0";
+      assertThat(commandOutput.toString()).contains(expectedRlpString);
+      assertThat(commandErrorOutput.toString()).isEmpty();
+    }
+  }
+
+  @Test
+  public void callingRLPEncodeSubCommandWithInvalidInputMustRaiseAnError() throws Exception {
+
+    final File tempJsonFile = temp.newFile("invalid_test.json");
+    try (final BufferedWriter fileWriter = Files.newBufferedWriter(tempJsonFile.toPath(), UTF_8)) {
+
+      fileWriter.write("{\"validators\":0}");
+
+      fileWriter.flush();
+
+      parseCommand(
+          RLP_SUBCOMMAND_NAME, RLP_ENCODE_SUBCOMMAND_NAME, "--from", tempJsonFile.getPath());
+
+      assertThat(commandOutput.toString()).isEmpty();
+      assertThat(commandErrorOutput.toString())
+          .startsWith(
+              "Unable to map the JSON data with IbftExtraData type. Please check JSON input format.");
+    }
+  }
+
+  @Test
+  public void callingRLPEncodeSubCommandWithEmptyInputMustRaiseAnError() throws Exception {
+
+    final File tempJsonFile = temp.newFile("empty.json");
+
+    parseCommand(RLP_SUBCOMMAND_NAME, RLP_ENCODE_SUBCOMMAND_NAME, "--from", tempJsonFile.getPath());
+
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString())
+        .startsWith("An error occurred while trying to read the JSON data.");
+  }
+
+  @Test
+  public void callingRLPEncodeSubCommandWithEmptyStdInputMustRaiseAnError() throws Exception {
+
+    // set empty stdin
+    final String jsonInput = "";
+    final ByteArrayInputStream stdIn = new ByteArrayInputStream(jsonInput.getBytes(UTF_8));
+
+    parseCommand(stdIn, RLP_SUBCOMMAND_NAME, RLP_ENCODE_SUBCOMMAND_NAME);
+
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString())
+        .startsWith("An error occurred while trying to read the JSON data.");
+  }
 
   @After
   public void restoreStdin() {
