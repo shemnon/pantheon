@@ -25,26 +25,28 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class IbftExtraDataCLIAdapter implements JSONtoRLP {
+/**
+ * Adapter to convert a typed JSON to an IbftExtraData object This adapter handles the JSON to RLP
+ * encoding
+ */
+public class IbftExtraDataCLIAdapter implements JSONToRLP {
 
-  private final Collection<String> validators;
+  private final List<Address> validators;
 
   @JsonCreator
   IbftExtraDataCLIAdapter(@JsonProperty("validators") final Collection<String> validators) {
-    this.validators = validators;
+    this.validators = validators.stream().map(Address::fromHexString).collect(Collectors.toList());
   }
 
   @Override
   public BytesValue encode() {
-    List<Address> validators =
-        this.validators.stream().map(Address::fromHexString).collect(Collectors.toList());
     return new IbftExtraData(
             BytesValue.wrap(new byte[32]), Collections.emptyList(), Optional.empty(), 0, validators)
         .encode();
   }
 
   @Override
-  public Class<? extends JSONtoRLP> getType() {
+  public Class<? extends JSONToRLP> getType() {
     return this.getClass();
   }
 }

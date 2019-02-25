@@ -60,10 +60,10 @@ public abstract class CommandTestAbstract {
 
   private final Logger TEST_LOGGER = LogManager.getLogger();
 
-  final ByteArrayOutputStream commandOutput = new ByteArrayOutputStream();
+  protected final ByteArrayOutputStream commandOutput = new ByteArrayOutputStream();
   private final PrintStream outPrintStream = new PrintStream(commandOutput);
 
-  final ByteArrayOutputStream commandErrorOutput = new ByteArrayOutputStream();
+  protected final ByteArrayOutputStream commandErrorOutput = new ByteArrayOutputStream();
   private final PrintStream errPrintStream = new PrintStream(commandErrorOutput);
 
   @Mock RunnerBuilder mockRunnerBuilder;
@@ -142,11 +142,11 @@ public abstract class CommandTestAbstract {
     commandErrorOutput.close();
   }
 
-  CommandLine.Model.CommandSpec parseCommand(final String... args) {
+  protected CommandLine.Model.CommandSpec parseCommand(final String... args) {
     return parseCommand(System.in, args);
   }
 
-  CommandLine.Model.CommandSpec parseCommand(final InputStream in, final String... args) {
+  protected CommandLine.Model.CommandSpec parseCommand(final InputStream in, final String... args) {
 
     final TestPantheonCommand pantheonCommand =
         new TestPantheonCommand(

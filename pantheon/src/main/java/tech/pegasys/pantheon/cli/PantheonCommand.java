@@ -105,7 +105,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
 
   private final Logger logger;
 
-  CommandLine commandLine;
+  private CommandLine commandLine;
 
   public static class RpcApisConverter implements ITypeConverter<RpcApi> {
 

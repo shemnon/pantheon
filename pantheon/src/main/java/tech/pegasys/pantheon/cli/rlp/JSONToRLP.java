@@ -14,8 +14,20 @@ package tech.pegasys.pantheon.cli.rlp;
 
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
-interface JSONtoRLP {
+/** Behaviour of objects that can be encoded from JSON to RLP */
+interface JSONToRLP {
+
+  /**
+   * Encodes the object into an RLP value.
+   *
+   * @return the RLP encoded object.
+   */
   BytesValue encode();
 
-  Class<? extends JSONtoRLP> getType();
+  /**
+   * Gives the type of the object that's being encoded
+   *
+   * @return the type of the current object that must be a type implementing this interface
+   */
+  Class<? extends JSONToRLP> getType();
 }

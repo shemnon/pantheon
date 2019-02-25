@@ -43,7 +43,7 @@ class PasswordSubCommand implements Runnable {
   @Spec
   private CommandSpec spec;
 
-  private final PrintStream out;
+  final PrintStream out;
 
   PasswordSubCommand(final PrintStream out) {
     this.out = out;

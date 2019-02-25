@@ -119,6 +119,10 @@ public class RLPSubCommand implements Runnable {
       readInput();
     }
 
+    /**
+     * Reads the stdin or from a file if one is specified by {@link #jsonSourceFile} then goes to
+     * {@link #encode(String)} this data
+     */
     private void readInput() {
       // if we have an output file defined, print to it
       // otherwise print to defined output, usually standard output.
@@ -141,20 +145,29 @@ public class RLPSubCommand implements Runnable {
           }
         }
       }
+
+      // next step is to encode the value
       encode(jsonData.toString());
     }
 
+    /**
+     * Encodes the JSON input into an RLP data based on the {@link #type} then goes to {@link
+     * #writeOutput(BytesValue)} this data to file or stdout
+     *
+     * @param jsonInput the JSON string data to encode
+     */
     private void encode(final String jsonInput) {
       // map the json to the object matching the type option
-      // the object must be an JSONToRLP object
+      // the object must be a JSONToRLP object
       if (jsonInput == null || jsonInput.isEmpty()) {
         throw new ParameterException(
             spec.commandLine(), "An error occurred while trying to read the JSON data.");
       } else {
         try {
           JsonObject jsonObject = new JsonObject(jsonInput);
-          JSONtoRLP objectToEncode = jsonObject.mapTo(type.getType());
-          //          // encode and write the value
+          JSONToRLP objectToEncode = jsonObject.mapTo(type.getType());
+
+          // encode and write the value
           writeOutput(objectToEncode.encode());
         } catch (DecodeException e) {
           throw new ParameterException(
@@ -169,8 +182,12 @@ public class RLPSubCommand implements Runnable {
       }
     }
 
+    /**
+     * write the encoded result to stdout or a file if the option is specified
+     *
+     * @param rlpEncodedOutput the RLP output to write to file or stdout
+     */
     private void writeOutput(final BytesValue rlpEncodedOutput) {
-      // write the encoded result to stdout or a file if the option is specified
       if (rlpTargetFile != null) {
         final Path targetPath = rlpTargetFile.toPath();
 

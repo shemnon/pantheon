@@ -121,10 +121,14 @@ public class IbftExtraData {
   }
 
   public static String createGenesisExtraDataString(final List<Address> validators) {
-    return new IbftExtraData(
-            BytesValue.wrap(new byte[32]), Collections.emptyList(), Optional.empty(), 0, validators)
-        .encode()
-        .toString();
+    final IbftExtraData extraData =
+        new IbftExtraData(
+            BytesValue.wrap(new byte[32]),
+            Collections.emptyList(),
+            Optional.empty(),
+            0,
+            validators);
+    return extraData.encode().toString();
   }
 
   // Accessors
