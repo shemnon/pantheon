@@ -13,17 +13,18 @@
 package tech.pegasys.pantheon.cli.rlp;
 
 /** Type of the RLP data to encode/decode */
-public enum RLPType implements RLPTypeProvider {
+public enum RLPType {
   // Enum is used to enable the listing of the possible values in PicoCLI.
-  IBFT_EXTRA_DATA {
-    @Override
-    public Class<? extends JSONToRLP> getType() {
-      return IbftExtraDataCLIAdapter.class;
-    }
-  };
-}
+  IBFT_EXTRA_DATA(new IbftExtraDataCLIAdapter());
 
-/** Enables the behaviour of being a type provider on the enum value */
-interface RLPTypeProvider {
-  Class<? extends JSONToRLP> getType();
+  private final JSONToRLP adapter;
+
+  RLPType(final JSONToRLP adapter) {
+
+    this.adapter = adapter;
+  }
+
+  public JSONToRLP getAdapter() {
+    return adapter;
+  }
 }

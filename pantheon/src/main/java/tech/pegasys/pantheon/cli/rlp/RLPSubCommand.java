@@ -30,8 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
 
-import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.JsonObject;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine.Command;
@@ -157,27 +156,22 @@ public class RLPSubCommand implements Runnable {
      * @param jsonInput the JSON string data to encode
      */
     private void encode(final String jsonInput) {
-      // map the json to the object matching the type option
-      // the object must be a JSONToRLP object
       if (jsonInput == null || jsonInput.isEmpty()) {
         throw new ParameterException(
             spec.commandLine(), "An error occurred while trying to read the JSON data.");
       } else {
         try {
-          JsonObject jsonObject = new JsonObject(jsonInput);
-          JSONToRLP objectToEncode = jsonObject.mapTo(type.getType());
-
           // encode and write the value
-          writeOutput(objectToEncode.encode());
-        } catch (DecodeException e) {
+          writeOutput(type.getAdapter().encode(jsonInput));
+        } catch (MismatchedInputException e) {
           throw new ParameterException(
               spec.commandLine(),
-              "Unable to load the JSON data. Please check JSON input format. " + e.getMessage());
-        } catch (IllegalArgumentException e) {
+              "Unable to map the JSON data with selected type. Please check JSON input format. "
+                  + e);
+        } catch (IOException e) {
           throw new ParameterException(
               spec.commandLine(),
-              "Unable to map the JSON data with IbftExtraData type. Please check JSON input format. "
-                  + e.getMessage());
+              "Unable to load the JSON data. Please check JSON input format. " + e);
         }
       }
     }

@@ -16,14 +16,14 @@ import tech.pegasys.pantheon.consensus.ibft.IbftExtraData;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Adapter to convert a typed JSON to an IbftExtraData object This adapter handles the JSON to RLP
@@ -31,22 +31,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class IbftExtraDataCLIAdapter implements JSONToRLP {
 
-  private final List<Address> validators;
-
-  @JsonCreator
-  IbftExtraDataCLIAdapter(@JsonProperty("validators") final Collection<String> validators) {
-    this.validators = validators.stream().map(Address::fromHexString).collect(Collectors.toList());
-  }
-
   @Override
-  public BytesValue encode() {
+  public BytesValue encode(final String json) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    TypeReference<Collection<String>> typeRef = new TypeReference<Collection<String>>() {};
+    Collection<String> validatorAddresse = mapper.readValue(json, typeRef);
+
+    Collection<Address> addresses =
+        validatorAddresse.stream().map(Address::fromHexString).collect(Collectors.toList());
+
     return new IbftExtraData(
-            BytesValue.wrap(new byte[32]), Collections.emptyList(), Optional.empty(), 0, validators)
+            BytesValue.wrap(new byte[32]), Collections.emptyList(), Optional.empty(), 0, addresses)
         .encode();
-  }
-
-  @Override
-  public Class<? extends JSONToRLP> getType() {
-    return this.getClass();
   }
 }

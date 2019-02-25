@@ -96,11 +96,10 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
-  public void callingRLPEncodeSubCommandWithoutPathMustWriteToStandardOutput() {
+  public void encodeWithoutPathMustWriteToStandardOutput() {
 
     final String jsonInput =
-        "{\"validators\":[\"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
-            + "\"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\" ]}";
+        "[\"be068f726a13c8d46c44be6ce9d275600e1735a4\", \"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\"]";
 
     // set stdin
     final ByteArrayInputStream stdIn = new ByteArrayInputStream(jsonInput.getBytes(UTF_8));
@@ -115,13 +114,12 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
-  public void callingRLPEncodeSubCommandWithOutputFileMustWriteInThisFile() throws Exception {
+  public void encodeWithOutputFileMustWriteInThisFile() throws Exception {
 
     final File file = File.createTempFile("ibftExtraData", "rlp");
 
     final String jsonInput =
-        "{\"validators\":[\"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
-            + "\"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\" ]}";
+        "[\"be068f726a13c8d46c44be6ce9d275600e1735a4\", \"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\"]";
 
     // set stdin
     final ByteArrayInputStream stdIn = new ByteArrayInputStream(jsonInput.getBytes(UTF_8));
@@ -139,16 +137,13 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
-  public void callingRLPEncodeSubCommandWithInputFilePathMustReadFromThisFile() throws Exception {
+  public void encodeWithInputFilePathMustReadFromThisFile() throws Exception {
 
     final File tempJsonFile = temp.newFile("test.json");
     try (final BufferedWriter fileWriter = Files.newBufferedWriter(tempJsonFile.toPath(), UTF_8)) {
 
       fileWriter.write(
-          "{\"validators\":[\n"
-              + "        \"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
-              + "            \"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\"\n"
-              + "]}");
+          "[\"be068f726a13c8d46c44be6ce9d275600e1735a4\", \"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\"]");
 
       fileWriter.flush();
 
@@ -164,12 +159,12 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
-  public void callingRLPEncodeSubCommandWithInvalidInputMustRaiseAnError() throws Exception {
+  public void encodeWithInvalidInputMustRaiseAnError() throws Exception {
 
     final File tempJsonFile = temp.newFile("invalid_test.json");
     try (final BufferedWriter fileWriter = Files.newBufferedWriter(tempJsonFile.toPath(), UTF_8)) {
 
-      fileWriter.write("{\"validators\":0}");
+      fileWriter.write("{\"property\":0}");
 
       fileWriter.flush();
 
@@ -179,12 +174,12 @@ public class RLPSubCommandTest extends CommandTestAbstract {
       assertThat(commandOutput.toString()).isEmpty();
       assertThat(commandErrorOutput.toString())
           .startsWith(
-              "Unable to map the JSON data with IbftExtraData type. Please check JSON input format.");
+              "Unable to map the JSON data with selected type. Please check JSON input format.");
     }
   }
 
   @Test
-  public void callingRLPEncodeSubCommandWithEmptyInputMustRaiseAnError() throws Exception {
+  public void encodeWithEmptyInputMustRaiseAnError() throws Exception {
 
     final File tempJsonFile = temp.newFile("empty.json");
 
@@ -196,7 +191,7 @@ public class RLPSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
-  public void callingRLPEncodeSubCommandWithEmptyStdInputMustRaiseAnError() throws Exception {
+  public void encodeWithEmptyStdInputMustRaiseAnError() throws Exception {
 
     // set empty stdin
     final String jsonInput = "";

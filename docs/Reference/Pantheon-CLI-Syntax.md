@@ -1084,8 +1084,8 @@ For the moment, only IBFT extra data type of RLP data is supported.
 This data is used to build the IBFT 2.0 genesis file.
 
 ???+ summary "IBFT_EXTRA_DATA"
-    To generate the IBFT_EXTRA_DATA typed RLP string you need a JSON input containing all the validator
-    addresses that you want to insert in your genesis.
+    To generate the IBFT_EXTRA_DATA typed RLP string you need a JSON input containing an array with 
+    all the validator addresses strings that you want to insert in your genesis.
     
     The JSON content is an object with a validator property that's an array of validator addresse strings.
 
@@ -1097,48 +1097,33 @@ This data is used to build the IBFT 2.0 genesis file.
         
         ```json
         {
-           "$schema":"",
-           "$id":"http://tech.pegasys.pantheon/cli_rlp_ibft_extra_data.json",
-           "type":"object",
-           "title":"IBFT extra data",
-           "description":"JSON format used as input to generate an IBFT extra data RLP string",
-           "default":null,
-           "definitions":{
-        
-           },
-           "required":[
-              "validators"
-           ],
-           "properties":{
-              "validators":{
-                 "$id":"#/properties/validators",
-                 "type":"array",
-                 "title":"Validators addresses list",
-                 "description":"List of validator addresses to use in the extra data",
-                 "default":null,
-                 "items":{
-                    "$id":"#/properties/validators/items",
-                    "type":"string",
-                    "title":"Validator address",
-                    "description":"The validator node address",
-                    "default":"",
-                    "examples":[
-                       "be068f726a13c8d46c44be6ce9d275600e1735a4",
-                       "5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193"
-                    ],
-                    "pattern":"^([0-9a-f]{40})$"
-                 }
-              }
-           }
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "$id": "http://tech.pegasys.pantheon/cli_rlp_ibft_extra_data.json",
+          "type": "array",
+          "definitions": {},
+          "title": "IBFT extra data",
+          "description":"JSON format used as input to generate an IBFT extra data RLP string",
+          "items": {
+            "$id": "#/address",
+            "type": "string",
+            "title": "Validator address",
+            "description":"The validator node address",
+            "default": "",
+            "examples": [
+              "be068f726a13c8d46c44be6ce9d275600e1735a4",
+              "5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193"
+            ],
+            "pattern":"^([0-9a-f]{40})$"
+          }
         }
         ``` 
         
     !!!example "Example IBFT_EXTRA_DATA encoding"
         ```json tab="JSON input"
-        {"validators":[
+        [
           "be068f726a13c8d46c44be6ce9d275600e1735a4",
           "5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193"
-        ]}
+        ]
         ```
         
         ``` tab="RLP output"
