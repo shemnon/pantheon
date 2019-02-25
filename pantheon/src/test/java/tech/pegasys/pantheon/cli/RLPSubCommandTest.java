@@ -24,13 +24,6 @@ import org.junit.Test;
 import picocli.CommandLine.Model.CommandSpec;
 
 public class RLPSubCommandTest extends CommandTestAbstract {
-  //  [ "0000000000000000000000000000000000000000000000000000000000000000",
-  //      [ "be068f726a13c8d46c44be6ce9d275600e1735a4",
-  //      "5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193" ],
-  //      "",
-  //      "00000000",
-  //      []
-  //      ]
 
   private static final String EXPECTED_RLP_USAGE =
       "Usage: pantheon rlp [-hV] [COMMAND]"
@@ -44,6 +37,23 @@ public class RLPSubCommandTest extends CommandTestAbstract {
           + "Commands:"
           + System.lineSeparator()
           + "  encode  This command encodes a JSON typed data into an RLP hex string.";
+
+  private static final String EXPECTED_RLP_ENCODE_USAGE =
+      "Usage: pantheon rlp encode [-hV] [--from=<FILE>] [--to=<FILE>] [--type=<type>]"
+          + System.lineSeparator()
+          + "This command encodes a JSON typed data into an RLP hex string."
+          + System.lineSeparator()
+          + "      --from=<FILE>   File containing JSON object to encode"
+          + System.lineSeparator()
+          + "      --to=<FILE>     File to write encoded RLP string to."
+          + System.lineSeparator()
+          + "      --type=<type>   Type of the RLP data to encode, possible values are"
+          + System.lineSeparator()
+          + "                        IBFT_EXTRA_DATA. (default: IBFT_EXTRA_DATA)"
+          + System.lineSeparator()
+          + "  -h, --help          Show this help message and exit."
+          + System.lineSeparator()
+          + "  -V, --version       Print version information and exit.";
 
   private static final String RLP_SUBCOMMAND_NAME = "rlp";
   private static final String RLP_ENCODE_SUBCOMMAND_NAME = "encode";
@@ -75,10 +85,17 @@ public class RLPSubCommandTest extends CommandTestAbstract {
 
   // Encode RLP sub-command
   @Test
+  public void callingRPLEncodeSubCommandHelpMustDisplayUsage() {
+    parseCommand(RLP_SUBCOMMAND_NAME, RLP_ENCODE_SUBCOMMAND_NAME, "--help");
+    assertThat(commandOutput.toString()).startsWith(EXPECTED_RLP_ENCODE_USAGE);
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
   public void callingRLPEncodeSubCommandWithoutPathMustWriteToStandardOutput() {
 
     String jsonInput =
-        "{\"validators\":[ \"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
+        "{\"validators\":[\"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
             + "\"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\" ]}";
 
     // set stdin
@@ -99,7 +116,9 @@ public class RLPSubCommandTest extends CommandTestAbstract {
     final File file = File.createTempFile("ibftExtraData", "rlp");
 
     String jsonInput =
-        "{\"validators\":[ \"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
+        //        "[\"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
+        //            + "\"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\" ]";
+        "{\"validators\":[\"be068f726a13c8d46c44be6ce9d275600e1735a4\",\n"
             + "\"5ff6f4b66a46a2b2310a6f3a93aaddc0d9a1c193\" ]}";
 
     // set stdin
@@ -116,6 +135,11 @@ public class RLPSubCommandTest extends CommandTestAbstract {
     assertThat(commandOutput.toString()).isEmpty();
     assertThat(commandErrorOutput.toString()).isEmpty();
   }
+
+  // TODO
+  // - test with input from file
+  // - test with invalid inputs
+  // - test with no input
 
   @After
   public void restoreStdin() {

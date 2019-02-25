@@ -10,11 +10,13 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.pantheon.ethereum.rlp;
+package tech.pegasys.pantheon.cli.rlp;
 
-import tech.pegasys.pantheon.util.bytes.BytesValue;
-
-public interface RLPEncodable {
-
-  BytesValue encode();
+public enum RLPType implements RLPTypeProvider {
+  IBFT_EXTRA_DATA {
+    @Override
+    public Class<? extends JSONtoRLP> getType() {
+      return IbftExtraDataCLIAdapter.class;
+    }
+  };
 }

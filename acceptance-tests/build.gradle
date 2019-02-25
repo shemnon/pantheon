@@ -25,7 +25,6 @@ dependencies {
   testImplementation project(':ethereum:blockcreation')
   testImplementation project(':ethereum:jsonrpc')
   testImplementation project(':ethereum:permissioning')
-  testImplementation project(':ethereum:rlp')
   testImplementation project(':metrics')
   testImplementation project(':pantheon')
   testImplementation project(':util')

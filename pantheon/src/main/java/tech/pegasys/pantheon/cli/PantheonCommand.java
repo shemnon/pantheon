@@ -31,6 +31,7 @@ import tech.pegasys.pantheon.cli.custom.CorsAllowedOriginsProperty;
 import tech.pegasys.pantheon.cli.custom.EnodeToURIPropertyConverter;
 import tech.pegasys.pantheon.cli.custom.JsonRPCWhitelistHostsProperty;
 import tech.pegasys.pantheon.cli.custom.RpcAuthFileValidator;
+import tech.pegasys.pantheon.cli.rlp.RLPSubCommand;
 import tech.pegasys.pantheon.config.GenesisConfigFile;
 import tech.pegasys.pantheon.consensus.clique.jsonrpc.CliqueRpcApis;
 import tech.pegasys.pantheon.consensus.ibft.jsonrpc.IbftRpcApis;

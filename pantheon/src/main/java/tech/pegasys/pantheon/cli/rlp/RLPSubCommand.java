@@ -10,15 +10,14 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.pantheon.cli;
+package tech.pegasys.pantheon.cli.rlp;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static tech.pegasys.pantheon.cli.DefaultCommandValues.MANDATORY_FILE_FORMAT_HELP;
 
-import tech.pegasys.pantheon.cli.RLPSubCommand.EncodeSubCommand;
-import tech.pegasys.pantheon.consensus.ibft.IbftExtraData;
-import tech.pegasys.pantheon.ethereum.rlp.RLPEncodable;
+import tech.pegasys.pantheon.cli.PantheonCommand;
+import tech.pegasys.pantheon.cli.rlp.RLPSubCommand.EncodeSubCommand;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.io.BufferedReader;
@@ -48,9 +47,9 @@ import picocli.CommandLine.Spec;
     description = "This command provides RLP data related actions.",
     mixinStandardHelpOptions = true,
     subcommands = {EncodeSubCommand.class})
-class RLPSubCommand implements Runnable {
+public class RLPSubCommand implements Runnable {
 
-  static final String COMMAND_NAME = "rlp";
+  public static final String COMMAND_NAME = "rlp";
   private static final Logger LOG = LogManager.getLogger();
 
   private final PrintStream out;
@@ -64,7 +63,7 @@ class RLPSubCommand implements Runnable {
   @Spec
   private CommandSpec spec;
 
-  RLPSubCommand(final PrintStream out, final InputStream in) {
+  public RLPSubCommand(final PrintStream out, final InputStream in) {
     this.out = out;
     this.in = in;
   }
@@ -94,6 +93,13 @@ class RLPSubCommand implements Runnable {
     private CommandSpec spec;
 
     @Option(
+        names = "--type",
+        description =
+            "Type of the RLP data to encode, possible values are ${COMPLETION-CANDIDATES}. (default: ${DEFAULT-VALUE})",
+        arity = "1..1")
+    private RLPType type = RLPType.IBFT_EXTRA_DATA;
+
+    @Option(
         names = "--from",
         paramLabel = MANDATORY_FILE_FORMAT_HELP,
         description = "File containing JSON object to encode",
@@ -103,7 +109,7 @@ class RLPSubCommand implements Runnable {
     @Option(
         names = "--to",
         paramLabel = MANDATORY_FILE_FORMAT_HELP,
-        description = "File to write encoded RPL string to.",
+        description = "File to write encoded RLP string to.",
         arity = "1..1")
     private File rlpTargetFile = null;
 
@@ -140,23 +146,25 @@ class RLPSubCommand implements Runnable {
 
     private void encode(final String jsonInput) {
       // map the json to the object matching the type option
-      // the object must be an RLPEncodable object
+      // the object must be an JSONToRLP object
       if (jsonInput == null || jsonInput.isEmpty()) {
         throw new ExecutionException(
             spec.commandLine(), "An error occurred while trying to read the JSON data.");
       } else {
         try {
           JsonObject jsonObject = new JsonObject(jsonInput);
-          RLPEncodable objectToEncode = jsonObject.mapTo(IbftExtraData.class);
-          // encode and write the value
+          JSONtoRLP objectToEncode = jsonObject.mapTo(type.getType());
+          //          // encode and write the value
           writeOutput(objectToEncode.encode());
         } catch (DecodeException e) {
           throw new ParameterException(
-              spec.commandLine(), "Unable to load the JSON data. Please check JSON input format.");
+              spec.commandLine(),
+              "Unable to load the JSON data. Please check JSON input format. " + e.getMessage());
         } catch (IllegalArgumentException e) {
           throw new ParameterException(
               spec.commandLine(),
-              "Unable to map the JSON data with IbftExtraData type. Please check JSON input format.");
+              "Unable to map the JSON data with IbftExtraData type. Please check JSON input format. "
+                  + e.getMessage());
         }
       }
     }
@@ -170,7 +178,8 @@ class RLPSubCommand implements Runnable {
           fileWriter.write(rlpEncodedOutput.toString());
         } catch (final IOException e) {
           throw new ParameterException(
-              spec.commandLine(), "An error occurred while trying to write the RLP string");
+              spec.commandLine(),
+              "An error occurred while trying to write the RLP string. " + e.getMessage());
         }
       } else {
         parentCommand.out.println(rlpEncodedOutput);
