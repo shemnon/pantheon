@@ -20,9 +20,17 @@ import tech.pegasys.pantheon.ethereum.core.Util;
 import tech.pegasys.pantheon.ethereum.rlp.BytesValueRLPOutput;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 public class CliqueBlockHashing {
+
+  private static final Cache<CliqueExtraData, Address> signatureCache =
+      CacheBuilder.newBuilder().maximumSize(2048).expireAfterAccess(Duration.ofMinutes(2)).build();
 
   /**
    * Constructs a hash of the block header, suitable for use when creating the proposer seal. The
@@ -52,8 +60,16 @@ public class CliqueBlockHashing {
       throw new IllegalArgumentException(
           "Supplied cliqueExtraData does not include a proposer " + "seal");
     }
-    final Hash proposerHash = calculateDataHashForProposerSeal(header, cliqueExtraData);
-    return Util.signatureToAddress(cliqueExtraData.getProposerSeal().get(), proposerHash);
+    try {
+      return signatureCache.get(
+          cliqueExtraData,
+          () -> {
+            final Hash proposerHash = calculateDataHashForProposerSeal(header, cliqueExtraData);
+            return Util.signatureToAddress(cliqueExtraData.getProposerSeal().get(), proposerHash);
+          });
+    } catch (final ExecutionException ee) {
+      throw new IllegalArgumentException(ee.getCause());
+    }
   }
 
   private static BytesValue serializeHeaderWithoutProposerSeal(
