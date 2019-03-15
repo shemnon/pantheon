@@ -107,12 +107,14 @@ public class Pipe<T> implements ReadPipe<T>, WritePipe<T> {
     return queue.poll();
   }
 
+  @SuppressWarnings("MixedMutabilityReturnType")
   @Override
   public List<T> getBatch(final int maximumBatchSize) {
     final T nextItem = get();
     if (nextItem == null) {
       return Collections.emptyList();
     }
+
     final List<T> batch = new ArrayList<>();
     batch.add(nextItem);
     queue.drainTo(batch, maximumBatchSize - 1);
