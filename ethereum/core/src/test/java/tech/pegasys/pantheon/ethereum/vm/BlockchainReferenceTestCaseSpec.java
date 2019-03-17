@@ -85,6 +85,7 @@ public class BlockchainReferenceTestCaseSpec {
       @JsonProperty("network") final String network,
       @JsonProperty("blocks") final CandidateBlock[] candidateBlocks,
       @JsonProperty("genesisBlockHeader") final BlockHeaderMock genesisBlockHeader,
+      @SuppressWarnings("unused") @JsonProperty("genesisRLP") final String genesisRLP,
       @JsonProperty("pre") final Map<String, WorldStateMock.AccountMock> accounts,
       @JsonProperty("lastblockhash") final String lastBlockHash,
       @JsonProperty("sealEngine") final String sealEngine) {
