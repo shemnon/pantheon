@@ -31,10 +31,14 @@ import org.iq80.leveldb.DBException;
 import org.iq80.leveldb.Options;
 import org.iq80.leveldb.WriteBatch;
 import org.iq80.leveldb.impl.Iq80DBFactory;
+import org.iq80.leveldb.table.BloomFilterPolicy;
 
 public class LevelDbKeyValueStorage implements KeyValueStorage, Closeable {
 
   private static final Logger LOG = LogManager.getLogger();
+
+  private static final long CACHESIZE = 16 * (2 << 20);
+  private static final int MAX_OPEN_FILES = 1023;
 
   private final Options options;
   private final DB db;
@@ -53,8 +57,12 @@ public class LevelDbKeyValueStorage implements KeyValueStorage, Closeable {
 
   private LevelDbKeyValueStorage(final Path storageDirectory, final MetricsSystem metricsSystem) {
     try {
-      options = new Options();
-      options.createIfMissing(true);
+      options =
+          new Options()
+              .createIfMissing(true)
+              .cacheSize(CACHESIZE)
+              .filterPolicy(new BloomFilterPolicy(10))
+              .maxOpenFiles(MAX_OPEN_FILES);
       db = new Iq80DBFactory().open(storageDirectory.toFile(), options);
 
       readLatency =
