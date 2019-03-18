@@ -23,7 +23,7 @@ import tech.pegasys.pantheon.ethereum.core.PendingTransactions;
 import tech.pegasys.pantheon.ethereum.core.PrivacyParameters;
 import tech.pegasys.pantheon.ethereum.eth.sync.SynchronizerConfiguration;
 import tech.pegasys.pantheon.ethereum.storage.StorageProvider;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.RocksDbStorageProvider;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.LevelDbStorageProvider;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 
 import java.io.File;
@@ -94,8 +94,10 @@ public class PantheonControllerBuilder {
     // otherwise use the indicated genesis file
     final KeyPair nodeKeys = loadKeyPair(nodePrivateKeyFile);
 
+    //    final StorageProvider storageProvider =
+    //        RocksDbStorageProvider.create(homePath.resolve(DATABASE_PATH), metricsSystem);
     final StorageProvider storageProvider =
-        RocksDbStorageProvider.create(homePath.resolve(DATABASE_PATH), metricsSystem);
+        LevelDbStorageProvider.create(homePath.resolve(DATABASE_PATH), metricsSystem);
 
     final GenesisConfigFile genesisConfigFile;
     if (devMode) {
@@ -104,7 +106,7 @@ public class PantheonControllerBuilder {
       final String genesisConfig = ethNetworkConfig.getGenesisConfig();
       genesisConfigFile = GenesisConfigFile.fromConfig(genesisConfig);
     }
-    Clock clock = Clock.systemUTC();
+    final Clock clock = Clock.systemUTC();
     return PantheonController.fromConfig(
         genesisConfigFile,
         synchronizerConfiguration,

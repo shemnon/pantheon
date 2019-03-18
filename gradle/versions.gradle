@@ -33,6 +33,8 @@ dependencyManagement {
 
     dependency 'info.picocli:picocli:3.9.5'
 
+    dependency 'io.github.pcmind:leveldb:0.12'
+
     dependency 'io.pkts:pkts-core:3.0.4'
 
     dependency "io.prometheus:simpleclient:0.6.0"
