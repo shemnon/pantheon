@@ -13,6 +13,7 @@
 package tech.pegasys.pantheon.tests.acceptance.dsl.node.factory;
 
 import tech.pegasys.pantheon.ethereum.core.MiningParameters;
+import tech.pegasys.pantheon.ethereum.core.PrivacyParameters;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration;
 import tech.pegasys.pantheon.ethereum.jsonrpc.websocket.WebSocketConfiguration;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
@@ -25,36 +26,45 @@ class PantheonFactoryConfiguration {
 
   private final String name;
   private final MiningParameters miningParameters;
+  private final PrivacyParameters privacyParameters;
   private final JsonRpcConfiguration jsonRpcConfiguration;
   private final WebSocketConfiguration webSocketConfiguration;
   private final MetricsConfiguration metricsConfiguration;
   private final Optional<PermissioningConfiguration> permissioningConfiguration;
+  private final Optional<String> keyFilePath;
   private final boolean devMode;
   private final GenesisConfigProvider genesisConfigProvider;
-  private final Boolean p2pEnabled;
+  private final boolean p2pEnabled;
   private final boolean discoveryEnabled;
+  private final boolean bootnodeEligible;
 
   PantheonFactoryConfiguration(
       final String name,
       final MiningParameters miningParameters,
+      final PrivacyParameters privacyParameters,
       final JsonRpcConfiguration jsonRpcConfiguration,
       final WebSocketConfiguration webSocketConfiguration,
       final MetricsConfiguration metricsConfiguration,
       final Optional<PermissioningConfiguration> permissioningConfiguration,
+      final Optional<String> keyFilePath,
       final boolean devMode,
       final GenesisConfigProvider genesisConfigProvider,
-      final Boolean p2pEnabled,
-      final boolean discoveryEnabled) {
+      final boolean p2pEnabled,
+      final boolean discoveryEnabled,
+      final boolean bootnodeEligible) {
     this.name = name;
     this.miningParameters = miningParameters;
+    this.privacyParameters = privacyParameters;
     this.jsonRpcConfiguration = jsonRpcConfiguration;
     this.webSocketConfiguration = webSocketConfiguration;
     this.metricsConfiguration = metricsConfiguration;
     this.permissioningConfiguration = permissioningConfiguration;
+    this.keyFilePath = keyFilePath;
     this.devMode = devMode;
     this.genesisConfigProvider = genesisConfigProvider;
     this.p2pEnabled = p2pEnabled;
     this.discoveryEnabled = discoveryEnabled;
+    this.bootnodeEligible = bootnodeEligible;
   }
 
   public String getName() {
@@ -63,6 +73,10 @@ class PantheonFactoryConfiguration {
 
   public MiningParameters getMiningParameters() {
     return miningParameters;
+  }
+
+  public PrivacyParameters getPrivacyParameters() {
+    return privacyParameters;
   }
 
   public JsonRpcConfiguration getJsonRpcConfiguration() {
@@ -81,6 +95,10 @@ class PantheonFactoryConfiguration {
     return permissioningConfiguration;
   }
 
+  public Optional<String> getKeyFilePath() {
+    return keyFilePath;
+  }
+
   public boolean isDevMode() {
     return devMode;
   }
@@ -93,7 +111,11 @@ class PantheonFactoryConfiguration {
     return genesisConfigProvider;
   }
 
-  public Boolean getP2pEnabled() {
+  public boolean isP2pEnabled() {
     return p2pEnabled;
+  }
+
+  public boolean isBootnodeEligible() {
+    return bootnodeEligible;
   }
 }

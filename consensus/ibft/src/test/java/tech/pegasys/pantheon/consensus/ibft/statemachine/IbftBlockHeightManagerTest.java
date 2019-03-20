@@ -21,12 +21,13 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static tech.pegasys.pantheon.consensus.ibft.IbftContextBuilder.setupContextWithValidators;
 import static tech.pegasys.pantheon.consensus.ibft.TestHelpers.createFrom;
 
-import tech.pegasys.pantheon.consensus.common.VoteTally;
 import tech.pegasys.pantheon.consensus.ibft.BlockTimer;
 import tech.pegasys.pantheon.consensus.ibft.ConsensusRoundIdentifier;
 import tech.pegasys.pantheon.consensus.ibft.IbftContext;
@@ -35,15 +36,15 @@ import tech.pegasys.pantheon.consensus.ibft.RoundTimer;
 import tech.pegasys.pantheon.consensus.ibft.blockcreation.IbftBlockCreator;
 import tech.pegasys.pantheon.consensus.ibft.ibftevent.RoundExpiry;
 import tech.pegasys.pantheon.consensus.ibft.messagewrappers.Commit;
-import tech.pegasys.pantheon.consensus.ibft.messagewrappers.NewRound;
 import tech.pegasys.pantheon.consensus.ibft.messagewrappers.Prepare;
+import tech.pegasys.pantheon.consensus.ibft.messagewrappers.Proposal;
 import tech.pegasys.pantheon.consensus.ibft.messagewrappers.RoundChange;
 import tech.pegasys.pantheon.consensus.ibft.network.IbftMessageTransmitter;
 import tech.pegasys.pantheon.consensus.ibft.payload.MessageFactory;
 import tech.pegasys.pantheon.consensus.ibft.payload.RoundChangeCertificate;
+import tech.pegasys.pantheon.consensus.ibft.validation.FutureRoundProposalMessageValidator;
 import tech.pegasys.pantheon.consensus.ibft.validation.MessageValidator;
 import tech.pegasys.pantheon.consensus.ibft.validation.MessageValidatorFactory;
-import tech.pegasys.pantheon.consensus.ibft.validation.NewRoundMessageValidator;
 import tech.pegasys.pantheon.crypto.SECP256K1.KeyPair;
 import tech.pegasys.pantheon.crypto.SECP256K1.Signature;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
@@ -90,11 +91,10 @@ public class IbftBlockHeightManagerTest {
   @Mock private BlockImporter<IbftContext> blockImporter;
   @Mock private BlockTimer blockTimer;
   @Mock private RoundTimer roundTimer;
-  @Mock private NewRoundMessageValidator newRoundPayloadValidator;
+  @Mock private FutureRoundProposalMessageValidator futureRoundProposalMessageValidator;
 
   @Captor private ArgumentCaptor<Optional<PreparedRoundArtifacts>> preparedRoundArtifactsCaptor;
 
-  private final List<KeyPair> validatorKeys = Lists.newArrayList();
   private final List<Address> validators = Lists.newArrayList();
   private final List<MessageFactory> validatorMessageFactory = Lists.newArrayList();
 
@@ -104,7 +104,7 @@ public class IbftBlockHeightManagerTest {
 
   private void buildCreatedBlock() {
 
-    IbftExtraData extraData =
+    final IbftExtraData extraData =
         new IbftExtraData(
             BytesValue.wrap(new byte[32]), emptyList(), Optional.empty(), 0, validators);
 
@@ -117,7 +117,6 @@ public class IbftBlockHeightManagerTest {
   public void setup() {
     for (int i = 0; i < 3; i++) {
       final KeyPair key = KeyPair.generate();
-      validatorKeys.add(key);
       validators.add(Util.publicKeyToAddress(key.getPublicKey()));
       validatorMessageFactory.add(new MessageFactory(key));
     }
@@ -130,23 +129,22 @@ public class IbftBlockHeightManagerTest {
     when(messageValidator.validatePrepare(any())).thenReturn(true);
     when(finalState.getTransmitter()).thenReturn(messageTransmitter);
     when(finalState.getBlockTimer()).thenReturn(blockTimer);
-    when(finalState.getRoundTimer()).thenReturn(roundTimer);
     when(finalState.getQuorum()).thenReturn(3);
     when(finalState.getMessageFactory()).thenReturn(messageFactory);
     when(blockCreator.createBlock(anyLong())).thenReturn(createdBlock);
-    when(newRoundPayloadValidator.validateNewRoundMessage(any())).thenReturn(true);
-    when(messageValidatorFactory.createNewRoundValidator(anyLong()))
-        .thenReturn(newRoundPayloadValidator);
-    when(messageValidatorFactory.createMessageValidator(any())).thenReturn(messageValidator);
 
-    protocolContext =
-        new ProtocolContext<>(null, null, new IbftContext(new VoteTally(validators), null));
+    when(futureRoundProposalMessageValidator.validateProposalMessage(any())).thenReturn(true);
+    when(messageValidatorFactory.createFutureRoundProposalMessageValidator(anyLong(), any()))
+        .thenReturn(futureRoundProposalMessageValidator);
+    when(messageValidatorFactory.createMessageValidator(any(), any())).thenReturn(messageValidator);
+
+    protocolContext = new ProtocolContext<>(null, null, setupContextWithValidators(validators));
 
     // Ensure the created IbftRound has the valid ConsensusRoundIdentifier;
     when(roundFactory.createNewRound(any(), anyInt()))
         .thenAnswer(
             invocation -> {
-              final int round = (int) invocation.getArgument(1);
+              final int round = invocation.getArgument(1);
               final ConsensusRoundIdentifier roundId = new ConsensusRoundIdentifier(1, round);
               final RoundState createdRoundState =
                   new RoundState(roundId, finalState.getQuorum(), messageValidator);
@@ -158,7 +156,8 @@ public class IbftBlockHeightManagerTest {
                   new Subscribers<>(),
                   localNodeKeys,
                   messageFactory,
-                  messageTransmitter);
+                  messageTransmitter,
+                  roundTimer);
             });
 
     when(roundFactory.createNewRoundWithState(any(), any()))
@@ -173,7 +172,8 @@ public class IbftBlockHeightManagerTest {
                   new Subscribers<>(),
                   localNodeKeys,
                   messageFactory,
-                  messageTransmitter);
+                  messageTransmitter,
+                  roundTimer);
             });
   }
 
@@ -181,15 +181,13 @@ public class IbftBlockHeightManagerTest {
   public void startsABlockTimerOnStartIfLocalNodeIsTheProoserForRound() {
     when(finalState.isLocalNodeProposerForRound(any())).thenReturn(true);
 
-    final IbftBlockHeightManager manager =
-        new IbftBlockHeightManager(
-            headerTestFixture.buildHeader(),
-            finalState,
-            roundChangeManager,
-            roundFactory,
-            clock,
-            messageValidatorFactory);
-    manager.start();
+    new IbftBlockHeightManager(
+        headerTestFixture.buildHeader(),
+        finalState,
+        roundChangeManager,
+        roundFactory,
+        clock,
+        messageValidatorFactory);
 
     verify(blockTimer, times(1)).startTimer(any(), any());
   }
@@ -204,10 +202,9 @@ public class IbftBlockHeightManagerTest {
             roundFactory,
             clock,
             messageValidatorFactory);
-    manager.start();
 
     manager.handleBlockTimerExpiry(roundIdentifier);
-    verify(messageTransmitter, times(1)).multicastProposal(eq(roundIdentifier), any());
+    verify(messageTransmitter, times(1)).multicastProposal(eq(roundIdentifier), any(), any());
     verify(messageTransmitter, never()).multicastPrepare(any(), any());
     verify(messageTransmitter, never()).multicastPrepare(any(), any());
   }
@@ -229,7 +226,6 @@ public class IbftBlockHeightManagerTest {
             roundFactory,
             clock,
             messageValidatorFactory);
-    manager.start();
     verify(roundFactory).createNewRound(any(), eq(0));
 
     manager.handleRoundChangePayload(roundChange);
@@ -249,7 +245,6 @@ public class IbftBlockHeightManagerTest {
             roundFactory,
             clock,
             messageValidatorFactory);
-    manager.start();
     verify(roundFactory).createNewRound(any(), eq(0));
 
     manager.roundExpired(new RoundExpiry(roundIdentifier));
@@ -257,7 +252,7 @@ public class IbftBlockHeightManagerTest {
   }
 
   @Test
-  public void whenSufficientRoundChangesAreReceivedANewRoundMessageIsTransmitted() {
+  public void whenSufficientRoundChangesAreReceivedAProposalMessageIsTransmitted() {
     final ConsensusRoundIdentifier futureRoundIdentifier = createFrom(roundIdentifier, 0, +2);
     final RoundChange roundChange =
         messageFactory.createRoundChange(futureRoundIdentifier, Optional.empty());
@@ -276,12 +271,12 @@ public class IbftBlockHeightManagerTest {
             roundFactory,
             clock,
             messageValidatorFactory);
-    manager.start();
+    reset(messageTransmitter);
 
     manager.handleRoundChangePayload(roundChange);
 
     verify(messageTransmitter, times(1))
-        .multicastNewRound(eq(futureRoundIdentifier), eq(roundChangCert), any(), any());
+        .multicastProposal(eq(futureRoundIdentifier), any(), eq(Optional.of(roundChangCert)));
   }
 
   @Test
@@ -296,7 +291,6 @@ public class IbftBlockHeightManagerTest {
             roundFactory,
             clock,
             messageValidatorFactory);
-    manager.start();
 
     final Prepare prepare =
         validatorMessageFactory
@@ -314,14 +308,13 @@ public class IbftBlockHeightManagerTest {
     manager.handleCommitPayload(commit);
 
     // Force a new round to be started at new round number.
-    final NewRound newRound =
-        messageFactory.createNewRound(
+    final Proposal futureRoundProposal =
+        messageFactory.createProposal(
             futureRoundIdentifier,
-            new RoundChangeCertificate(Collections.emptyList()),
-            messageFactory.createProposal(futureRoundIdentifier, createdBlock).getSignedPayload(),
-            createdBlock);
+            createdBlock,
+            Optional.of(new RoundChangeCertificate(Collections.emptyList())));
 
-    manager.handleNewRoundPayload(newRound);
+    manager.handleProposalPayload(futureRoundProposal);
 
     // Final state sets the Quorum Size to 3, so should send a Prepare and also a commit
     verify(messageTransmitter, times(1)).multicastPrepare(eq(futureRoundIdentifier), any());
@@ -338,7 +331,6 @@ public class IbftBlockHeightManagerTest {
             roundFactory,
             clock,
             messageValidatorFactory);
-    manager.start();
     manager.handleBlockTimerExpiry(roundIdentifier); // Trigger a Proposal creation.
 
     final Prepare firstPrepare =
@@ -364,5 +356,32 @@ public class IbftBlockHeightManagerTest {
 
     assertThat(preparedCert.get().getPreparedCertificate().getPreparePayloads())
         .containsOnly(firstPrepare.getSignedPayload(), secondPrepare.getSignedPayload());
+  }
+
+  @Test
+  public void illegalFutureRoundProposalDoesNotTriggerNewRound() {
+    when(futureRoundProposalMessageValidator.validateProposalMessage(any())).thenReturn(false);
+
+    final ConsensusRoundIdentifier futureRoundIdentifier = createFrom(roundIdentifier, 0, +2);
+
+    final IbftBlockHeightManager manager =
+        new IbftBlockHeightManager(
+            headerTestFixture.buildHeader(),
+            finalState,
+            roundChangeManager,
+            roundFactory,
+            clock,
+            messageValidatorFactory);
+
+    // Force a new round to be started at new round number.
+    final Proposal futureRoundProposal =
+        messageFactory.createProposal(
+            futureRoundIdentifier,
+            createdBlock,
+            Optional.of(new RoundChangeCertificate(Collections.emptyList())));
+    reset(roundFactory); // Discard the existing createNewRound invocation.
+
+    manager.handleProposalPayload(futureRoundProposal);
+    verify(roundFactory, never()).createNewRound(any(), anyInt());
   }
 }

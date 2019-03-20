@@ -40,7 +40,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class AccountWhitelistControllerTest {
 
   private AccountWhitelistController controller;
-  @Mock private PermissioningConfiguration permissioningConfig;
+  @Mock private LocalPermissioningConfiguration permissioningConfig;
   @Mock private WhitelistPersistor whitelistPersistor;
 
   @Before
@@ -188,7 +188,7 @@ public class AccountWhitelistControllerTest {
     final String expectedAccount = "0x627306090abab3a6e1400e9345bc60c78a8bef57";
     final Path permissionsFile = createPermissionsFileWithAccount(expectedAccount);
 
-    when(permissioningConfig.getConfigurationFilePath())
+    when(permissioningConfig.getAccountPermissioningConfigFilePath())
         .thenReturn(permissionsFile.toAbsolutePath().toString());
     when(permissioningConfig.isAccountWhitelistEnabled()).thenReturn(true);
     when(permissioningConfig.getAccountWhitelist())
@@ -202,7 +202,7 @@ public class AccountWhitelistControllerTest {
 
   @Test
   public void reloadAccountWhitelistWithErrorReadingConfigFileShouldKeepOldWhitelist() {
-    when(permissioningConfig.getConfigurationFilePath()).thenReturn("foo");
+    when(permissioningConfig.getAccountPermissioningConfigFilePath()).thenReturn("foo");
     when(permissioningConfig.isAccountWhitelistEnabled()).thenReturn(true);
     when(permissioningConfig.getAccountWhitelist())
         .thenReturn(Arrays.asList("0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"));
@@ -212,15 +212,29 @@ public class AccountWhitelistControllerTest {
 
     assertThat(thrown)
         .isInstanceOf(RuntimeException.class)
-        .hasMessageContaining("Unable to read permissions TOML config file");
+        .hasMessageContaining("Unable to read permissioning TOML config file");
 
     assertThat(controller.getAccountWhitelist())
         .containsExactly("0xfe3b557e8fb62b89f4916b721be55ceb828dbd73");
   }
 
+  @Test
+  public void accountThatDoesNotStartWith0xIsNotValid() {
+    assertThat(AccountWhitelistController.isValidAccountString("bob")).isFalse();
+    assertThat(
+            AccountWhitelistController.isValidAccountString(
+                "b9b81ee349c3807e46bc71aa2632203c5b462032"))
+        .isFalse();
+    assertThat(
+            AccountWhitelistController.isValidAccountString(
+                "0xb9b81ee349c3807e46bc71aa2632203c5b462032"))
+        .isTrue();
+  }
+
   private Path createPermissionsFileWithAccount(final String account) throws IOException {
     final String nodePermissionsFileContent = "accounts-whitelist=[\"" + account + "\"]";
     final Path permissionsFile = Files.createTempFile("account_permissions", "");
+    permissionsFile.toFile().deleteOnExit();
     Files.write(permissionsFile, nodePermissionsFileContent.getBytes(StandardCharsets.UTF_8));
     return permissionsFile;
   }

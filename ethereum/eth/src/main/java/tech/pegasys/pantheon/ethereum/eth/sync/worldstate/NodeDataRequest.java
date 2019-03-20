@@ -12,6 +12,8 @@
  */
 package tech.pegasys.pantheon.ethereum.eth.sync.worldstate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.rlp.RLP;
 import tech.pegasys.pantheon.ethereum.rlp.RLPInput;
@@ -19,14 +21,14 @@ import tech.pegasys.pantheon.ethereum.rlp.RLPOutput;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public abstract class NodeDataRequest {
-
   private final RequestType requestType;
   private final Hash hash;
   private BytesValue data;
+  private boolean requiresPersisting = true;
 
   protected NodeDataRequest(final RequestType requestType, final Hash hash) {
     this.requestType = requestType;
@@ -50,24 +52,30 @@ public abstract class NodeDataRequest {
   }
 
   public static NodeDataRequest deserialize(final BytesValue encoded) {
-    RLPInput in = RLP.input(encoded);
+    final RLPInput in = RLP.input(encoded);
     in.enterList();
-    RequestType requestType = RequestType.fromValue(in.readByte());
-    Hash hash = Hash.wrap(in.readBytes32());
+    final RequestType requestType = RequestType.fromValue(in.readByte());
+    final Hash hash = Hash.wrap(in.readBytes32());
     in.leaveList();
 
+    final NodeDataRequest deserialized;
     switch (requestType) {
       case ACCOUNT_TRIE_NODE:
-        return createAccountDataRequest(hash);
+        deserialized = createAccountDataRequest(hash);
+        break;
       case STORAGE_TRIE_NODE:
-        return createStorageDataRequest(hash);
+        deserialized = createStorageDataRequest(hash);
+        break;
       case CODE:
-        return createCodeRequest(hash);
+        deserialized = createCodeRequest(hash);
+        break;
       default:
         throw new IllegalArgumentException(
             "Unable to deserialize provided data into a valid "
                 + NodeDataRequest.class.getSimpleName());
     }
+
+    return deserialized;
   }
 
   private void writeTo(final RLPOutput out) {
@@ -94,9 +102,21 @@ public abstract class NodeDataRequest {
     return this;
   }
 
-  public abstract void persist(final WorldStateStorage.Updater updater);
+  public NodeDataRequest setRequiresPersisting(final boolean requiresPersisting) {
+    this.requiresPersisting = requiresPersisting;
+    return this;
+  }
 
-  public abstract Stream<NodeDataRequest> getChildRequests();
+  public final void persist(final WorldStateStorage.Updater updater) {
+    if (requiresPersisting) {
+      checkNotNull(getData(), "Must set data before node can be persisted.");
+      doPersist(updater);
+    }
+  }
+
+  protected abstract void doPersist(final WorldStateStorage.Updater updater);
+
+  public abstract List<NodeDataRequest> getChildRequests();
 
   public abstract Optional<BytesValue> getExistingData(final WorldStateStorage worldStateStorage);
 }

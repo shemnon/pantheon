@@ -17,10 +17,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import tech.pegasys.pantheon.ethereum.eth.manager.EthPeer;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthProtocolManagerTestUtil;
-import tech.pegasys.pantheon.ethereum.eth.manager.EthTask;
 import tech.pegasys.pantheon.ethereum.eth.manager.RespondingEthPeer;
 import tech.pegasys.pantheon.ethereum.eth.manager.RespondingEthPeer.Responder;
 import tech.pegasys.pantheon.ethereum.eth.manager.exceptions.MaxRetriesReachedException;
+import tech.pegasys.pantheon.ethereum.eth.manager.task.EthTask;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -138,7 +138,8 @@ public abstract class RetryingMessageTaskTest<T> extends AbstractMessageTaskTest
     assertThat(future.isDone()).isFalse();
 
     // Setup a peer
-    final Responder responder = RespondingEthPeer.blockchainResponder(blockchain);
+    final Responder responder =
+        RespondingEthPeer.blockchainResponder(blockchain, protocolContext.getWorldStateArchive());
     final RespondingEthPeer respondingPeer =
         EthProtocolManagerTestUtil.createPeer(ethProtocolManager);
     respondingPeer.respondWhile(responder, () -> !future.isDone());
@@ -150,7 +151,8 @@ public abstract class RetryingMessageTaskTest<T> extends AbstractMessageTaskTest
   public void completeWhenPeersTimeoutTemporarily()
       throws ExecutionException, InterruptedException {
     peerCountToTimeout.set(1);
-    final Responder responder = RespondingEthPeer.blockchainResponder(blockchain);
+    final Responder responder =
+        RespondingEthPeer.blockchainResponder(blockchain, protocolContext.getWorldStateArchive());
     final RespondingEthPeer respondingPeer =
         EthProtocolManagerTestUtil.createPeer(ethProtocolManager);
     final T requestedData = generateDataToBeRequested();

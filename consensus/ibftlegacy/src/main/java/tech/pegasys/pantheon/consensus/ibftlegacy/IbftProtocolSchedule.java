@@ -16,9 +16,6 @@ import static tech.pegasys.pantheon.consensus.ibftlegacy.IbftBlockHeaderValidati
 
 import tech.pegasys.pantheon.config.GenesisConfigOptions;
 import tech.pegasys.pantheon.config.IbftConfigOptions;
-import tech.pegasys.pantheon.consensus.common.EpochManager;
-import tech.pegasys.pantheon.consensus.common.VoteTallyUpdater;
-import tech.pegasys.pantheon.consensus.ibft.IbftBlockImporter;
 import tech.pegasys.pantheon.consensus.ibft.IbftContext;
 import tech.pegasys.pantheon.ethereum.MainnetBlockValidator;
 import tech.pegasys.pantheon.ethereum.core.PrivacyParameters;
@@ -38,32 +35,25 @@ public class IbftProtocolSchedule {
 
   public static ProtocolSchedule<IbftContext> create(final GenesisConfigOptions config) {
     final IbftConfigOptions ibftConfig = config.getIbftLegacyConfigOptions();
-    final long epochLength = ibftConfig.getEpochLength();
     final long blockPeriod = ibftConfig.getBlockPeriodSeconds();
-    final EpochManager epochManager = new EpochManager(epochLength);
 
     return new ProtocolScheduleBuilder<>(
             config,
             DEFAULT_CHAIN_ID,
-            builder -> applyIbftChanges(blockPeriod, epochManager, builder),
+            builder -> applyIbftChanges(blockPeriod, builder),
             PrivacyParameters.noPrivacy())
         .createProtocolSchedule();
   }
 
   private static ProtocolSpecBuilder<IbftContext> applyIbftChanges(
-      final long secondsBetweenBlocks,
-      final EpochManager epochManager,
-      final ProtocolSpecBuilder<Void> builder) {
+      final long secondsBetweenBlocks, final ProtocolSpecBuilder<Void> builder) {
     return builder
         .<IbftContext>changeConsensusContextType(
             difficultyCalculator -> ibftBlockHeaderValidator(secondsBetweenBlocks),
             difficultyCalculator -> ibftBlockHeaderValidator(secondsBetweenBlocks),
             MainnetBlockBodyValidator::new,
             MainnetBlockValidator::new,
-            (blockValidator) ->
-                new IbftBlockImporter(
-                    new MainnetBlockImporter<>(blockValidator),
-                    new VoteTallyUpdater(epochManager, new IbftLegacyBlockInterface())),
+            MainnetBlockImporter::new,
             (time, parent, protocolContext) -> BigInteger.ONE)
         .blockReward(Wei.ZERO)
         .blockHashFunction(IbftBlockHashing::calculateHashOfIbftBlockOnChain);

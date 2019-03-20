@@ -12,10 +12,7 @@
  */
 package tech.pegasys.pantheon.util;
 
-import tech.pegasys.pantheon.cli.EthNetworkConfig;
-import tech.pegasys.pantheon.ethereum.p2p.config.DiscoveryConfiguration;
-import tech.pegasys.pantheon.ethereum.p2p.peers.Peer;
-import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
+import tech.pegasys.pantheon.ethereum.permissioning.LocalPermissioningConfiguration;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -25,34 +22,27 @@ import java.util.stream.Collectors;
 
 public class PermissioningConfigurationValidator {
 
-  public static void areAllBootnodesAreInWhitelist(
-      final EthNetworkConfig ethNetworkConfig,
-      final PermissioningConfiguration permissioningConfiguration)
+  public static void areAllNodesAreInWhitelist(
+      final Collection<URI> nodeURIs,
+      final LocalPermissioningConfiguration permissioningConfiguration)
       throws Exception {
-    List<Peer> bootnodesNotInWhitelist = new ArrayList<>();
-    final List<Peer> bootnodes =
-        DiscoveryConfiguration.getBootstrapPeersFromGenericCollection(
-            ethNetworkConfig.getBootNodes());
-    if (permissioningConfiguration.isNodeWhitelistEnabled() && bootnodes != null) {
-      bootnodesNotInWhitelist =
-          bootnodes.stream()
-              .filter(
-                  node ->
-                      !permissioningConfiguration
-                          .getNodeWhitelist()
-                          .contains(URI.create(node.getEnodeURI())))
+    List<URI> nodesNotInWhitelist = new ArrayList<>();
+    if (permissioningConfiguration.isNodeWhitelistEnabled() && nodeURIs != null) {
+      nodesNotInWhitelist =
+          nodeURIs.stream()
+              .filter(enode -> !permissioningConfiguration.getNodeWhitelist().contains(enode))
               .collect(Collectors.toList());
     }
-    if (!bootnodesNotInWhitelist.isEmpty()) {
+    if (!nodesNotInWhitelist.isEmpty()) {
       throw new Exception(
-          "Bootnode(s) not in nodes-whitelist " + nodeToURI(bootnodesNotInWhitelist));
+          "Specified node(s) not in nodes-whitelist " + enodesAsStrings(nodesNotInWhitelist));
     }
   }
 
-  private static Collection<String> nodeToURI(final List<Peer> bootnodesNotInWhitelist) {
+  private static Collection<String> enodesAsStrings(final List<URI> bootnodesNotInWhitelist) {
     return bootnodesNotInWhitelist
         .parallelStream()
-        .map(Peer::getEnodeURI)
+        .map(URI::toASCIIString)
         .collect(Collectors.toList());
   }
 }

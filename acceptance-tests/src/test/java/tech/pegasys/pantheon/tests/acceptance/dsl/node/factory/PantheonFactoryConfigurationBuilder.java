@@ -16,7 +16,9 @@ import static java.util.Collections.singletonList;
 
 import tech.pegasys.pantheon.ethereum.core.MiningParameters;
 import tech.pegasys.pantheon.ethereum.core.MiningParametersTestBuilder;
+import tech.pegasys.pantheon.ethereum.core.PrivacyParameters;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration;
+import tech.pegasys.pantheon.ethereum.jsonrpc.RpcApis;
 import tech.pegasys.pantheon.ethereum.jsonrpc.websocket.WebSocketConfiguration;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
@@ -24,6 +26,7 @@ import tech.pegasys.pantheon.tests.acceptance.dsl.node.GenesisConfigProvider;
 
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Optional;
 
 public class PantheonFactoryConfigurationBuilder {
@@ -31,14 +34,17 @@ public class PantheonFactoryConfigurationBuilder {
   private String name;
   private MiningParameters miningParameters =
       new MiningParametersTestBuilder().enabled(false).build();
+  private PrivacyParameters privacyParameters = PrivacyParameters.noPrivacy();
   private JsonRpcConfiguration jsonRpcConfiguration = JsonRpcConfiguration.createDefault();
   private WebSocketConfiguration webSocketConfiguration = WebSocketConfiguration.createDefault();
   private MetricsConfiguration metricsConfiguration = MetricsConfiguration.createDefault();
   private Optional<PermissioningConfiguration> permissioningConfiguration = Optional.empty();
+  private Optional<String> keyFilePath = Optional.empty();
   private boolean devMode = true;
   private GenesisConfigProvider genesisConfigProvider = ignore -> Optional.empty();
   private Boolean p2pEnabled = true;
   private boolean discoveryEnabled = true;
+  private boolean bootnodeEligible = true;
 
   public PantheonFactoryConfigurationBuilder setName(final String name) {
     this.name = name;
@@ -67,6 +73,14 @@ public class PantheonFactoryConfigurationBuilder {
     this.jsonRpcConfiguration.setPort(0);
     this.jsonRpcConfiguration.setHostsWhitelist(singletonList("*"));
 
+    return this;
+  }
+
+  public PantheonFactoryConfigurationBuilder enablePrivateTransactions(
+      final PrivacyParameters privacyParameters) {
+    this.jsonRpcConfiguration.addRpcApi(RpcApis.EEA);
+    this.privacyParameters = privacyParameters;
+    this.privacyParameters.setEnabled(true);
     return this;
   }
 
@@ -99,8 +113,14 @@ public class PantheonFactoryConfigurationBuilder {
     final WebSocketConfiguration config = WebSocketConfiguration.createDefault();
     config.setEnabled(true);
     config.setPort(0);
+    config.setHostsWhitelist(Collections.singleton("*"));
 
     this.webSocketConfiguration = config;
+    return this;
+  }
+
+  public PantheonFactoryConfigurationBuilder bootnodeEligible(final boolean bootnodeEligible) {
+    this.bootnodeEligible = bootnodeEligible;
     return this;
   }
 
@@ -120,6 +140,11 @@ public class PantheonFactoryConfigurationBuilder {
   public PantheonFactoryConfigurationBuilder setPermissioningConfiguration(
       final PermissioningConfiguration permissioningConfiguration) {
     this.permissioningConfiguration = Optional.of(permissioningConfiguration);
+    return this;
+  }
+
+  public PantheonFactoryConfigurationBuilder setKeyFilePath(final String keyFilePath) {
+    this.keyFilePath = Optional.of(keyFilePath);
     return this;
   }
 
@@ -148,13 +173,16 @@ public class PantheonFactoryConfigurationBuilder {
     return new PantheonFactoryConfiguration(
         name,
         miningParameters,
+        privacyParameters,
         jsonRpcConfiguration,
         webSocketConfiguration,
         metricsConfiguration,
         permissioningConfiguration,
+        keyFilePath,
         devMode,
         genesisConfigProvider,
         p2pEnabled,
-        discoveryEnabled);
+        discoveryEnabled,
+        bootnodeEligible);
   }
 }

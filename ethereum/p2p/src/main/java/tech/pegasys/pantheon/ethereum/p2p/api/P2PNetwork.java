@@ -15,17 +15,18 @@ package tech.pegasys.pantheon.ethereum.p2p.api;
 import tech.pegasys.pantheon.ethereum.p2p.peers.Peer;
 import tech.pegasys.pantheon.ethereum.p2p.wire.Capability;
 import tech.pegasys.pantheon.ethereum.p2p.wire.PeerInfo;
-import tech.pegasys.pantheon.ethereum.permissioning.NodeWhitelistController;
+import tech.pegasys.pantheon.ethereum.permissioning.NodeLocalConfigPermissioningController;
 
 import java.io.Closeable;
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /** P2P Network Interface. */
-public interface P2PNetwork extends Closeable, Runnable {
+public interface P2PNetwork extends Closeable {
+
+  void start();
 
   /**
    * Returns a snapshot of the currently connected peer connections.
@@ -44,8 +45,8 @@ public interface P2PNetwork extends Closeable, Runnable {
 
   /**
    * Subscribe a {@link Consumer} to all incoming {@link Message} of a given sub-protocol. Calling
-   * {@link #run()} on an implementation without at least having one subscribed {@link Consumer} per
-   * supported sub-protocol should throw a {@link RuntimeException}.
+   * {@link #start()} on an implementation without at least having one subscribed {@link Consumer}
+   * per supported sub-protocol should throw a {@link RuntimeException}.
    *
    * @param capability Capability (sub-protocol) to subscribe to.
    * @param consumer Consumer to subscribe
@@ -76,6 +77,16 @@ public interface P2PNetwork extends Closeable, Runnable {
   boolean addMaintainConnectionPeer(final Peer peer);
 
   /**
+   * Removes a {@link Peer} from a list indicating any existing efforts to connect to a given peer
+   * should be removed, and if connected, the peer should be disconnected
+   *
+   * @param peer The peer to which connections are not longer required
+   * @return boolean representing whether or not the peer has been disconnected, or if it was not
+   *     currently connected.
+   */
+  boolean removeMaintainedConnectionPeer(final Peer peer);
+
+  /**
    * Trigger that an external clock can use to make the network attempt connections to maintained
    * peers
    */
@@ -87,7 +98,7 @@ public interface P2PNetwork extends Closeable, Runnable {
   /** Blocks until the P2P network layer has stopped. */
   void awaitStop();
 
-  InetSocketAddress getDiscoverySocketAddress();
+  Optional<? extends Peer> getAdvertisedPeer();
 
   /**
    * Returns {@link PeerInfo} object for this node
@@ -113,7 +124,7 @@ public interface P2PNetwork extends Closeable, Runnable {
   /**
    * Returns the node whitelist controller
    *
-   * @return an instance of NodeWhitelistController, if set.
+   * @return an instance of NodeLocalConfigPermissioningController, if set.
    */
-  Optional<NodeWhitelistController> getNodeWhitelistController();
+  Optional<NodeLocalConfigPermissioningController> getNodeWhitelistController();
 }

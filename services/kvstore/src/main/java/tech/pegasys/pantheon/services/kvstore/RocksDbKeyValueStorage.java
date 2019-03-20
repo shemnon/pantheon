@@ -21,20 +21,13 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.io.Closeable;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
@@ -81,6 +74,19 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
           metricsSystem.createTimer(
               MetricCategory.ROCKSDB, "commit_latency_seconds", "Latency for commits to RocksDB.");
 
+      metricsSystem.createLongGauge(
+          MetricCategory.ROCKSDB,
+          "rocks_db_table_readers_memory_bytes",
+          "Estimated memory used for RocksDB index and filter blocks in bytes",
+          () -> {
+            try {
+              return db.getLongProperty("rocksdb.estimate-table-readers-mem");
+            } catch (final RocksDBException e) {
+              LOG.debug("Failed to get RocksDB metric", e);
+              return 0L;
+            }
+          });
+
       rollbackCount =
           metricsSystem.createCounter(
               MetricCategory.ROCKSDB,
@@ -96,7 +102,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     throwIfClosed();
 
     try (final OperationTimer.TimingContext ignored = readLatency.startTimer()) {
-      return Optional.ofNullable(db.get(key.extractArray())).map(BytesValue::wrap);
+      return Optional.ofNullable(db.get(key.getArrayUnsafe())).map(BytesValue::wrap);
     } catch (final RocksDBException e) {
       throw new StorageException(e);
     }
@@ -107,14 +113,6 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     throwIfClosed();
     final WriteOptions options = new WriteOptions();
     return new RocksDbTransaction(db.beginTransaction(options), options);
-  }
-
-  @Override
-  public Stream<Entry> entries() {
-    throwIfClosed();
-    final RocksIterator rocksIt = db.newIterator();
-    rocksIt.seekToFirst();
-    return new RocksDbEntryIterator(rocksIt).toStream();
   }
 
   @Override
@@ -133,61 +131,6 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     }
   }
 
-  /**
-   * Iterates over rocksDB key-value entries. Reads from a db snapshot implicitly taken when the
-   * RocksIterator passed to the constructor was created.
-   *
-   * <p>Implements {@link AutoCloseable} and can be used with try-with-resources construct. When
-   * transformed to a stream (see {@link #toStream}), iterator is automatically closed when the
-   * stream is closed.
-   */
-  private static class RocksDbEntryIterator implements Iterator<Entry>, AutoCloseable {
-    private final RocksIterator rocksIt;
-    private volatile boolean closed = false;
-
-    RocksDbEntryIterator(final RocksIterator rocksIt) {
-      this.rocksIt = rocksIt;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return rocksIt.isValid();
-    }
-
-    @Override
-    public Entry next() {
-      if (closed) {
-        throw new IllegalStateException("Attempt to read from a closed RocksDbEntryIterator.");
-      }
-      try {
-        rocksIt.status();
-      } catch (final RocksDBException e) {
-        LOG.error("RocksDbEntryIterator encountered a problem while iterating.", e);
-      }
-      if (!hasNext()) {
-        throw new NoSuchElementException();
-      }
-      final Entry entry =
-          Entry.create(BytesValue.wrap(rocksIt.key()), BytesValue.wrap(rocksIt.value()));
-      rocksIt.next();
-      return entry;
-    }
-
-    Stream<Entry> toStream() {
-      final Spliterator<Entry> split =
-          Spliterators.spliteratorUnknownSize(
-              this, Spliterator.IMMUTABLE | Spliterator.DISTINCT | Spliterator.NONNULL);
-
-      return StreamSupport.stream(split, false).onClose(this::close);
-    }
-
-    @Override
-    public void close() {
-      rocksIt.close();
-      closed = true;
-    }
-  }
-
   private class RocksDbTransaction extends AbstractTransaction {
     private final org.rocksdb.Transaction innerTx;
     private final WriteOptions options;
@@ -200,7 +143,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     @Override
     protected void doPut(final BytesValue key, final BytesValue value) {
       try (final OperationTimer.TimingContext ignored = writeLatency.startTimer()) {
-        innerTx.put(key.extractArray(), value.extractArray());
+        innerTx.put(key.getArrayUnsafe(), value.getArrayUnsafe());
       } catch (final RocksDBException e) {
         throw new StorageException(e);
       }
@@ -209,7 +152,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     @Override
     protected void doRemove(final BytesValue key) {
       try (final OperationTimer.TimingContext ignored = removeLatency.startTimer()) {
-        innerTx.delete(key.extractArray());
+        innerTx.delete(key.getArrayUnsafe());
       } catch (final RocksDBException e) {
         throw new StorageException(e);
       }

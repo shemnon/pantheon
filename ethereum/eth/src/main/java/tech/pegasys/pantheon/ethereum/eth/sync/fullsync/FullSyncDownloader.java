@@ -15,8 +15,8 @@ package tech.pegasys.pantheon.ethereum.eth.sync.fullsync;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.eth.manager.AbstractPeerTask.PeerTaskResult;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
+import tech.pegasys.pantheon.ethereum.eth.manager.task.AbstractPeerTask.PeerTaskResult;
 import tech.pegasys.pantheon.ethereum.eth.sync.ChainDownloader;
 import tech.pegasys.pantheon.ethereum.eth.sync.CheckpointHeaderManager;
 import tech.pegasys.pantheon.ethereum.eth.sync.SynchronizerConfiguration;
@@ -25,24 +25,20 @@ import tech.pegasys.pantheon.ethereum.eth.sync.tasks.ImportBlocksTask;
 import tech.pegasys.pantheon.ethereum.eth.sync.tasks.ParallelImportChainSegmentTask;
 import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
-import tech.pegasys.pantheon.metrics.LabelledMetric;
-import tech.pegasys.pantheon.metrics.OperationTimer;
+import tech.pegasys.pantheon.metrics.MetricsSystem;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class FullSyncDownloader<C> {
-  private static final Logger LOG = LogManager.getLogger();
   private final ChainDownloader<C> chainDownloader;
   private final SynchronizerConfiguration config;
   private final ProtocolSchedule<C> protocolSchedule;
   private final ProtocolContext<C> protocolContext;
   private final EthContext ethContext;
-  private final LabelledMetric<OperationTimer> ethTasksTimer;
+  private final MetricsSystem metricsSystem;
 
   public FullSyncDownloader(
       final SynchronizerConfiguration config,
@@ -50,23 +46,23 @@ public class FullSyncDownloader<C> {
       final ProtocolContext<C> protocolContext,
       final EthContext ethContext,
       final SyncState syncState,
-      final LabelledMetric<OperationTimer> ethTasksTimer) {
+      final MetricsSystem metricsSystem) {
     this.config = config;
     this.protocolSchedule = protocolSchedule;
     this.protocolContext = protocolContext;
     this.ethContext = ethContext;
-    this.ethTasksTimer = ethTasksTimer;
+    this.metricsSystem = metricsSystem;
     chainDownloader =
         new ChainDownloader<>(
             config,
             ethContext,
             syncState,
-            ethTasksTimer,
             new FullSyncTargetManager<>(
-                config, protocolSchedule, protocolContext, ethContext, syncState, ethTasksTimer),
+                config, protocolSchedule, protocolContext, ethContext, syncState, metricsSystem),
             new CheckpointHeaderManager<>(
-                config, protocolContext, ethContext, syncState, protocolSchedule, ethTasksTimer),
-            this::importBlocksForCheckpoints);
+                config, protocolContext, ethContext, syncState, protocolSchedule, metricsSystem),
+            this::importBlocksForCheckpoints,
+            metricsSystem);
   }
 
   public void start() {
@@ -90,7 +86,7 @@ public class FullSyncDownloader<C> {
               ethContext,
               checkpointHeaders.get(0),
               config.downloaderChainSegmentSize(),
-              ethTasksTimer);
+              metricsSystem);
       importedBlocks = importTask.run().thenApply(PeerTaskResult::getResult);
     } else {
       final ParallelImportChainSegmentTask<C, Block> importTask =
@@ -99,11 +95,11 @@ public class FullSyncDownloader<C> {
               protocolContext,
               ethContext,
               config.downloaderParallelism(),
-              ethTasksTimer,
               new FullSyncBlockHandler<>(
-                  protocolSchedule, protocolContext, ethContext, ethTasksTimer),
+                  protocolSchedule, protocolContext, ethContext, metricsSystem),
               () -> HeaderValidationMode.DETACHED_ONLY,
-              checkpointHeaders);
+              checkpointHeaders,
+              metricsSystem);
       importedBlocks = importTask.run();
     }
     return importedBlocks;

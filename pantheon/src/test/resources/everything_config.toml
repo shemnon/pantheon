@@ -50,7 +50,6 @@ rpc-ws-api=["DEBUG","ETH"]
 rpc-ws-apis=["DEBUG","ETH"]
 rpc-ws-host="9.10.11.12"
 rpc-ws-port=9101
-rpc-ws-refresh-delay=500
 rpc-ws-authentication-enabled=false
 rpc-ws-authentication-credentials-file="none"
 
@@ -58,6 +57,7 @@ rpc-ws-authentication-credentials-file="none"
 metrics-enabled=false
 metrics-host="8.6.7.5"
 metrics-port=309
+metrics-category=["RPC"]
 metrics-push-enabled=false
 metrics-push-host="5.5.5.1"
 metrics-push-port=212
@@ -71,12 +71,17 @@ miner-extra-data="0x444F4E27542050414E4943202120484F444C2C20484F444C2C20484F444C
 min-gas-price="1"
 
 # Permissioning
-permissions-nodes-enabled=false
-permissions-accounts-enabled=false
-permissions-config-file="./permissions_config.toml"
+permissions-nodes-config-file-enabled=false
+permissions-nodes-config-file="./permissions_config.toml"
+permissions-accounts-config-file-enabled=false
+permissions-accounts-config-file="./permissions_config.toml"
+permissions-nodes-contract-enabled=false
+permissions-nodes-contract-address="0x0000000000000000000000000000000000001234"
 
 # Privacy
 privacy-url="http://127.0.0.1:8888"
 privacy-public-key-file="./pubKey.pub"
 privacy-enabled=false
 privacy-precompiled-address=9
+
+tx-pool-max-size=1234

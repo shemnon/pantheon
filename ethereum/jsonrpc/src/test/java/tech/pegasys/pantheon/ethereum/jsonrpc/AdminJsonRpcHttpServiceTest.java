@@ -53,14 +53,13 @@ public class AdminJsonRpcHttpServiceTest extends JsonRpcHttpServiceTest {
         new PeerInfo(4, CLIENT_VERSION, caps, 60303, BytesValue.fromHexString("0003"));
     final InetSocketAddress addr30301 = new InetSocketAddress("localhost", 30301);
     final InetSocketAddress addr30302 = new InetSocketAddress("localhost", 30302);
-    final InetSocketAddress addr30303 = new InetSocketAddress("localhost", 30303);
     final InetSocketAddress addr60301 = new InetSocketAddress("localhost", 60301);
     final InetSocketAddress addr60302 = new InetSocketAddress("localhost", 60302);
     final InetSocketAddress addr60303 = new InetSocketAddress("localhost", 60303);
 
-    peerList.add(new MockPeerConnection(info1, addr60301, addr30302));
-    peerList.add(new MockPeerConnection(info2, addr30301, addr60302));
-    peerList.add(new MockPeerConnection(info3, addr30301, addr60303));
+    peerList.add(MockPeerConnection.create(info1, addr60301, addr30302));
+    peerList.add(MockPeerConnection.create(info2, addr30301, addr60302));
+    peerList.add(MockPeerConnection.create(info3, addr30301, addr60303));
 
     when(peerDiscoveryMock.getPeers()).thenReturn(peerList);
 
