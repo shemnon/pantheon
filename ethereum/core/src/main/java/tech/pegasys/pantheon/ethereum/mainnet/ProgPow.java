@@ -22,40 +22,77 @@ import java.util.function.BiConsumer;
 class ProgPow {
 
   /** Number of blocks before changing the random program. */
-  @SuppressWarnings("FieldCanBeLocal")
-  private final int progPowPeriod = 50;
+  private final int progPowPeriod;
 
   /** The number of parallel lanes that coordinate to calculate a single hash instance. */
-  final int progPowLanes = 16;
+  final int progPowLanes;
 
   /** The register file usage size */
-  final int progPowRegs = 32;
+  final int progPowRegs;
 
   /** Number of uint32 loads from the DAG per lane. */
-  @SuppressWarnings("FieldCanBeLocal")
-  private final int progPowDagLoads = 4;
+  private final int progPowDagLoads;
 
   /** The size of the cache. */
-  @SuppressWarnings("FieldCanBeLocal")
-  private final int progPowCacheBytes = 16 * 1024;
+  private final int progPowCacheBytes;
 
   /** The number of DAG accesses, defined as the outer loop of the algorithm. */
-  @SuppressWarnings("FieldCanBeLocal")
-  private final int progPowCntDag = 64;
+  private final int progPowCntDag;
 
   /** The number of cache accesses per loop. */
-  @SuppressWarnings("FieldCanBeLocal")
-  private final int progPowCntCache = 12;
+  private final int progPowCntCache;
 
   /** The number of math operations per loop. */
-  @SuppressWarnings("FieldCanBeLocal")
-  private final int progPowCntMath = 20;
+  private final int progPowCntMath;
 
   /** FNV 32-bit prime. */
   private static final int FNV_PRIME = 0x01000193;
 
   /** FNV 32-bit offset basis. */
   private static final int FNV_OFFSET_BASIS = 0x811c9dc5;
+
+  private ProgPow(
+      final int progPowPeriod,
+      final int progPowLanes,
+      final int progPowRegs,
+      final int progPowDagLoads,
+      final int progPowCacheBytes,
+      final int progPowCntDag,
+      final int progPowCntCache,
+      final int progPowCntMath) {
+    this.progPowPeriod = progPowPeriod;
+    this.progPowLanes = progPowLanes;
+    this.progPowRegs = progPowRegs;
+    this.progPowDagLoads = progPowDagLoads;
+    this.progPowCacheBytes = progPowCacheBytes;
+    this.progPowCntDag = progPowCntDag;
+    this.progPowCntCache = progPowCntCache;
+    this.progPowCntMath = progPowCntMath;
+  }
+
+  public static ProgPow progPow_0_9_2() {
+    return new ProgPow(
+        /* PROG_POW_PERIOD      */ 50,
+        /* PROG_POW_LANES       */ 16,
+        /* PROG_POW_REGS        */ 32,
+        /* PROG_POW_PERIOD      */ 4,
+        /* PROG_POW_CACHE_BYTES */ 16 * 1024,
+        /* PROG_POW_CNT_DAG     */ 64,
+        /* PROG_POW_CNT_CACHE   */ 12,
+        /* PROG_POW_CNT_MATH    */ 20);
+  }
+
+  public static ProgPow progPow_0_9_3() {
+    return new ProgPow(
+        /* PROG_POW_PERIOD      */ 10,
+        /* PROG_POW_LANES       */ 16,
+        /* PROG_POW_REGS        */ 32,
+        /* PROG_POW_PERIOD      */ 4,
+        /* PROG_POW_CACHE_BYTES */ 16 * 1024,
+        /* PROG_POW_CNT_DAG     */ 64,
+        /* PROG_POW_CNT_CACHE   */ 11,
+        /* PROG_POW_CNT_MATH    */ 18);
+  }
 
   static int fnv1a(final int h, final int d) {
     return (h ^ d) * FNV_PRIME;

@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("RedundantArrayCreation")
-public class ProgPowTest {
+public class ProgPow_0_9_2_Test {
 
   private static final EthHashCacheFactory cacheFactory = new EthHashCacheFactory();
 
@@ -28,7 +28,7 @@ public class ProgPowTest {
 
   @Before
   public void setUp() {
-    progPow = new ProgPow();
+    progPow = ProgPow.progPow_0_9_2();
   }
 
   @Test
@@ -437,14 +437,14 @@ public class ProgPowTest {
         progPow.progPowHash(
             blockNumber,
             0x123456789abcdef0L,
-            ProgPowHashTest.toIntArray(
+            ProgPow_0_9_2_HashTest.toIntArray(
                 BytesValue.fromHexString(
                     "ffeeddccbbaa9988776655443322110000112233445566778899aabbccddeeff")),
             (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     assertThat(result)
         .containsExactly(
-            ProgPowHashTest.toIntArray(
+            ProgPow_0_9_2_HashTest.toIntArray(
                 BytesValue.fromHexString(
                     "5b7ccd472dbefdd95b895cac8ece67ff0deb5a6bd2ecc6e162383d00c3728ece")));
   }

@@ -24,7 +24,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ProgPowHashTest {
+public class ProgPow_0_9_2_HashTest {
 
   @Parameters
   public static Object[][] getParameters() {
@@ -117,7 +117,7 @@ public class ProgPowHashTest {
         100_000_000,
         "49e15ba4bf501ce8fe88765403bd0f848e19cff5c50ba5c0d6210ddb16250ec3",
         "02abe0589481055e",
-        "c273fd02c0487db47024104252a5ffe9232d3d300ca7a454f35d73d5fc26e217"
+        "b879f84923e71b812ef5a42ece0b5b9366c31cab218f40afe65f8a2cae448a6f"
       },
     };
   }
@@ -127,7 +127,7 @@ public class ProgPowHashTest {
   private final String nonceHex;
   private final String resultHex;
 
-  public ProgPowHashTest(
+  public ProgPow_0_9_2_HashTest(
       final long blockNumber,
       final String headerHex,
       final String nonceHex,
@@ -144,7 +144,7 @@ public class ProgPowHashTest {
 
   @Before
   public void setUp() {
-    progPow = new ProgPow();
+    progPow = ProgPow.progPow_0_9_2();
   }
 
   @Test
