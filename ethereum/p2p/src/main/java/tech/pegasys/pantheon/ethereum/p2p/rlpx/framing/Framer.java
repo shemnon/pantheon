@@ -169,7 +169,8 @@ public class Framer {
   private int processHeader(final ByteBuf encryptedHeader) throws FramingException {
     if (encryptedHeader.readableBytes() != LENGTH_FULL_HEADER) {
       throw error(
-          "Expected %s bytes in header, got %s", LENGTH_FULL_HEADER, encryptedHeader.readableBytes());
+          "Expected %s bytes in header, got %s",
+          LENGTH_FULL_HEADER, encryptedHeader.readableBytes());
     }
 
     // Decrypt the header.
