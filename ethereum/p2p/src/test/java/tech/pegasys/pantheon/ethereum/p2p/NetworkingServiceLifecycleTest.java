@@ -13,6 +13,7 @@
 package tech.pegasys.pantheon.ethereum.p2p;
 
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,7 +47,7 @@ public class NetworkingServiceLifecycleTest {
   }
 
   @Test
-  public void createPeerDiscoveryAgent() {
+  public void createP2PNetwork() {
     final SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.generate();
     final NetworkingConfiguration config = configWithRandomPorts();
     try (final NettyP2PNetwork service =
@@ -55,7 +56,6 @@ public class NetworkingServiceLifecycleTest {
             keyPair,
             config,
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
@@ -75,7 +75,7 @@ public class NetworkingServiceLifecycleTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void createPeerDiscoveryAgent_NullHost() throws IOException {
+  public void createP2PNetwork_NullHost() throws IOException {
     final SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.generate();
     final NetworkingConfiguration config =
         NetworkingConfiguration.create()
@@ -86,7 +86,6 @@ public class NetworkingServiceLifecycleTest {
             keyPair,
             config,
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
@@ -96,7 +95,7 @@ public class NetworkingServiceLifecycleTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void createPeerDiscoveryAgent_InvalidHost() throws IOException {
+  public void createP2PNetwork_InvalidHost() throws IOException {
     final SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.generate();
     final NetworkingConfiguration config =
         NetworkingConfiguration.create()
@@ -107,7 +106,6 @@ public class NetworkingServiceLifecycleTest {
             keyPair,
             config,
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
@@ -117,7 +115,7 @@ public class NetworkingServiceLifecycleTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void createPeerDiscoveryAgent_InvalidPort() throws IOException {
+  public void createP2PNetwork_InvalidPort() throws IOException {
     final SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.generate();
     final NetworkingConfiguration config =
         NetworkingConfiguration.create()
@@ -128,7 +126,6 @@ public class NetworkingServiceLifecycleTest {
             keyPair,
             config,
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
@@ -138,14 +135,13 @@ public class NetworkingServiceLifecycleTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void createPeerDiscoveryAgent_NullKeyPair() throws IOException {
+  public void createP2PNetwork_NullKeyPair() throws IOException {
     try (final P2PNetwork broken =
         new NettyP2PNetwork(
             vertx,
             null,
             configWithRandomPorts(),
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
@@ -155,7 +151,7 @@ public class NetworkingServiceLifecycleTest {
   }
 
   @Test
-  public void startStopPeerDiscoveryAgent() {
+  public void startStopP2PNetwork() {
     final SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.generate();
     try (final NettyP2PNetwork service =
         new NettyP2PNetwork(
@@ -163,14 +159,12 @@ public class NetworkingServiceLifecycleTest {
             keyPair,
             configWithRandomPorts(),
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
             Optional.empty())) {
       service.start();
       service.stop();
-      service.start();
     }
   }
 
@@ -183,7 +177,6 @@ public class NetworkingServiceLifecycleTest {
                 keyPair,
                 configWithRandomPorts(),
                 emptyList(),
-                () -> true,
                 new PeerBlacklist(),
                 new NoOpMetricsSystem(),
                 Optional.empty(),
@@ -194,7 +187,6 @@ public class NetworkingServiceLifecycleTest {
                 keyPair,
                 configWithRandomPorts(),
                 emptyList(),
-                () -> true,
                 new PeerBlacklist(),
                 new NoOpMetricsSystem(),
                 Optional.empty(),
@@ -215,7 +207,6 @@ public class NetworkingServiceLifecycleTest {
             keyPair,
             configWithRandomPorts(),
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
@@ -231,7 +222,6 @@ public class NetworkingServiceLifecycleTest {
               keyPair,
               config,
               emptyList(),
-              () -> true,
               new PeerBlacklist(),
               new NoOpMetricsSystem(),
               Optional.empty(),
@@ -254,7 +244,7 @@ public class NetworkingServiceLifecycleTest {
   }
 
   @Test
-  public void createPeerDiscoveryAgent_NoActivePeers() {
+  public void createP2PNetwork_NoActivePeers() {
     final SECP256K1.KeyPair keyPair = SECP256K1.KeyPair.generate();
     try (final NettyP2PNetwork agent =
         new NettyP2PNetwork(
@@ -262,12 +252,11 @@ public class NetworkingServiceLifecycleTest {
             keyPair,
             configWithRandomPorts(),
             emptyList(),
-            () -> true,
             new PeerBlacklist(),
             new NoOpMetricsSystem(),
             Optional.empty(),
             Optional.empty())) {
-      assertTrue(agent.getDiscoveryPeers().isEmpty());
+      assertTrue(agent.getDiscoveryPeers().collect(toList()).isEmpty());
       assertEquals(0, agent.getPeers().size());
     }
   }

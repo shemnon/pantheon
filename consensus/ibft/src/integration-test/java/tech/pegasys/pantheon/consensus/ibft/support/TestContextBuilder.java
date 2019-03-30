@@ -60,10 +60,13 @@ import tech.pegasys.pantheon.ethereum.core.BlockHeaderTestFixture;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.MiningParameters;
 import tech.pegasys.pantheon.ethereum.core.PendingTransactions;
+import tech.pegasys.pantheon.ethereum.core.PrivacyParameters;
 import tech.pegasys.pantheon.ethereum.core.Util;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
+import tech.pegasys.pantheon.metrics.MetricsSystem;
+import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.testutil.TestClock;
 import tech.pegasys.pantheon.util.Subscribers;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -83,6 +86,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 
 public class TestContextBuilder {
+  private static MetricsSystem metricsSystem = new NoOpMetricsSystem();
 
   private static class ControllerAndState {
 
@@ -258,7 +262,7 @@ public class TestContextBuilder {
     genesisConfigOptions.byzantiumBlock(0);
 
     final ProtocolSchedule<IbftContext> protocolSchedule =
-        IbftProtocolSchedule.create(genesisConfigOptions);
+        IbftProtocolSchedule.create(genesisConfigOptions, PrivacyParameters.noPrivacy());
 
     /////////////////////////////////////////////////////////////////////////////////////
     // From here down is BASICALLY taken from IbftPantheonController
@@ -282,7 +286,7 @@ public class TestContextBuilder {
     final IbftBlockCreatorFactory blockCreatorFactory =
         new IbftBlockCreatorFactory(
             (gasLimit) -> gasLimit,
-            new PendingTransactions(1, clock), // changed from IbftPantheonController
+            new PendingTransactions(1, clock, metricsSystem), // changed from IbftPantheonController
             protocolContext,
             protocolSchedule,
             miningParams,
