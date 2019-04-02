@@ -150,12 +150,16 @@ public class ProgPow_0_9_3_HashTest {
   @Test
   public void validateProPowHash() {
     final EthHashCacheFactory.EthHashDescriptor cache = cacheFactory.ethHashCacheFor(blockNumber);
+    final int[] cDag =
+        progPow.createDagCache(
+            blockNumber, (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     final int[] result =
         progPow.progPowHash(
             blockNumber,
             BytesValue.fromHexString(nonceHex).getLong(0),
             toIntArray(BytesValue.fromHexString(headerHex)),
+            cDag,
             (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     assertThat(fromIntArray(result)).isEqualTo(BytesValue.fromHexString(resultHex));

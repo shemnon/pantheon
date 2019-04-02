@@ -227,10 +227,14 @@ public class ProgPow_0_9_2_Test {
 
     final long blockNumber = 30000;
     final EthHashCacheFactory.EthHashDescriptor cache = cacheFactory.ethHashCacheFor(blockNumber);
+    final int[] cDag =
+        progPow.createDagCache(
+            blockNumber, (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
     progPow.progPowLoop(
         blockNumber,
         0,
         mix,
+        cDag,
         (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     assertThat(mix[0])
@@ -432,6 +436,9 @@ public class ProgPow_0_9_2_Test {
   public void chfastHash30000() {
     final long blockNumber = 30000;
     final EthHashCacheFactory.EthHashDescriptor cache = cacheFactory.ethHashCacheFor(blockNumber);
+    final int[] cDag =
+        progPow.createDagCache(
+            blockNumber, (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     final int[] result =
         progPow.progPowHash(
@@ -440,6 +447,7 @@ public class ProgPow_0_9_2_Test {
             ProgPow_0_9_2_HashTest.toIntArray(
                 BytesValue.fromHexString(
                     "ffeeddccbbaa9988776655443322110000112233445566778899aabbccddeeff")),
+            cDag,
             (target, ind) -> EthHash.calcDatasetItem(target, cache.getCache(), ind));
 
     assertThat(result)

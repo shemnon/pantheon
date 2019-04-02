@@ -330,6 +330,7 @@ class ProgPow {
       //      final long prog_seed, // value is (block_number/progPowPeriod)
       final long nonce,
       final int[] header,
+      final int[] cachedDag,
       final BiConsumer<byte[], Integer> datasetLookup) {
     final int[][] mix = new int[progPowLanes][progPowRegs];
     final int[] digest = new int[8];
@@ -348,7 +349,7 @@ class ProgPow {
 
     // execute the randomly generated inner loop
     for (int i = 0; i < progPowCntDag; i++) {
-      progPowLoop(blockNumber, i, mix, datasetLookup);
+      progPowLoop(blockNumber, i, mix, cachedDag, datasetLookup);
     }
 
     // Reduce mix data to a per-lane 32-bit digest
@@ -447,10 +448,26 @@ class ProgPow {
     throw new RuntimeException("This should be impossible.");
   }
 
+  public int[] createDagCache(
+      final long blockNumber, final BiConsumer<byte[], Integer> datasetLookup) {
+    // cache the first 16KB of the dag
+    final int[] cdag = new int[4096];
+    final byte[] lookupHolder = new byte[64];
+    for (int i = 0; i < 4096; i++) {
+      // this could be sped up 16x
+      datasetLookup.accept(lookupHolder, i >> 4);
+      final int dagValue =
+          Integer.reverseBytes(BytesValue.wrap(lookupHolder).getInt((i & 0xf) << 2));
+      cdag[i] = dagValue;
+    }
+    return cdag;
+  }
+
   void progPowLoop(
       final long blockNum,
       final int loop,
       final int[][] mix,
+      final int[] cDag,
       final BiConsumer<byte[], Integer> datasetLookup) {
     final long datasetSize = EthHash.datasetSize(blockNum / EthHash.EPOCH_LENGTH);
     final int[][] dagEntry = new int[progPowLanes][progPowDagLoads];
@@ -492,10 +509,8 @@ class ProgPow {
         for (int l = 0; l < progPowLanes; l++) {
           final int offset =
               Integer.remainderUnsigned(mix[l][src], (progPowCacheBytes / Integer.BYTES));
-          datasetLookup.accept(lookupHolder, offset >> 4);
-          final int dagValue =
-              Integer.reverseBytes(BytesValue.wrap(lookupHolder).getInt((offset & 0xf) << 2));
-          mix[l][dst] = merge(mix[l][dst], dagValue, sel);
+          final int cdagValue = cDag[offset];
+          mix[l][dst] = merge(mix[l][dst], cdagValue, sel);
         }
       }
       if (i < progPowCntMath) {
