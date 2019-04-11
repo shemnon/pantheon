@@ -73,7 +73,7 @@ public class PeerDiscoveryAgentTest {
 
     // Start another peer pointing to those 20 agents.
     final MockPeerDiscoveryAgent agent = helper.startDiscoveryAgent(otherPeers);
-    assertThat(agent.getPeers()).hasSize(20);
+    assertThat(agent.getPeers()).contains(otherPeers.toArray(new DiscoveryPeer[20]));
     assertThat(agent.getPeers()).allMatch(p -> p.getStatus() == PeerDiscoveryStatus.BONDED);
 
     // Use additional agent to exchange messages with agent
