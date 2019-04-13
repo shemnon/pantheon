@@ -33,6 +33,8 @@ import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.junit.Test;
 
@@ -169,6 +171,47 @@ public class PrometheusMetricsSystemTest {
     metricsSystem.createGauge(JVM, "myValue", "Help", () -> 7d);
     assertThatThrownBy(() -> metricsSystem.createGauge(JVM, "myValue", "Help", () -> 7d))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldHandleDuplicateUniquelyLabelledGaugeCreation() {
+    LabelledMetric<Consumer<Supplier<Double>>> labeler1 =
+        metricsSystem.createLabelledGauge(JVM, "myValue", "Help", "label");
+    LabelledMetric<Consumer<Supplier<Double>>> labeler2 =
+        metricsSystem.createLabelledGauge(JVM, "myValue", "Help", "label");
+    assertThat(labeler1).isEqualTo(labeler2);
+  }
+
+  @Test
+  public void shouldReplaceDuplicateLabelledGauges() {
+    metricsSystem
+        .createLabelledGauge(JVM, "myValue", "Help", "label")
+        .labels("one")
+        .accept(() -> 7d);
+    metricsSystem
+        .createLabelledGauge(JVM, "myValue", "Help", "label")
+        .labels("one")
+        .accept(() -> 8d);
+
+    assertThat(metricsSystem.getMetrics())
+        .containsExactlyInAnyOrder(new Observation(JVM, "myValue", 8d, singletonList("one")));
+  }
+
+  @Test
+  public void shouldCreateSeparateObservationsForEachLabelledGauge() {
+    metricsSystem
+        .createLabelledGauge(JVM, "myValue", "Help", "label")
+        .labels("one")
+        .accept(() -> 7d);
+    metricsSystem
+        .createLabelledGauge(JVM, "myValue", "Help", "label")
+        .labels("two")
+        .accept(() -> 6d);
+
+    assertThat(metricsSystem.getMetrics())
+        .containsExactlyInAnyOrder(
+            new Observation(JVM, "myValue", 7d, singletonList("one")),
+            new Observation(JVM, "myValue", 6d, singletonList("two")));
   }
 
   @Test

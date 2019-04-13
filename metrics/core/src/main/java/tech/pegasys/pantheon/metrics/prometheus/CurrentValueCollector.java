@@ -27,7 +27,7 @@ class CurrentValueCollector extends Collector {
   private final String help;
   private final Supplier<Double> valueSupplier;
 
-  public CurrentValueCollector(
+  CurrentValueCollector(
       final String metricName, final String help, final Supplier<Double> valueSupplier) {
     this.metricName = metricName;
     this.help = help;

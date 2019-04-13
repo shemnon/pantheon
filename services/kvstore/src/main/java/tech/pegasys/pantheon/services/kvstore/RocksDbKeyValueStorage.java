@@ -60,6 +60,8 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
       final RocksDbConfiguration rocksDbConfiguration, final MetricsSystem metricsSystem) {
     RocksDbUtil.loadNativeLibrary();
     try {
+      final String dbLabel = rocksDbConfiguration.getLabel();
+
       stats = new Statistics();
       options =
           new Options()
@@ -67,8 +69,8 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
               .setMaxOpenFiles(rocksDbConfiguration.getMaxOpenFiles())
               .setTableFormatConfig(rocksDbConfiguration.getBlockBasedTableConfig())
               .setStatistics(stats);
-
       txOptions = new TransactionDBOptions();
+
       db = TransactionDB.open(options, txOptions, rocksDbConfiguration.getDatabaseDir().toString());
 
       readLatency =
@@ -78,7 +80,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
                   "read_latency_seconds",
                   "Latency for read from RocksDB.",
                   "database")
-              .labels(rocksDbConfiguration.getLabel());
+              .labels(dbLabel);
       removeLatency =
           metricsSystem
               .createLabelledTimer(
@@ -86,7 +88,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
                   "remove_latency_seconds",
                   "Latency of remove requests from RocksDB.",
                   "database")
-              .labels(rocksDbConfiguration.getLabel());
+              .labels(dbLabel);
       writeLatency =
           metricsSystem
               .createLabelledTimer(
@@ -94,7 +96,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
                   "write_latency_seconds",
                   "Latency for write to RocksDB.",
                   "database")
-              .labels(rocksDbConfiguration.getLabel());
+              .labels(dbLabel);
       commitLatency =
           metricsSystem
               .createLabelledTimer(
@@ -102,24 +104,29 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
                   "commit_latency_seconds",
                   "Latency for commits to RocksDB.",
                   "database")
-              .labels(rocksDbConfiguration.getLabel());
+              .labels(dbLabel);
 
       if (metricsSystem instanceof PrometheusMetricsSystem) {
-        RocksDBStats.registerRocksDBMetrics(stats, (PrometheusMetricsSystem) metricsSystem);
+        RocksDBStats.registerRocksDBMetrics(
+            stats, (PrometheusMetricsSystem) metricsSystem, dbLabel);
       }
 
-      metricsSystem.createLongGauge(
-          MetricCategory.KVSTORE_ROCKSDB,
-          "rocks_db_table_readers_memory_bytes",
-          "Estimated memory used for RocksDB index and filter blocks in bytes",
-          () -> {
-            try {
-              return db.getLongProperty("rocksdb.estimate-table-readers-mem");
-            } catch (final RocksDBException e) {
-              LOG.debug("Failed to get RocksDB metric", e);
-              return 0L;
-            }
-          });
+      metricsSystem
+          .createLabelledLongGauge(
+              MetricCategory.KVSTORE_ROCKSDB,
+              "rocks_db_table_readers_memory_bytes",
+              "Estimated memory used for RocksDB index and filter blocks in bytes",
+              "database")
+          .labels(dbLabel)
+          .accept(
+              () -> {
+                try {
+                  return db.getLongProperty("rocksdb.estimate-table-readers-mem");
+                } catch (final RocksDBException e) {
+                  LOG.debug("Failed to get RocksDB metric", e);
+                  return 0L;
+                }
+              });
 
       rollbackCount =
           metricsSystem
@@ -128,7 +135,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
                   "rollback_count",
                   "Number of RocksDB transactions rolled back.",
                   "database")
-              .labels(rocksDbConfiguration.getLabel());
+              .labels(dbLabel);
     } catch (final RocksDBException e) {
       throw new StorageException(e);
     }

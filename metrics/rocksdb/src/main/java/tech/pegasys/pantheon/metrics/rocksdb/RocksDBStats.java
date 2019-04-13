@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import io.prometheus.client.Collector;
 import org.rocksdb.HistogramData;
 import org.rocksdb.HistogramType;
@@ -28,10 +29,10 @@ import org.rocksdb.TickerType;
 
 public class RocksDBStats {
 
-  static final List<String> LABELS = Collections.singletonList("quantile");
-  static final List<String> LABEL_50 = Collections.singletonList("0.5");
-  static final List<String> LABEL_95 = Collections.singletonList("0.95");
-  static final List<String> LABEL_99 = Collections.singletonList("0.99");
+  static final ImmutableList<String> LABELS = ImmutableList.of("quantile", "database");
+  static final String LABEL_50 = "0.5";
+  static final String LABEL_95 = "0.95";
+  static final String LABEL_99 = "0.99";
 
   // Tickers - RocksDB equivalent of counters
   static final TickerType[] TICKERS = {
@@ -167,24 +168,28 @@ public class RocksDBStats {
   };
 
   public static void registerRocksDBMetrics(
-      final Statistics stats, final PrometheusMetricsSystem metricsSystem) {
+      final Statistics stats, final PrometheusMetricsSystem metricsSystem, final String label) {
 
     for (final TickerType ticker : TICKERS) {
       final String promCounterName = ticker.name().toLowerCase();
-      metricsSystem.createLongGauge(
-          KVSTORE_ROCKSDB_STATS,
-          promCounterName,
-          "RocksDB reported statistics for " + ticker.name(),
-          () -> stats.getTickerCount(ticker));
+      metricsSystem
+          .createLabelledLongGauge(
+              KVSTORE_ROCKSDB_STATS,
+              promCounterName,
+              "RocksDB reported statistics for " + ticker.name(),
+              "database")
+          .labels(label)
+          .accept(() -> stats.getTickerCount(ticker));
     }
 
     for (final HistogramType histogram : HISTOGRAMS) {
-      metricsSystem.addCollector(KVSTORE_ROCKSDB_STATS, histogramToCollector(stats, histogram));
+      metricsSystem.addCollector(
+          KVSTORE_ROCKSDB_STATS, histogramToCollector(stats, histogram, label));
     }
   }
 
   private static Collector histogramToCollector(
-      final Statistics stats, final HistogramType histogram) {
+      final Statistics stats, final HistogramType histogram, final String label) {
     return new Collector() {
       final String metricName =
           PrometheusMetricsSystem.convertToPrometheusName(
@@ -192,6 +197,9 @@ public class RocksDBStats {
 
       @Override
       public List<MetricFamilySamples> collect() {
+        final List<String> LABELS_50 = ImmutableList.of(LABEL_50, label);
+        final List<String> LABELS_95 = ImmutableList.of(LABEL_95, label);
+        final List<String> LABELS_99 = ImmutableList.of(LABEL_99, label);
         final HistogramData data = stats.getHistogramData(histogram);
         return Collections.singletonList(
             new MetricFamilySamples(
@@ -199,11 +207,11 @@ public class RocksDBStats {
                 Type.SUMMARY,
                 "RocksDB histogram for " + metricName,
                 Arrays.asList(
-                    new MetricFamilySamples.Sample(metricName, LABELS, LABEL_50, data.getMedian()),
+                    new MetricFamilySamples.Sample(metricName, LABELS, LABELS_50, data.getMedian()),
                     new MetricFamilySamples.Sample(
-                        metricName, LABELS, LABEL_95, data.getPercentile95()),
+                        metricName, LABELS, LABELS_95, data.getPercentile95()),
                     new MetricFamilySamples.Sample(
-                        metricName, LABELS, LABEL_99, data.getPercentile99()))));
+                        metricName, LABELS, LABELS_99, data.getPercentile99()))));
       }
     };
   }

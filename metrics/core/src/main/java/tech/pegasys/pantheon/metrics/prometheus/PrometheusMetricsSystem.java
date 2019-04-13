@@ -29,9 +29,11 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
 import io.prometheus.client.Collector;
 import io.prometheus.client.Collector.MetricFamilySamples;
 import io.prometheus.client.Collector.MetricFamilySamples.Sample;
@@ -55,6 +57,8 @@ public class PrometheusMetricsSystem implements MetricsSystem {
       new ConcurrentHashMap<>();
   private final Map<String, LabelledMetric<tech.pegasys.pantheon.metrics.OperationTimer>>
       cachedTimers = new ConcurrentHashMap<>();
+  private final Map<String, LabelledMetric<Consumer<Supplier<Double>>>> cachedGauges =
+      new ConcurrentHashMap<>();
 
   private final EnumSet<MetricCategory> enabledCategories = EnumSet.allOf(MetricCategory.class);
 
@@ -144,6 +148,27 @@ public class PrometheusMetricsSystem implements MetricsSystem {
       final Collector collector = new CurrentValueCollector(metricName, help, valueSupplier);
       addCollectorUnchecked(category, collector);
     }
+  }
+
+  @Override
+  public LabelledMetric<Consumer<Supplier<Double>>> createLabelledGauge(
+      final MetricCategory category,
+      final String name,
+      final String help,
+      final String... labelNames) {
+    final String metricName = convertToPrometheusName(category, name);
+    final LabelledCurrentValueCollector collector =
+        new LabelledCurrentValueCollector(metricName, help, ImmutableList.copyOf(labelNames));
+    return cachedGauges.computeIfAbsent(
+        metricName,
+        (k) -> {
+          addCollector(category, collector);
+          if (enabledCategories.contains(category)) {
+            return labels -> supplier -> collector.addGauge(ImmutableList.copyOf(labels), supplier);
+          } else {
+            return NoOpMetricsSystem.getLabelledGauge(labelNames.length);
+          }
+        });
   }
 
   public void addCollector(final MetricCategory category, final Collector metric) {

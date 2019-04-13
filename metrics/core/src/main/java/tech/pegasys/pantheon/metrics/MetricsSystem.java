@@ -12,6 +12,7 @@
  */
 package tech.pegasys.pantheon.metrics;
 
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -50,6 +51,27 @@ public interface MetricsSystem {
       final String help,
       final Supplier<Long> valueSupplier) {
     createGauge(category, name, help, () -> (double) valueSupplier.get());
+  }
+
+  LabelledMetric<Consumer<Supplier<Double>>> createLabelledGauge(
+      MetricCategory category, String name, String help, String... labelNames);
+
+  default LabelledMetric<Consumer<Supplier<Integer>>> createLabelledIntegerGauge(
+      final MetricCategory category,
+      final String name,
+      final String help,
+      final String... labelNames) {
+    return (labels) ->
+        (value) -> createLabelledGauge(category, name, help, labelNames).labels(labels);
+  }
+
+  default LabelledMetric<Consumer<Supplier<Long>>> createLabelledLongGauge(
+      final MetricCategory category,
+      final String name,
+      final String help,
+      final String... labelNames) {
+    return (labels) ->
+        (value) -> createLabelledGauge(category, name, help, labelNames).labels(labels);
   }
 
   Stream<Observation> getMetrics(MetricCategory category);
