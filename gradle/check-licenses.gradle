@@ -79,7 +79,7 @@ downloadLicenses {
           license('Apache Software Licenses', 'http://www.apache.org/licenses/LICENSE-2.0.txt'),
           license('Apache', 'http://www.opensource.org/licenses/Apache-2.0')
       ],
-      (mit)       : ['The MIT License'],
+      (mit)       : ['The MIT License', 'MIT'],
       (bsd)       : [
           'BSD',
           'BSD licence',
@@ -129,6 +129,10 @@ downloadLicenses {
       (group('pantheon.consensus'))  : apache,
       (group('pantheon.metrics'))  : apache,
 
+      // https://github.com/java-native-access/jna/blob/master/LICENSE
+      // BoltDB is dual licensed under Apache v2.0 and LGPL 2.1 licenses
+      // Explicitly declare that we are using the Apache v2.0 license
+      (group('net.java.dev.jna')): apache,
       // https://checkerframework.org/manual/#license
       // The more permissive MIT License applies to code that you might want
       // to include in your own program, such as the annotations and run-time utility classes.

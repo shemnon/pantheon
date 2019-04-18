@@ -21,6 +21,7 @@ import tech.pegasys.pantheon.ethereum.eth.sync.SynchronizerConfiguration;
 import tech.pegasys.pantheon.services.kvstore.RocksDbConfiguration;
 import tech.pegasys.pantheon.util.BlockImporter;
 
+import com.protonail.bolt.jna.Bolt;
 import picocli.CommandLine.RunLast;
 
 public final class Pantheon {
@@ -28,6 +29,7 @@ public final class Pantheon {
   private static final int ERROR_EXIT_CODE = 1;
 
   public static void main(final String... args) {
+    Bolt.init();
 
     final PantheonCommand pantheonCommand =
         new PantheonCommand(

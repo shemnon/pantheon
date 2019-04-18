@@ -62,6 +62,11 @@ dependencies {
   testImplementation 'org.awaitility:awaitility'
   testImplementation 'org.mockito:mockito-core'
   testImplementation 'org.apache.commons:commons-text'
+
+  implementation 'com.protonail.bolt-jna:bolt-jna-core:1.3.1-1'
+  implementation 'com.protonail.bolt-jna:bolt-jna-native:1.3.1-1:osx'
+  implementation 'com.protonail.bolt-jna:bolt-jna-native:1.3.1-1:windows-x86_64'
+  implementation 'com.protonail.bolt-jna:bolt-jna-native:1.3.1-1:linux-x86_64'
 }
 
 task writeInfoFile(type: ProjectPropertiesFile) {

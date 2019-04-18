@@ -24,7 +24,7 @@ import tech.pegasys.pantheon.ethereum.eth.EthereumWireProtocolConfiguration;
 import tech.pegasys.pantheon.ethereum.eth.sync.SynchronizerConfiguration;
 import tech.pegasys.pantheon.ethereum.eth.transactions.PendingTransactions;
 import tech.pegasys.pantheon.ethereum.storage.StorageProvider;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.RocksDbStorageProvider;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.BoltDbStorageProvider;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.services.kvstore.RocksDbConfiguration;
 
@@ -121,8 +121,10 @@ public class PantheonControllerBuilder {
     final KeyPair nodeKeys = loadKeyPair(nodePrivateKeyFile);
     privacyParameters.setSigningKeyPair(nodeKeys);
 
+    //    final StorageProvider storageProvider =
+    //        RocksDbStorageProvider.create(rocksDbConfiguration, metricsSystem);
     final StorageProvider storageProvider =
-        RocksDbStorageProvider.create(rocksDbConfiguration, metricsSystem);
+        BoltDbStorageProvider.create(rocksDbConfiguration, metricsSystem);
 
     final GenesisConfigFile genesisConfigFile;
     if (devMode) {
