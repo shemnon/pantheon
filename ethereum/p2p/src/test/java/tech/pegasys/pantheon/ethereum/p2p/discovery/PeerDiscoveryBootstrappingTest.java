@@ -118,17 +118,18 @@ public class PeerDiscoveryBootstrappingTest {
     final BytesValue[] otherPeersIds =
         otherAgents.stream().map(PeerDiscoveryAgent::getId).toArray(BytesValue[]::new);
 
-    assertThat(bootstrapAgent.peers())
+    assertThat(bootstrapAgent.discoveredPeers())
         .extracting(Peer::getId)
         .containsExactlyInAnyOrder(otherPeersIds);
 
-    assertThat(bootstrapAgent.peers()).allMatch(p -> p.getStatus() == PeerDiscoveryStatus.BONDED);
+    assertThat(bootstrapAgent.discoveredPeers())
+        .allMatch(p -> p.getStatus() == PeerDiscoveryStatus.BONDED);
 
     // This agent will bootstrap off the bootstrap peer, will add all nodes returned by the latter,
     // and will
     // bond with them, ultimately adding all 7 nodes in the network to its table.
     final PeerDiscoveryAgent newAgent =
         helper.startDiscoveryAgent(bootstrapAgent.getAdvertisedPeer().get());
-    assertThat(newAgent.peers()).hasSize(6);
+    assertThat(newAgent.discoveredPeers()).hasSize(6);
   }
 }

@@ -154,7 +154,7 @@ public class PeerTable {
 
     distanceCache.remove(id);
 
-    if (table[distance].peers().isEmpty()) {
+    if (table[distance].getPeers().isEmpty()) {
       return EvictResult.absent();
     }
 
@@ -199,7 +199,7 @@ public class PeerTable {
   }
 
   public Stream<DiscoveryPeer> allPeers() {
-    return Arrays.stream(table).flatMap(e -> e.peers().stream());
+    return Arrays.stream(table).flatMap(e -> e.getPeers().stream());
   }
 
   /**

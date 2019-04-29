@@ -228,8 +228,8 @@ public abstract class PeerDiscoveryAgent implements DisconnectCallback {
             });
   }
 
-  public Stream<DiscoveryPeer> peers() {
-    return controller.map(PeerDiscoveryController::peers).orElse(Stream.empty());
+  public Stream<DiscoveryPeer> discoveredPeers() {
+    return controller.map(PeerDiscoveryController::discoveredPeers).orElse(Stream.empty());
   }
 
   public Optional<DiscoveryPeer> getAdvertisedPeer() {

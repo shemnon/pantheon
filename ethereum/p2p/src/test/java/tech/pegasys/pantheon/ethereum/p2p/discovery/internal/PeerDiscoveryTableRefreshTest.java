@@ -79,7 +79,7 @@ public class PeerDiscoveryTableRefreshTest {
     controller.onMessage(pingPacket, peers.get(1));
 
     // Wait until the controller has added the newly found peer.
-    assertThat(controller.peers()).hasSize(1);
+    assertThat(controller.discoveredPeers()).hasSize(1);
 
     // Simulate a PONG message from peer 0.
     final PongPacketData pongPacketData =
@@ -93,7 +93,7 @@ public class PeerDiscoveryTableRefreshTest {
 
       controller.getRecursivePeerRefreshState().cancel();
       timer.runPeriodicHandlers();
-      controller.peers().forEach(p -> p.setStatus(PeerDiscoveryStatus.KNOWN));
+      controller.discoveredPeers().forEach(p -> p.setStatus(PeerDiscoveryStatus.KNOWN));
       controller.onMessage(pingPacket, peers.get(1));
     }
     verify(outboundMessageHandler, atLeast(5)).send(eq(peers.get(1)), captor.capture());

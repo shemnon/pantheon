@@ -554,7 +554,7 @@ public class PeerDiscoveryController {
    *
    * @return List of peers.
    */
-  public Stream<DiscoveryPeer> peers() {
+  public Stream<DiscoveryPeer> discoveredPeers() {
     return peerTable.allPeers();
   }
 

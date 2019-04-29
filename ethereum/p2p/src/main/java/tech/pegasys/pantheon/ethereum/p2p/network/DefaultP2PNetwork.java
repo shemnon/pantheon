@@ -437,7 +437,7 @@ public class DefaultP2PNetwork implements P2PNetwork {
 
   @Override
   public Stream<DiscoveryPeer> discoveredPeers() {
-    return peerDiscoveryAgent.peers();
+    return peerDiscoveryAgent.discoveredPeers();
   }
 
   @Override

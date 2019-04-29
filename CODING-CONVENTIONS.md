@@ -149,7 +149,9 @@ Method parameters must be final.  Class level and local fields should be final w
 
 * Getters follow idiomatic format with `get` prefix.  For example, `getBlock()` gets a block property.
 * Setters follow idiomatic format with `set` prefix. For example, `setBlock(Block block)` sets a block property.
-* For `toString methods`,  use the Guava 18+ `MoreObjects.toStringHelper`
+* The Getter pattern should not be used to return single use objects like `Stream` and `Iterator`.
+* The Setter pattern should not be used for chained builder methods.
+* For `toString` methods use the Guava 18+ `MoreObjects.toStringHelper`
 * Equals and `hashCode()` methods use the `Object.equals` and `Object.hash` methods (this is the _Java 7+_ template in IntelliJ. Don’t accept subclasses and don’t use getters)
 
 ## 4.2.4 Testing
