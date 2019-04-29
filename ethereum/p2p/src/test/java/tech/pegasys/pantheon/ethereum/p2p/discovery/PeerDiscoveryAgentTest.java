@@ -46,7 +46,7 @@ public class PeerDiscoveryAgentTest {
   public void neighborsPacketFromUnbondedPeerIsDropped() {
     // Start an agent with no bootstrap peers.
     final MockPeerDiscoveryAgent agent = helper.startDiscoveryAgent(Collections.emptyList());
-    assertThat(agent.getPeers()).isEmpty();
+    assertThat(agent.peers()).isEmpty();
 
     // Start a test peer
     final MockPeerDiscoveryAgent otherNode = helper.startDiscoveryAgent();
@@ -57,7 +57,7 @@ public class PeerDiscoveryAgentTest {
     final Packet packet = Packet.create(PacketType.NEIGHBORS, data, otherNode.getKeyPair());
     helper.sendMessageBetweenAgents(otherNode, agent, packet);
 
-    assertThat(agent.getPeers()).isEmpty();
+    assertThat(agent.peers()).isEmpty();
   }
 
   @Test
@@ -77,8 +77,8 @@ public class PeerDiscoveryAgentTest {
     // list.  By moving to a contains we make sure that all the peers are loaded with tolerance for
     // duplicates.  If we fix the duplication problem we should use containsExactlyInAnyOrder to
     // hedge against missing one and duplicating another.
-    assertThat(agent.getPeers()).contains(otherPeers.toArray(new DiscoveryPeer[20]));
-    assertThat(agent.getPeers()).allMatch(p -> p.getStatus() == PeerDiscoveryStatus.BONDED);
+    assertThat(agent.peers()).contains(otherPeers.toArray(new DiscoveryPeer[20]));
+    assertThat(agent.peers()).allMatch(p -> p.getStatus() == PeerDiscoveryStatus.BONDED);
 
     // Use additional agent to exchange messages with agent
     final MockPeerDiscoveryAgent testAgent = helper.startDiscoveryAgent();
@@ -128,12 +128,12 @@ public class PeerDiscoveryAgentTest {
     final MockPeerDiscoveryAgent peerDiscoveryAgent2 = helper.startDiscoveryAgent(peer);
     peerDiscoveryAgent2.start(BROADCAST_TCP_PORT).join();
 
-    assertThat(peerDiscoveryAgent2.getPeers().collect(toList()).size()).isEqualTo(1);
+    assertThat(peerDiscoveryAgent2.peers().collect(toList()).size()).isEqualTo(1);
 
     final PeerConnection peerConnection = createAnonymousPeerConnection(peer.getId());
     peerDiscoveryAgent2.onDisconnect(peerConnection, DisconnectReason.REQUESTED, true);
 
-    assertThat(peerDiscoveryAgent2.getPeers().collect(toList()).size()).isEqualTo(0);
+    assertThat(peerDiscoveryAgent2.peers().collect(toList()).size()).isEqualTo(0);
   }
 
   @Test
@@ -148,19 +148,19 @@ public class PeerDiscoveryAgentTest {
 
     // Bond to peer
     bondViaIncomingPing(agent, otherNode);
-    assertThat(agent.getPeers()).hasSize(1);
+    assertThat(agent.peers()).hasSize(1);
 
     // Disconnect with innocuous reason
     blacklist.onDisconnect(wirePeer, DisconnectReason.TOO_MANY_PEERS, false);
     agent.onDisconnect(wirePeer, DisconnectReason.TOO_MANY_PEERS, false);
     // Confirm peer was removed
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
 
     // Bond again
     bondViaIncomingPing(agent, otherNode);
 
     // Check peer was allowed to connect
-    assertThat(agent.getPeers()).hasSize(1);
+    assertThat(agent.peers()).hasSize(1);
   }
 
   protected void bondViaIncomingPing(
@@ -181,19 +181,19 @@ public class PeerDiscoveryAgentTest {
 
     // Bond to peer
     bondViaIncomingPing(agent, otherNode);
-    assertThat(agent.getPeers()).hasSize(1);
+    assertThat(agent.peers()).hasSize(1);
 
     // Disconnect with problematic reason
     blacklist.onDisconnect(wirePeer, DisconnectReason.BREACH_OF_PROTOCOL, false);
     agent.onDisconnect(wirePeer, DisconnectReason.BREACH_OF_PROTOCOL, false);
     // Confirm peer was removed
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
 
     // Bond again
     bondViaIncomingPing(agent, otherNode);
 
     // Check peer was not allowed to connect
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
   }
 
   @Test
@@ -208,19 +208,19 @@ public class PeerDiscoveryAgentTest {
 
     // Bond to peer
     bondViaIncomingPing(agent, otherNode);
-    assertThat(agent.getPeers()).hasSize(1);
+    assertThat(agent.peers()).hasSize(1);
 
     // Disconnect with problematic reason
     blacklist.onDisconnect(wirePeer, DisconnectReason.BREACH_OF_PROTOCOL, true);
     agent.onDisconnect(wirePeer, DisconnectReason.BREACH_OF_PROTOCOL, true);
     // Confirm peer was removed
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
 
     // Bond again
     bondViaIncomingPing(agent, otherNode);
 
     // Check peer was allowed to connect
-    assertThat(agent.getPeers()).hasSize(1);
+    assertThat(agent.peers()).hasSize(1);
   }
 
   @Test
@@ -235,19 +235,19 @@ public class PeerDiscoveryAgentTest {
 
     // Bond to peer
     bondViaIncomingPing(agent, otherNode);
-    assertThat(agent.getPeers()).hasSize(1);
+    assertThat(agent.peers()).hasSize(1);
 
     // Disconnect
     blacklist.onDisconnect(wirePeer, DisconnectReason.INCOMPATIBLE_P2P_PROTOCOL_VERSION, false);
     agent.onDisconnect(wirePeer, DisconnectReason.INCOMPATIBLE_P2P_PROTOCOL_VERSION, false);
     // Confirm peer was removed
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
 
     // Bond again
     bondViaIncomingPing(agent, otherNode);
 
     // Check peer was not allowed to connect
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
   }
 
   @Test
@@ -262,19 +262,19 @@ public class PeerDiscoveryAgentTest {
 
     // Bond to peer
     bondViaIncomingPing(agent, otherNode);
-    assertThat(agent.getPeers()).hasSize(1);
+    assertThat(agent.peers()).hasSize(1);
 
     // Disconnect
     blacklist.onDisconnect(wirePeer, DisconnectReason.INCOMPATIBLE_P2P_PROTOCOL_VERSION, true);
     agent.onDisconnect(wirePeer, DisconnectReason.INCOMPATIBLE_P2P_PROTOCOL_VERSION, true);
     // Confirm peer was removed
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
 
     // Bond again
     bondViaIncomingPing(agent, otherNode);
 
     // Check peer was not allowed to connect
-    assertThat(agent.getPeers()).hasSize(0);
+    assertThat(agent.peers()).hasSize(0);
   }
 
   @Test

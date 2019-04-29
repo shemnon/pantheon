@@ -53,8 +53,8 @@ public class PeerDiscoveryBondingTest {
     assertThat(pong.getTo()).isEqualTo(otherAgent.getAdvertisedPeer().get().getEndpoint());
 
     // The agent considers the test peer BONDED.
-    assertThat(agent.getPeers()).hasSize(1);
-    assertThat(agent.getPeers()).allMatch(p -> p.getStatus() == PeerDiscoveryStatus.BONDED);
+    assertThat(agent.peers()).hasSize(1);
+    assertThat(agent.peers()).allMatch(p -> p.getStatus() == PeerDiscoveryStatus.BONDED);
   }
 
   @Test

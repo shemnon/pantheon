@@ -554,8 +554,8 @@ public class PeerDiscoveryController {
    *
    * @return List of peers.
    */
-  public Stream<DiscoveryPeer> getPeers() {
-    return peerTable.getAllPeers();
+  public Stream<DiscoveryPeer> peers() {
+    return peerTable.allPeers();
   }
 
   public void setRetryDelayFunction(final RetryDelayFunction retryDelayFunction) {

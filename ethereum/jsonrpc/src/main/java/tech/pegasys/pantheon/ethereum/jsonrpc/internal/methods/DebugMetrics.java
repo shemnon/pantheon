@@ -38,7 +38,7 @@ public class DebugMetrics implements JsonRpcMethod {
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
     final Map<String, Object> observations = new HashMap<>();
-    metricsSystem.getMetrics().forEach(observation -> addObservation(observations, observation));
+    metricsSystem.observations().forEach(observation -> addObservation(observations, observation));
     return new JsonRpcSuccessResponse(request.getId(), observations);
   }
 

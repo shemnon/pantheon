@@ -346,7 +346,7 @@ public final class DefaultP2PNetworkTest {
     DiscoveryPeer peer = createDiscoveryPeer(0);
     peer.setStatus(PeerDiscoveryStatus.BONDED);
 
-    doReturn(Stream.of(peer)).when(network).getDiscoveredPeers();
+    doReturn(Stream.of(peer)).when(network).discoveredPeers();
     ArgumentCaptor<DiscoveryPeer> peerCapture = ArgumentCaptor.forClass(DiscoveryPeer.class);
     doReturn(CompletableFuture.completedFuture(mock(PeerConnection.class)))
         .when(network)
@@ -367,7 +367,7 @@ public final class DefaultP2PNetworkTest {
     DiscoveryPeer peer = createDiscoveryPeer(0);
     peer.setStatus(PeerDiscoveryStatus.KNOWN);
 
-    doReturn(Stream.of(peer)).when(network).getDiscoveredPeers();
+    doReturn(Stream.of(peer)).when(network).discoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());
@@ -384,7 +384,7 @@ public final class DefaultP2PNetworkTest {
     peer.setStatus(PeerDiscoveryStatus.BONDED);
 
     doReturn(true).when(network).isConnecting(peer);
-    doReturn(Stream.of(peer)).when(network).getDiscoveredPeers();
+    doReturn(Stream.of(peer)).when(network).discoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());
@@ -401,7 +401,7 @@ public final class DefaultP2PNetworkTest {
     peer.setStatus(PeerDiscoveryStatus.BONDED);
 
     doReturn(true).when(network).isConnected(peer);
-    doReturn(Stream.of(peer)).when(network).getDiscoveredPeers();
+    doReturn(Stream.of(peer)).when(network).discoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());
@@ -425,7 +425,7 @@ public final class DefaultP2PNetworkTest {
                 })
             .collect(Collectors.toList());
 
-    doReturn(peers.stream()).when(network).getDiscoveredPeers();
+    doReturn(peers.stream()).when(network).discoveredPeers();
     ArgumentCaptor<DiscoveryPeer> peerCapture = ArgumentCaptor.forClass(DiscoveryPeer.class);
     doReturn(CompletableFuture.completedFuture(mock(PeerConnection.class)))
         .when(network)
@@ -454,7 +454,7 @@ public final class DefaultP2PNetworkTest {
                 })
             .collect(Collectors.toList());
 
-    lenient().doReturn(peers.stream()).when(network).getDiscoveredPeers();
+    lenient().doReturn(peers.stream()).when(network).discoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());

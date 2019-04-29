@@ -108,7 +108,7 @@ public class IncrementerTest {
     assertThat(localBlockchain.getChainHeadBlockNumber()).isEqualTo(targetBlock);
 
     final List<Observation> metrics =
-        metricsSystem.getMetrics(MetricCategory.SYNCHRONIZER).collect(Collectors.toList());
+        metricsSystem.observations(MetricCategory.SYNCHRONIZER).collect(Collectors.toList());
 
     // the first iteration gets the genesis block, which results in no data
     // being passed downstream.  So observed value is 2.

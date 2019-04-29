@@ -38,7 +38,7 @@ public class PeerTableTest {
       assertThat(result.getOutcome()).isEqualTo(AddOutcome.ADDED);
     }
 
-    assertThat(table.getAllPeers()).hasSize(5);
+    assertThat(table.allPeers()).hasSize(5);
   }
 
   @Test
@@ -48,7 +48,7 @@ public class PeerTableTest {
     final PeerTable.AddResult result = table.tryAdd(localPeer);
 
     assertThat(result.getOutcome()).isEqualTo(AddOutcome.SELF);
-    assertThat(table.getAllPeers()).hasSize(0);
+    assertThat(table.allPeers()).hasSize(0);
   }
 
   @Test

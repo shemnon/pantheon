@@ -129,7 +129,7 @@ public final class MockNetwork {
     }
 
     @Override
-    public Stream<DiscoveryPeer> getDiscoveredPeers() {
+    public Stream<DiscoveryPeer> discoveredPeers() {
       return Stream.empty();
     }
 
