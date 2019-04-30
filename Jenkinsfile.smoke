@@ -1,0 +1,66 @@
+#!/usr/bin/env groovy
+
+
+def images = [params.javas]
+
+if (params.javas == 'all' || !params.javas?.trim()) {
+  images = [
+    'openjdk:8',
+    'openjdk:10',
+    'openjdk:11',
+    'openjdk:12',
+    'pegasyseng/jdk:oracle-8-0.0.1',
+    'pegasyseng/jdk:oracle-11-0.0.1',
+    'pegasyseng/jdk:corretto-8-0.0.1',
+    'adoptopenjdk/openjdk8-openj9:jdk8u181-b13_openj9-0.9.0'
+ ]
+}
+
+
+for (x in images) {
+  def image = x
+
+  timeout(20) {
+    node {
+      checkout poll: false,
+          scm: [$class: 'GitSCM',
+                branches: [[name: 'master']],
+                browser: [$class: 'GithubWeb', repoUrl: 'https://github.com/pegasyseng/pantheon'],
+                doGenerateSubmoduleConfigurations: false,
+                extensions: [
+                    [$class: 'WipeWorkspace'],
+                    [
+                        $class: 'SubmoduleOption',
+                        disableSubmodules: false,
+                        parentCredentials: false,
+                        recursiveSubmodules: true,
+                        reference: '',
+                        trackingSubmodules: false],
+                    [
+                        $class: 'CloneOption',
+                        depth: 0,
+                        noTags: false,
+                        reference: '',
+                        shallow: true]],
+                submoduleCfg: [],
+                userRemoteConfigs: [[credentialsId: 'c617cf4b-975a-4ea6-a7e8-a2ba14874475', url: 'https://github.com/pegasyseng/pantheon.git']]]
+
+      docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-pegasysengci') {
+        docker.image(image).inside {
+          try {
+            stage('Build ' + image) {
+              sh './gradlew --no-daemon --parallel ' + params.gradle_options + ' build'
+            }
+          } finally {
+            archiveArtifacts '**/build/reports/**'
+            archiveArtifacts '**/build/test-results/**'
+            archiveArtifacts 'build/reports/**'
+            archiveArtifacts 'build/distributions/**'
+
+            junit '**/build/test-results/**/*.xml'
+          }
+        }
+      }
+    }
+  }
+}
