@@ -35,7 +35,7 @@ public class NoopP2PNetwork implements P2PNetwork {
   }
 
   @Override
-  public Stream<DiscoveryPeer> discoveredPeers() {
+  public Stream<DiscoveryPeer> streamDiscoveredPeers() {
     return Stream.empty();
   }
 

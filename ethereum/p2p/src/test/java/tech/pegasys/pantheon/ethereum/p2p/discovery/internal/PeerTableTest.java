@@ -38,7 +38,7 @@ public class PeerTableTest {
       assertThat(result.getOutcome()).isEqualTo(AddOutcome.ADDED);
     }
 
-    assertThat(table.allPeers()).hasSize(5);
+    assertThat(table.streamAllPeers()).hasSize(5);
   }
 
   @Test
@@ -48,7 +48,7 @@ public class PeerTableTest {
     final PeerTable.AddResult result = table.tryAdd(localPeer);
 
     assertThat(result.getOutcome()).isEqualTo(AddOutcome.SELF);
-    assertThat(table.allPeers()).hasSize(0);
+    assertThat(table.streamAllPeers()).hasSize(0);
   }
 
   @Test
@@ -73,7 +73,7 @@ public class PeerTableTest {
 
     table.tryAdd(peer);
 
-    EvictResult evictResult = table.tryEvict(peer);
+    final EvictResult evictResult = table.tryEvict(peer);
     assertThat(evictResult.getOutcome()).isEqualTo(EvictOutcome.EVICTED);
   }
 
@@ -82,7 +82,7 @@ public class PeerTableTest {
     final PeerTable table = new PeerTable(Peer.randomId(), 16);
     final DiscoveryPeer peer = helper.createDiscoveryPeer();
 
-    EvictResult evictResult = table.tryEvict(peer);
+    final EvictResult evictResult = table.tryEvict(peer);
     assertThat(evictResult.getOutcome()).isEqualTo(EvictOutcome.ABSENT);
   }
 
@@ -93,7 +93,7 @@ public class PeerTableTest {
     final List<DiscoveryPeer> otherPeers = helper.createDiscoveryPeers(5);
     otherPeers.forEach(table::tryAdd);
 
-    EvictResult evictResult = table.tryEvict(peer);
+    final EvictResult evictResult = table.tryEvict(peer);
     assertThat(evictResult.getOutcome()).isEqualTo(EvictOutcome.ABSENT);
   }
 
@@ -102,7 +102,7 @@ public class PeerTableTest {
     final DiscoveryPeer peer = helper.createDiscoveryPeer();
     final PeerTable table = new PeerTable(peer.getId(), 16);
 
-    EvictResult evictResult = table.tryEvict(peer);
+    final EvictResult evictResult = table.tryEvict(peer);
     assertThat(evictResult.getOutcome()).isEqualTo(EvictOutcome.SELF);
   }
 }

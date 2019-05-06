@@ -82,24 +82,24 @@ public class EthPeers {
   }
 
   public int availablePeerCount() {
-    return (int) availablePeers().count();
+    return (int) streamAvailablePeers().count();
   }
 
-  public Stream<EthPeer> availablePeers() {
+  public Stream<EthPeer> streamAvailablePeers() {
     return connections.values().stream().filter(EthPeer::readyForRequests);
   }
 
   public Optional<EthPeer> bestPeer() {
-    return availablePeers().max(BEST_CHAIN);
+    return streamAvailablePeers().max(BEST_CHAIN);
   }
 
   public Optional<EthPeer> idlePeer() {
-    return idlePeers().min(LEAST_TO_MOST_BUSY);
+    return streamIdlePeers().min(LEAST_TO_MOST_BUSY);
   }
 
-  private Stream<EthPeer> idlePeers() {
+  private Stream<EthPeer> streamIdlePeers() {
     final List<EthPeer> peers =
-        availablePeers()
+        streamAvailablePeers()
             .filter(p -> p.outstandingRequests() < maxOutstandingRequests)
             .collect(Collectors.toList());
     Collections.shuffle(peers);
@@ -107,7 +107,9 @@ public class EthPeers {
   }
 
   public Optional<EthPeer> idlePeer(final long withBlocksUpTo) {
-    return idlePeers().filter(p -> p.chainState().getEstimatedHeight() >= withBlocksUpTo).findAny();
+    return streamIdlePeers()
+        .filter(p -> p.chainState().getEstimatedHeight() >= withBlocksUpTo)
+        .findAny();
   }
 
   @FunctionalInterface

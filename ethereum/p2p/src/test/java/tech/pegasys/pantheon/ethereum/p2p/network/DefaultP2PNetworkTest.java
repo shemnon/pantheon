@@ -80,7 +80,7 @@ public final class DefaultP2PNetworkTest {
 
   @Mock private Blockchain blockchain;
 
-  private ArgumentCaptor<BlockAddedObserver> observerCaptor =
+  private final ArgumentCaptor<BlockAddedObserver> observerCaptor =
       ArgumentCaptor.forClass(BlockAddedObserver.class);
 
   private final Vertx vertx = Vertx.vertx();
@@ -297,7 +297,7 @@ public final class DefaultP2PNetworkTest {
     final Peer remotePeer = mockPeer("127.0.0.2", 30302);
     final PeerConnection peerConnection = mockPeerConnection(remotePeer);
 
-    CompletableFuture<PeerConnection> future = network.connect(remotePeer);
+    final CompletableFuture<PeerConnection> future = network.connect(remotePeer);
 
     assertThat(network.peerMaintainConnectionList.contains(remotePeer)).isFalse();
     assertThat(network.pendingConnections.containsKey(remotePeer)).isTrue();
@@ -328,9 +328,9 @@ public final class DefaultP2PNetworkTest {
   @Test
   public void handlePeerBondedEvent_forPeerWithNoTcpPort() {
     final DefaultP2PNetwork network = mockNetwork();
-    DiscoveryPeer peer =
+    final DiscoveryPeer peer =
         new DiscoveryPeer(generatePeerId(0), "127.0.0.1", 999, OptionalInt.empty());
-    PeerBondedEvent peerBondedEvent = new PeerBondedEvent(peer, System.currentTimeMillis());
+    final PeerBondedEvent peerBondedEvent = new PeerBondedEvent(peer, System.currentTimeMillis());
 
     network.handlePeerBondedEvent().accept(peerBondedEvent);
     verify(network, times(1)).connect(peer);
@@ -343,11 +343,11 @@ public final class DefaultP2PNetworkTest {
         mockNetwork(() -> RlpxConfiguration.create().setMaxPeers(maxPeers));
 
     doReturn(2).when(network).connectionCount();
-    DiscoveryPeer peer = createDiscoveryPeer(0);
+    final DiscoveryPeer peer = createDiscoveryPeer(0);
     peer.setStatus(PeerDiscoveryStatus.BONDED);
 
-    doReturn(Stream.of(peer)).when(network).discoveredPeers();
-    ArgumentCaptor<DiscoveryPeer> peerCapture = ArgumentCaptor.forClass(DiscoveryPeer.class);
+    doReturn(Stream.of(peer)).when(network).streamDiscoveredPeers();
+    final ArgumentCaptor<DiscoveryPeer> peerCapture = ArgumentCaptor.forClass(DiscoveryPeer.class);
     doReturn(CompletableFuture.completedFuture(mock(PeerConnection.class)))
         .when(network)
         .connect(peerCapture.capture());
@@ -364,10 +364,10 @@ public final class DefaultP2PNetworkTest {
         mockNetwork(() -> RlpxConfiguration.create().setMaxPeers(maxPeers));
 
     doReturn(2).when(network).connectionCount();
-    DiscoveryPeer peer = createDiscoveryPeer(0);
+    final DiscoveryPeer peer = createDiscoveryPeer(0);
     peer.setStatus(PeerDiscoveryStatus.KNOWN);
 
-    doReturn(Stream.of(peer)).when(network).discoveredPeers();
+    doReturn(Stream.of(peer)).when(network).streamDiscoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());
@@ -380,11 +380,11 @@ public final class DefaultP2PNetworkTest {
         mockNetwork(() -> RlpxConfiguration.create().setMaxPeers(maxPeers));
 
     doReturn(2).when(network).connectionCount();
-    DiscoveryPeer peer = createDiscoveryPeer(0);
+    final DiscoveryPeer peer = createDiscoveryPeer(0);
     peer.setStatus(PeerDiscoveryStatus.BONDED);
 
     doReturn(true).when(network).isConnecting(peer);
-    doReturn(Stream.of(peer)).when(network).discoveredPeers();
+    doReturn(Stream.of(peer)).when(network).streamDiscoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());
@@ -397,11 +397,11 @@ public final class DefaultP2PNetworkTest {
         mockNetwork(() -> RlpxConfiguration.create().setMaxPeers(maxPeers));
 
     doReturn(2).when(network).connectionCount();
-    DiscoveryPeer peer = createDiscoveryPeer(0);
+    final DiscoveryPeer peer = createDiscoveryPeer(0);
     peer.setStatus(PeerDiscoveryStatus.BONDED);
 
     doReturn(true).when(network).isConnected(peer);
-    doReturn(Stream.of(peer)).when(network).discoveredPeers();
+    doReturn(Stream.of(peer)).when(network).streamDiscoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());
@@ -414,7 +414,7 @@ public final class DefaultP2PNetworkTest {
         mockNetwork(() -> RlpxConfiguration.create().setMaxPeers(maxPeers));
 
     doReturn(2).when(network).connectionCount();
-    List<DiscoveryPeer> peers =
+    final List<DiscoveryPeer> peers =
         Stream.iterate(1, n -> n + 1)
             .limit(10)
             .map(
@@ -425,8 +425,8 @@ public final class DefaultP2PNetworkTest {
                 })
             .collect(Collectors.toList());
 
-    doReturn(peers.stream()).when(network).discoveredPeers();
-    ArgumentCaptor<DiscoveryPeer> peerCapture = ArgumentCaptor.forClass(DiscoveryPeer.class);
+    doReturn(peers.stream()).when(network).streamDiscoveredPeers();
+    final ArgumentCaptor<DiscoveryPeer> peerCapture = ArgumentCaptor.forClass(DiscoveryPeer.class);
     doReturn(CompletableFuture.completedFuture(mock(PeerConnection.class)))
         .when(network)
         .connect(peerCapture.capture());
@@ -443,7 +443,7 @@ public final class DefaultP2PNetworkTest {
         mockNetwork(() -> RlpxConfiguration.create().setMaxPeers(maxPeers));
 
     doReturn(maxPeers).when(network).connectionCount();
-    List<DiscoveryPeer> peers =
+    final List<DiscoveryPeer> peers =
         Stream.iterate(1, n -> n + 1)
             .limit(10)
             .map(
@@ -454,7 +454,7 @@ public final class DefaultP2PNetworkTest {
                 })
             .collect(Collectors.toList());
 
-    lenient().doReturn(peers.stream()).when(network).discoveredPeers();
+    lenient().doReturn(peers.stream()).when(network).streamDiscoveredPeers();
 
     network.attemptPeerConnections();
     verify(network, times(0)).connect(any());
@@ -465,7 +465,7 @@ public final class DefaultP2PNetworkTest {
   }
 
   private BytesValue generatePeerId(final int seed) {
-    BlockDataGenerator gen = new BlockDataGenerator(seed);
+    final BlockDataGenerator gen = new BlockDataGenerator(seed);
     return gen.bytesValue(DefaultPeer.PEER_ID_SIZE);
   }
 
@@ -507,7 +507,7 @@ public final class DefaultP2PNetworkTest {
   }
 
   private DefaultP2PNetwork mockNetwork(final Supplier<RlpxConfiguration> rlpxConfig) {
-    DefaultP2PNetwork network = spy(network(rlpxConfig));
+    final DefaultP2PNetwork network = spy(network(rlpxConfig));
     lenient().doReturn(new CompletableFuture<>()).when(network).connect(any());
     return network;
   }

@@ -59,7 +59,7 @@ public class NetworkingServiceLifecycleTest {
       assertEquals(config.getDiscovery().getAdvertisedHost(), enode.getIp());
       assertThat(udpPort).isNotZero();
       assertThat(tcpPort).isNotZero();
-      assertThat(service.discoveredPeers()).hasSize(0);
+      assertThat(service.streamDiscoveredPeers()).hasSize(0);
     }
   }
 
@@ -146,7 +146,7 @@ public class NetworkingServiceLifecycleTest {
   @Test
   public void createP2PNetwork_NoActivePeers() throws IOException {
     try (final P2PNetwork agent = builder().build()) {
-      assertTrue(agent.discoveredPeers().collect(toList()).isEmpty());
+      assertTrue(agent.streamDiscoveredPeers().collect(toList()).isEmpty());
       assertEquals(0, agent.getPeers().size());
     }
   }

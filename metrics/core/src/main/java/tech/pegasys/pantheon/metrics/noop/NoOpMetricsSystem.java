@@ -88,12 +88,12 @@ public class NoOpMetricsSystem implements MetricsSystem {
       final Supplier<Double> valueSupplier) {}
 
   @Override
-  public Stream<Observation> observations(final MetricCategory category) {
+  public Stream<Observation> streamObservations(final MetricCategory category) {
     return Stream.empty();
   }
 
   @Override
-  public Stream<Observation> observations() {
+  public Stream<Observation> streamObservations() {
     return Stream.empty();
   }
 

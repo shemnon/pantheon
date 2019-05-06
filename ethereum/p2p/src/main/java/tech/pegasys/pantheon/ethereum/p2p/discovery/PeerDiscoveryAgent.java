@@ -157,7 +157,7 @@ public abstract class PeerDiscoveryAgent implements DisconnectCallback {
   }
 
   private void startController() {
-    PeerDiscoveryController controller = createController();
+    final PeerDiscoveryController controller = createController();
     this.controller = Optional.of(controller);
     controller.start();
   }
@@ -195,8 +195,8 @@ public abstract class PeerDiscoveryAgent implements DisconnectCallback {
     }
 
     // Notify the peer controller.
-    String host = sourceEndpoint.getHost();
-    int port = sourceEndpoint.getUdpPort();
+    final String host = sourceEndpoint.getHost();
+    final int port = sourceEndpoint.getUdpPort();
     final DiscoveryPeer peer = new DiscoveryPeer(packet.getNodeId(), host, port, tcpPort);
     controller.ifPresent(c -> c.onMessage(packet, peer));
   }
@@ -228,8 +228,8 @@ public abstract class PeerDiscoveryAgent implements DisconnectCallback {
             });
   }
 
-  public Stream<DiscoveryPeer> discoveredPeers() {
-    return controller.map(PeerDiscoveryController::discoveredPeers).orElse(Stream.empty());
+  public Stream<DiscoveryPeer> streamDiscoveredPeers() {
+    return controller.map(PeerDiscoveryController::streamDiscoveredPeers).orElse(Stream.empty());
   }
 
   public Optional<DiscoveryPeer> getAdvertisedPeer() {
