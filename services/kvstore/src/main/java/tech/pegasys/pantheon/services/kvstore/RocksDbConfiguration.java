@@ -27,6 +27,7 @@ public class RocksDbConfiguration {
   private final long writeBufferSize;
   private final int writeBuffersMax;
   private final int witeBuffersToMergeMin;
+  private final boolean cacheIndexAndFilterBlocks;
 
   public RocksDbConfiguration(
       final Path databaseDir,
@@ -37,7 +38,8 @@ public class RocksDbConfiguration {
       final String label,
       final long writeBufferSize,
       final int writeBuffersMax,
-      final int witeBuffersToMergeMin) {
+      final int witeBuffersToMergeMin,
+      final boolean cacheIndexAndFilterBlocks) {
     this.maxBackgroundCompactions = maxBackgroundCompactions;
     this.backgroundThreadCount = backgroundThreadCount;
     this.databaseDir = databaseDir;
@@ -47,6 +49,7 @@ public class RocksDbConfiguration {
     this.writeBufferSize = writeBufferSize;
     this.writeBuffersMax = writeBuffersMax;
     this.witeBuffersToMergeMin = witeBuffersToMergeMin;
+    this.cacheIndexAndFilterBlocks = cacheIndexAndFilterBlocks;
   }
 
   public Path getDatabaseDir() {
@@ -85,6 +88,10 @@ public class RocksDbConfiguration {
     return witeBuffersToMergeMin;
   }
 
+  public boolean isCacheIndexAndFilterBlocks() {
+    return cacheIndexAndFilterBlocks;
+  }
+
   public static class Builder {
 
     Path databaseDir;
@@ -101,7 +108,7 @@ public class RocksDbConfiguration {
     @CommandLine.Option(
         names = {"--Xrocksdb-cache-capacity"},
         hidden = true,
-        defaultValue = "3221225472",
+        defaultValue = "3221225472", // 3GiB
         paramLabel = "<LONG>",
         description = "Cache capacity of RocksDB (default: ${DEFAULT-VALUE})")
     long cacheCapacity;
@@ -109,7 +116,7 @@ public class RocksDbConfiguration {
     @CommandLine.Option(
         names = {"--Xrocksdb-write-buffer-size"},
         hidden = true,
-        defaultValue = "67108864",
+        defaultValue = "67108864", // 64MB
         paramLabel = "<LONG>",
         description = "Size of the WriteBuffer in bytes for RocksDB (default: ${DEFAULT-VALUE})")
     long writeBufferSize;
@@ -130,6 +137,15 @@ public class RocksDbConfiguration {
         description =
             "Minumum number of write buffers to merge RocksDB (default: ${DEFAULT-VALUE})")
     int writeBuffersToMergeMin;
+
+    @CommandLine.Option(
+        names = {"--Xrocksdb-cache-index-and-filter-blocks"},
+        hidden = true,
+        defaultValue = "true",
+        paramLabel = "<BOOLEAN>",
+        description =
+            "Should RocksDB cache the index and filter blocks (default: ${DEFAULT-VALUE})")
+    boolean cacheIndexAndFilterBlocks;
 
     @CommandLine.Option(
         names = {"--Xrocksdb-max-background-compactions"},
@@ -183,6 +199,11 @@ public class RocksDbConfiguration {
       return this;
     }
 
+    public Builder cacheIndexAndFilterBlocks(final boolean cacheIndexAndFilterBlocks) {
+      this.cacheIndexAndFilterBlocks = cacheIndexAndFilterBlocks;
+      return this;
+    }
+
     public Builder maxBackgroundCompactions(final int maxBackgroundCompactions) {
       this.maxBackgroundCompactions = maxBackgroundCompactions;
       return this;
@@ -203,7 +224,8 @@ public class RocksDbConfiguration {
           label,
           writeBufferSize,
           writeBuffersMax,
-          writeBuffersToMergeMin);
+          writeBuffersToMergeMin,
+          cacheIndexAndFilterBlocks);
     }
   }
 }

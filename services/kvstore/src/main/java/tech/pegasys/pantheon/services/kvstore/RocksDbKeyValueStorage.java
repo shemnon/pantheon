@@ -12,6 +12,9 @@
  */
 package tech.pegasys.pantheon.services.kvstore;
 
+import static org.rocksdb.util.SizeUnit.KB;
+import static org.rocksdb.util.SizeUnit.MB;
+
 import tech.pegasys.pantheon.metrics.Counter;
 import tech.pegasys.pantheon.metrics.MetricCategory;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
@@ -65,21 +68,21 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     try {
       stats = new Statistics();
 
-
       options =
           new Options()
               .setCreateIfMissing(true)
               .setMaxOpenFiles(rocksDbConfiguration.getMaxOpenFiles())
-              .setTableFormatConfig(new BlockBasedTableConfig()
-                  .setBlockSize(16 * 1024)
-                  .setPinL0FilterAndIndexBlocksInCache(true)
-                  .setCacheIndexAndFilterBlocks(true) // make this an --X option
-                  .setFilter(new BloomFilter(10, true))
-                  .setFormatVersion(2)
-                  .setBlockCache(new LRUCache(rocksDbConfiguration.getCacheCapacity()))
-              )
-              .optimizeForPointLookup(rocksDbConfiguration.getCacheCapacity() >> 20) // API wants MBs
-              .setWriteBufferSize(rocksDbConfiguration.getWriteBufferSize()) // 64KiB
+              .setTableFormatConfig(
+                  new BlockBasedTableConfig()
+                      .setBlockSize(16 * KB)
+                      .setPinL0FilterAndIndexBlocksInCache(true)
+                      .setCacheIndexAndFilterBlocks(
+                          rocksDbConfiguration.isCacheIndexAndFilterBlocks())
+                      .setFilter(new BloomFilter(10, true))
+                      .setFormatVersion(2)
+                      .setBlockCache(new LRUCache(rocksDbConfiguration.getCacheCapacity())))
+              .optimizeForPointLookup(rocksDbConfiguration.getCacheCapacity() / MB) // API wants MBs
+              .setWriteBufferSize(rocksDbConfiguration.getWriteBufferSize())
               .setMaxWriteBufferNumber(rocksDbConfiguration.getWriteBuffersMax())
               .setMinWriteBufferNumberToMerge(rocksDbConfiguration.getWiteBuffersToMergeMin())
               .setMaxBackgroundCompactions(rocksDbConfiguration.getMaxBackgroundCompactions())
