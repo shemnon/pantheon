@@ -12,37 +12,41 @@
  */
 package tech.pegasys.pantheon.services.kvstore;
 
-import tech.pegasys.pantheon.services.util.RocksDbUtil;
-
 import java.nio.file.Path;
 
-import org.rocksdb.BlockBasedTableConfig;
-import org.rocksdb.LRUCache;
 import picocli.CommandLine;
 
 public class RocksDbConfiguration {
 
   private final Path databaseDir;
   private final int maxOpenFiles;
-  private final BlockBasedTableConfig blockBasedTableConfig;
+  private final long cacheCapacity;
   private final String label;
   private final int maxBackgroundCompactions;
   private final int backgroundThreadCount;
+  private final long writeBufferSize;
+  private final int writeBuffersMax;
+  private final int witeBuffersToMergeMin;
 
   public RocksDbConfiguration(
       final Path databaseDir,
       final int maxOpenFiles,
       final int maxBackgroundCompactions,
       final int backgroundThreadCount,
-      final LRUCache cache,
-      final String label) {
+      final long cacheCapacity,
+      final String label,
+      final long writeBufferSize,
+      final int writeBuffersMax,
+      final int witeBuffersToMergeMin) {
     this.maxBackgroundCompactions = maxBackgroundCompactions;
     this.backgroundThreadCount = backgroundThreadCount;
-    RocksDbUtil.loadNativeLibrary();
     this.databaseDir = databaseDir;
     this.maxOpenFiles = maxOpenFiles;
-    this.blockBasedTableConfig = new BlockBasedTableConfig().setBlockCache(cache);
+    this.cacheCapacity = cacheCapacity;
     this.label = label;
+    this.writeBufferSize = writeBufferSize;
+    this.writeBuffersMax = writeBuffersMax;
+    this.witeBuffersToMergeMin = witeBuffersToMergeMin;
   }
 
   public Path getDatabaseDir() {
@@ -61,18 +65,29 @@ public class RocksDbConfiguration {
     return backgroundThreadCount;
   }
 
-  public BlockBasedTableConfig getBlockBasedTableConfig() {
-    return blockBasedTableConfig;
+  public long getCacheCapacity() {
+    return cacheCapacity;
   }
 
   public String getLabel() {
     return label;
   }
 
+  public long getWriteBufferSize() {
+    return writeBufferSize;
+  }
+
+  public int getWriteBuffersMax() {
+    return writeBuffersMax;
+  }
+
+  public int getWiteBuffersToMergeMin() {
+    return witeBuffersToMergeMin;
+  }
+
   public static class Builder {
 
     Path databaseDir;
-    LRUCache cache = null;
     String label = "blockchain";
 
     @CommandLine.Option(
@@ -86,10 +101,35 @@ public class RocksDbConfiguration {
     @CommandLine.Option(
         names = {"--Xrocksdb-cache-capacity"},
         hidden = true,
-        defaultValue = "8388608",
+        defaultValue = "3221225472",
         paramLabel = "<LONG>",
         description = "Cache capacity of RocksDB (default: ${DEFAULT-VALUE})")
     long cacheCapacity;
+
+    @CommandLine.Option(
+        names = {"--Xrocksdb-write-buffer-size"},
+        hidden = true,
+        defaultValue = "67108864",
+        paramLabel = "<LONG>",
+        description = "Size of the WriteBuffer in bytes for RocksDB (default: ${DEFAULT-VALUE})")
+    long writeBufferSize;
+
+    @CommandLine.Option(
+        names = {"--Xrocksdb-write-buffers-max"},
+        hidden = true,
+        defaultValue = "6",
+        paramLabel = "<INTEGER>",
+        description = "Maximum number of write buffers for RocksDB (default: ${DEFAULT-VALUE})")
+    int writeBuffersMax;
+
+    @CommandLine.Option(
+        names = {"--Xrocksdb-write-buffers-to-merge-min"},
+        hidden = true,
+        defaultValue = "2",
+        paramLabel = "<INTEGER>",
+        description =
+            "Minumum number of write buffers to merge RocksDB (default: ${DEFAULT-VALUE})")
+    int writeBuffersToMergeMin;
 
     @CommandLine.Option(
         names = {"--Xrocksdb-max-background-compactions"},
@@ -128,6 +168,21 @@ public class RocksDbConfiguration {
       return this;
     }
 
+    public Builder writeBufferSize(final long writeBufferSize) {
+      this.writeBufferSize = writeBufferSize;
+      return this;
+    }
+
+    public Builder writeBuffersMax(final int writeBuffersMax) {
+      this.writeBuffersMax = writeBuffersMax;
+      return this;
+    }
+
+    public Builder writeBuffersToMergeMin(final int writeBuffersToMergeMin) {
+      this.writeBuffersToMergeMin = writeBuffersToMergeMin;
+      return this;
+    }
+
     public Builder maxBackgroundCompactions(final int maxBackgroundCompactions) {
       this.maxBackgroundCompactions = maxBackgroundCompactions;
       return this;
@@ -138,17 +193,17 @@ public class RocksDbConfiguration {
       return this;
     }
 
-    private LRUCache createCache(final long cacheCapacity) {
-      RocksDbUtil.loadNativeLibrary();
-      return new LRUCache(cacheCapacity);
-    }
-
     public RocksDbConfiguration build() {
-      if (cache == null) {
-        cache = createCache(cacheCapacity);
-      }
       return new RocksDbConfiguration(
-          databaseDir, maxOpenFiles, maxBackgroundCompactions, backgroundThreadCount, cache, label);
+          databaseDir,
+          maxOpenFiles,
+          maxBackgroundCompactions,
+          backgroundThreadCount,
+          cacheCapacity,
+          label,
+          writeBufferSize,
+          writeBuffersMax,
+          writeBuffersToMergeMin);
     }
   }
 }

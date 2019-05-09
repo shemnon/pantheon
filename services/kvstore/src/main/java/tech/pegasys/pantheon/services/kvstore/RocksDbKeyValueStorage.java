@@ -27,6 +27,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
+import org.rocksdb.LRUCache;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
@@ -61,12 +64,26 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     RocksDbUtil.loadNativeLibrary();
     try {
       stats = new Statistics();
+
+
       options =
           new Options()
               .setCreateIfMissing(true)
               .setMaxOpenFiles(rocksDbConfiguration.getMaxOpenFiles())
-              .setTableFormatConfig(rocksDbConfiguration.getBlockBasedTableConfig())
+              .setTableFormatConfig(new BlockBasedTableConfig()
+                  .setBlockSize(16 * 1024)
+                  .setPinL0FilterAndIndexBlocksInCache(true)
+                  .setCacheIndexAndFilterBlocks(true) // make this an --X option
+                  .setFilter(new BloomFilter(10, true))
+                  .setFormatVersion(2)
+                  .setBlockCache(new LRUCache(rocksDbConfiguration.getCacheCapacity()))
+              )
+              .optimizeForPointLookup(rocksDbConfiguration.getCacheCapacity() >> 20) // API wants MBs
+              .setWriteBufferSize(rocksDbConfiguration.getWriteBufferSize()) // 64KiB
+              .setMaxWriteBufferNumber(rocksDbConfiguration.getWriteBuffersMax())
+              .setMinWriteBufferNumberToMerge(rocksDbConfiguration.getWiteBuffersToMergeMin())
               .setMaxBackgroundCompactions(rocksDbConfiguration.getMaxBackgroundCompactions())
+              .setIncreaseParallelism(Runtime.getRuntime().availableProcessors())
               .setStatistics(stats);
       options.getEnv().setBackgroundThreads(rocksDbConfiguration.getBackgroundThreadCount());
 
