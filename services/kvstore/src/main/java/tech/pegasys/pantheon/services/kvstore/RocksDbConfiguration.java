@@ -12,19 +12,15 @@
  */
 package tech.pegasys.pantheon.services.kvstore;
 
-import tech.pegasys.pantheon.services.util.RocksDbUtil;
-
 import java.nio.file.Path;
 
-import org.rocksdb.BlockBasedTableConfig;
-import org.rocksdb.LRUCache;
 import picocli.CommandLine;
 
 public class RocksDbConfiguration {
 
   private final Path databaseDir;
   private final int maxOpenFiles;
-  private final BlockBasedTableConfig blockBasedTableConfig;
+  private final long cacheCapacity;
   private final String label;
   private final int maxBackgroundCompactions;
   private final int backgroundThreadCount;
@@ -34,14 +30,13 @@ public class RocksDbConfiguration {
       final int maxOpenFiles,
       final int maxBackgroundCompactions,
       final int backgroundThreadCount,
-      final LRUCache cache,
+      final long cacheCapacity,
       final String label) {
     this.maxBackgroundCompactions = maxBackgroundCompactions;
     this.backgroundThreadCount = backgroundThreadCount;
-    RocksDbUtil.loadNativeLibrary();
     this.databaseDir = databaseDir;
     this.maxOpenFiles = maxOpenFiles;
-    this.blockBasedTableConfig = new BlockBasedTableConfig().setBlockCache(cache);
+    this.cacheCapacity = cacheCapacity;
     this.label = label;
   }
 
@@ -49,30 +44,29 @@ public class RocksDbConfiguration {
     return databaseDir;
   }
 
-  public int getMaxOpenFiles() {
+  int getMaxOpenFiles() {
     return maxOpenFiles;
   }
 
-  public int getMaxBackgroundCompactions() {
+  int getMaxBackgroundCompactions() {
     return maxBackgroundCompactions;
   }
 
-  public int getBackgroundThreadCount() {
+  int getBackgroundThreadCount() {
     return backgroundThreadCount;
   }
 
-  public BlockBasedTableConfig getBlockBasedTableConfig() {
-    return blockBasedTableConfig;
+  long getCacheCapacity() {
+    return cacheCapacity;
   }
 
-  public String getLabel() {
+  String getLabel() {
     return label;
   }
 
   public static class Builder {
 
     Path databaseDir;
-    LRUCache cache = null;
     String label = "blockchain";
 
     @CommandLine.Option(
@@ -138,17 +132,14 @@ public class RocksDbConfiguration {
       return this;
     }
 
-    private LRUCache createCache(final long cacheCapacity) {
-      RocksDbUtil.loadNativeLibrary();
-      return new LRUCache(cacheCapacity);
-    }
-
     public RocksDbConfiguration build() {
-      if (cache == null) {
-        cache = createCache(cacheCapacity);
-      }
       return new RocksDbConfiguration(
-          databaseDir, maxOpenFiles, maxBackgroundCompactions, backgroundThreadCount, cache, label);
+          databaseDir,
+          maxOpenFiles,
+          maxBackgroundCompactions,
+          backgroundThreadCount,
+          cacheCapacity,
+          label);
     }
   }
 }

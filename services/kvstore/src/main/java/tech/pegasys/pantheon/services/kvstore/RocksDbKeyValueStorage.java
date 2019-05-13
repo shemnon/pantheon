@@ -12,6 +12,9 @@
  */
 package tech.pegasys.pantheon.services.kvstore;
 
+import static org.rocksdb.util.SizeUnit.KB;
+import static org.rocksdb.util.SizeUnit.MB;
+
 import tech.pegasys.pantheon.metrics.Counter;
 import tech.pegasys.pantheon.metrics.MetricCategory;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
@@ -27,6 +30,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
+import org.rocksdb.LRUCache;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
@@ -61,11 +67,14 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     RocksDbUtil.loadNativeLibrary();
     try {
       stats = new Statistics();
+
       options =
           new Options()
               .setCreateIfMissing(true)
               .setMaxOpenFiles(rocksDbConfiguration.getMaxOpenFiles())
-              .setTableFormatConfig(rocksDbConfiguration.getBlockBasedTableConfig())
+              .setTableFormatConfig(
+                  new BlockBasedTableConfig()
+                      .setBlockCache(new LRUCache(rocksDbConfiguration.getCacheCapacity())))
               .setMaxBackgroundCompactions(rocksDbConfiguration.getMaxBackgroundCompactions())
               .setStatistics(stats);
       options.getEnv().setBackgroundThreads(rocksDbConfiguration.getBackgroundThreadCount());
