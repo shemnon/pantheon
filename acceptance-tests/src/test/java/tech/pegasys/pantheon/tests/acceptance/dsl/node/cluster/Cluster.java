@@ -53,7 +53,10 @@ public class Cluster implements AutoCloseable {
     this(clusterConfiguration, net, PantheonNodeRunner.instance());
   }
 
-  public Cluster(final ClusterConfiguration clusterConfiguration, final Net net, final PantheonNodeRunner pantheonNodeRunner) {
+  public Cluster(
+      final ClusterConfiguration clusterConfiguration,
+      final Net net,
+      final PantheonNodeRunner pantheonNodeRunner) {
     this.clusterConfiguration = clusterConfiguration;
     this.net = net;
     this.pantheonNodeRunner = pantheonNodeRunner;
