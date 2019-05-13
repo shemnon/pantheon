@@ -72,9 +72,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
           new Options()
               .setCreateIfMissing(true)
               .setMaxOpenFiles(rocksDbConfiguration.getMaxOpenFiles())
-              .setTableFormatConfig(
-                  new BlockBasedTableConfig()
-                      .setBlockCache(new LRUCache(rocksDbConfiguration.getCacheCapacity())))
+              .optimizeForPointLookup(rocksDbConfiguration.getCacheCapacity() / MB) // API wants MBs
               .setMaxBackgroundCompactions(rocksDbConfiguration.getMaxBackgroundCompactions())
               .setStatistics(stats);
       options.getEnv().setBackgroundThreads(rocksDbConfiguration.getBackgroundThreadCount());
