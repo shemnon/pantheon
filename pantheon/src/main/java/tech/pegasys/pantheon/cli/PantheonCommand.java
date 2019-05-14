@@ -65,6 +65,7 @@ import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
 import tech.pegasys.pantheon.metrics.prometheus.PrometheusMetricsSystem;
 import tech.pegasys.pantheon.metrics.vertx.VertxMetricsAdapterFactory;
+import tech.pegasys.pantheon.services.kvstore.HaloDbConfiguration;
 import tech.pegasys.pantheon.plugins.internal.PantheonPluginContextImpl;
 import tech.pegasys.pantheon.plugins.services.PicoCLIOptions;
 import tech.pegasys.pantheon.services.kvstore.RocksDbConfiguration;
@@ -135,6 +136,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
   private final SynchronizerConfiguration.Builder synchronizerConfigurationBuilder;
   private final EthereumWireProtocolConfiguration.Builder ethereumWireConfigurationBuilder;
   private final RocksDbConfiguration.Builder rocksDbConfigurationBuilder;
+  private final HaloDbConfiguration.Builder haloDbConfigurationBuilder;
   private final RunnerBuilder runnerBuilder;
   private final PantheonController.Builder controllerBuilderFactory;
   private final PantheonPluginContextImpl pantheonPluginContext;
@@ -550,11 +552,11 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
 
     @Override
     public List<Object> handleParseException(final ParameterException ex, final String[] args) {
-      if (logLevel != null && Level.DEBUG.isMoreSpecificThan(logLevel)) {
+//      if (logLevel != null && Level.DEBUG.isMoreSpecificThan(logLevel)) {
         ex.printStackTrace(err());
-      } else {
-        err().println(ex.getMessage());
-      }
+//      } else {
+//        err().println(ex.getMessage());
+//      }
       if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, err())) {
         ex.getCommandLine().usage(err(), ansi());
       }
@@ -586,6 +588,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
       final SynchronizerConfiguration.Builder synchronizerConfigurationBuilder,
       final EthereumWireProtocolConfiguration.Builder ethereumWireConfigurationBuilder,
       final RocksDbConfiguration.Builder rocksDbConfigurationBuilder,
+      final HaloDbConfiguration.Builder haloDbConfigurationBuilder,
       final PantheonPluginContextImpl pantheonPluginContext) {
     this.logger = logger;
     this.blockImporter = blockImporter;
@@ -594,6 +597,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
     this.synchronizerConfigurationBuilder = synchronizerConfigurationBuilder;
     this.ethereumWireConfigurationBuilder = ethereumWireConfigurationBuilder;
     this.rocksDbConfigurationBuilder = rocksDbConfigurationBuilder;
+    this.haloDbConfigurationBuilder = haloDbConfigurationBuilder;
     this.pantheonPluginContext = pantheonPluginContext;
   }
 
@@ -641,6 +645,8 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
             synchronizerConfigurationBuilder,
             "RocksDB",
             rocksDbConfigurationBuilder,
+            "HaloDB",
+            haloDbConfigurationBuilder,
             "Ethereum Wire Protocol",
             ethereumWireConfigurationBuilder));
 
@@ -774,6 +780,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
           .synchronizerConfiguration(buildSyncConfig())
           .ethereumWireProtocolConfiguration(ethereumWireConfigurationBuilder.build())
           .rocksDbConfiguration(buildRocksDbConfiguration())
+          .haloDbConfiguration(buildHaloDbConfiguration())
           .dataDirectory(dataDir())
           .miningParameters(
               new MiningParameters(coinbase, minTransactionGasPrice, extraData, isMiningEnabled))
@@ -1031,6 +1038,10 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
 
   private RocksDbConfiguration buildRocksDbConfiguration() {
     return rocksDbConfigurationBuilder.databaseDir(dataDir().resolve(DATABASE_PATH)).build();
+  }
+
+  private HaloDbConfiguration buildHaloDbConfiguration() {
+    return haloDbConfigurationBuilder.databaseDir(dataDir().resolve(DATABASE_PATH)).build();
   }
 
   // Blockchain synchronisation from peers.

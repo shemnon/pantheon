@@ -42,9 +42,10 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethodFact
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.p2p.config.SubProtocolConfiguration;
 import tech.pegasys.pantheon.ethereum.storage.StorageProvider;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.RocksDbStorageProvider;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.HaloDbStorageProvider;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
+import tech.pegasys.pantheon.services.kvstore.HaloDbConfiguration;
 import tech.pegasys.pantheon.services.kvstore.RocksDbConfiguration;
 
 import java.io.File;
@@ -77,10 +78,17 @@ public abstract class PantheonControllerBuilder<C> {
   private StorageProvider storageProvider;
   private final List<Runnable> shutdownActions = new ArrayList<>();
   private RocksDbConfiguration rocksDbConfiguration;
+  private HaloDbConfiguration haloDbConfiguration;
 
   public PantheonControllerBuilder<C> rocksDbConfiguration(
       final RocksDbConfiguration rocksDbConfiguration) {
     this.rocksDbConfiguration = rocksDbConfiguration;
+    return this;
+  }
+
+  public PantheonControllerBuilder<C> haloDbConfiguration(
+      final HaloDbConfiguration haloDbConfiguration) {
+    this.haloDbConfiguration = haloDbConfiguration;
     return this;
   }
 
@@ -178,8 +186,11 @@ public abstract class PantheonControllerBuilder<C> {
         "Must supply either storage provider or RocksDB confguration, but not both");
     privacyParameters.setSigningKeyPair(nodeKeys);
 
-    if (storageProvider == null && rocksDbConfiguration != null) {
-      storageProvider = RocksDbStorageProvider.create(rocksDbConfiguration, metricsSystem);
+    //    if (storageProvider == null && rocksDbConfiguration != null) {
+    //      storageProvider = RocksDbStorageProvider.create(rocksDbConfiguration, metricsSystem);
+    //    }
+    if (storageProvider == null && haloDbConfiguration != null) {
+      storageProvider = HaloDbStorageProvider.create(haloDbConfiguration, metricsSystem);
     }
 
     prepForBuild();

@@ -30,6 +30,7 @@ dependencies {
   implementation project(':services:util')
 
   implementation 'com.google.guava:guava'
+  implementation 'com.oath.halodb:halodb'
   implementation 'io.prometheus:simpleclient'
   implementation 'info.picocli:picocli'
   implementation 'org.apache.logging.log4j:log4j-api'

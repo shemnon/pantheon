@@ -29,6 +29,8 @@ dependencyManagement {
     
     dependency 'com.google.guava:guava:27.1-jre'
 
+    dependency 'com.oath.halodb:halodb:0.5.1'
+
     dependency 'com.squareup.okhttp3:okhttp:3.13.1'
 
     dependency 'commons-cli:commons-cli:1.4'

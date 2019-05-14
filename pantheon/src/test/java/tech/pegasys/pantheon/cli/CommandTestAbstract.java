@@ -32,6 +32,7 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration;
 import tech.pegasys.pantheon.ethereum.jsonrpc.websocket.WebSocketConfiguration;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
+import tech.pegasys.pantheon.services.kvstore.HaloDbConfiguration;
 import tech.pegasys.pantheon.plugins.internal.PantheonPluginContextImpl;
 import tech.pegasys.pantheon.services.kvstore.RocksDbConfiguration;
 import tech.pegasys.pantheon.util.BlockImporter;
@@ -83,6 +84,8 @@ public abstract class CommandTestAbstract {
   @Mock SynchronizerConfiguration mockSyncConf;
   @Mock RocksDbConfiguration.Builder mockRocksDbConfBuilder;
   @Mock RocksDbConfiguration mockRocksDbConf;
+  @Mock HaloDbConfiguration.Builder mockHaloDbConfBuilder;
+  @Mock HaloDbConfiguration mockHaloDbConf;
   @Mock PantheonController<Object> mockController;
   @Mock BlockImporter mockBlockImporter;
   @Mock Logger mockLogger;
@@ -119,6 +122,7 @@ public abstract class CommandTestAbstract {
     when(mockControllerBuilder.ethereumWireProtocolConfiguration(any()))
         .thenReturn(mockControllerBuilder);
     when(mockControllerBuilder.rocksDbConfiguration(any())).thenReturn(mockControllerBuilder);
+    when(mockControllerBuilder.haloDbConfiguration(any())).thenReturn(mockControllerBuilder);
     when(mockControllerBuilder.dataDirectory(any())).thenReturn(mockControllerBuilder);
     when(mockControllerBuilder.miningParameters(any())).thenReturn(mockControllerBuilder);
     when(mockControllerBuilder.maxPendingTransactions(anyInt())).thenReturn(mockControllerBuilder);
@@ -139,6 +143,9 @@ public abstract class CommandTestAbstract {
 
     when(mockRocksDbConfBuilder.databaseDir(any())).thenReturn(mockRocksDbConfBuilder);
     when(mockRocksDbConfBuilder.build()).thenReturn(mockRocksDbConf);
+
+    when(mockHaloDbConfBuilder.databaseDir(any())).thenReturn(mockHaloDbConfBuilder);
+    when(mockHaloDbConfBuilder.build()).thenReturn(mockHaloDbConf);
 
     when(mockRunnerBuilder.vertx(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.pantheonController(any())).thenReturn(mockRunnerBuilder);
@@ -199,6 +206,7 @@ public abstract class CommandTestAbstract {
             mockSyncConfBuilder,
             mockEthereumWireProtocolConfigurationBuilder,
             mockRocksDbConfBuilder,
+            mockHaloDbConfBuilder,
             keyLoader,
             mockPantheonPluginContext);
 
@@ -229,6 +237,7 @@ public abstract class CommandTestAbstract {
         final SynchronizerConfiguration.Builder mockSyncConfBuilder,
         final EthereumWireProtocolConfiguration.Builder mockEthereumConfigurationMockBuilder,
         final RocksDbConfiguration.Builder mockRocksDbConfBuilder,
+        final HaloDbConfiguration.Builder mockHaloDbConfBuilder,
         final KeyLoader keyLoader,
         final PantheonPluginContextImpl pantheonPluginContext) {
       super(
@@ -239,6 +248,7 @@ public abstract class CommandTestAbstract {
           mockSyncConfBuilder,
           mockEthereumConfigurationMockBuilder,
           mockRocksDbConfBuilder,
+          mockHaloDbConfBuilder
           pantheonPluginContext);
       this.keyLoader = keyLoader;
     }
