@@ -546,7 +546,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
   private final Integer pendingTxRetentionPeriod = PendingTransactions.DEFAULT_TX_RETENTION_HOURS;
 
   // Inner class so we can get to loggingLevel.
-  public class PantheonExceptionHandler
+  public static class PantheonExceptionHandler
       extends CommandLine.AbstractHandler<List<Object>, PantheonExceptionHandler>
       implements CommandLine.IExceptionHandler2<List<Object>> {
 
