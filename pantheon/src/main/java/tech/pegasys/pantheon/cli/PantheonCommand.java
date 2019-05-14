@@ -775,12 +775,19 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
 
   PantheonController<?> buildController() {
     try {
+      HaloDbConfiguration haloDbConfiguration = buildHaloDbConfiguration();
+      RocksDbConfiguration rocksDbConfiguration = buildRocksDbConfiguration();
+      if (haloDbConfiguration.isEnabled()) {
+        rocksDbConfiguration = null;
+      } else {
+        haloDbConfiguration = null;
+      }
       return controllerBuilderFactory
           .fromEthNetworkConfig(updateNetworkConfig(getNetwork()))
           .synchronizerConfiguration(buildSyncConfig())
           .ethereumWireProtocolConfiguration(ethereumWireConfigurationBuilder.build())
-          .rocksDbConfiguration(buildRocksDbConfiguration())
-          .haloDbConfiguration(buildHaloDbConfiguration())
+          .rocksDbConfiguration(rocksDbConfiguration)
+          .haloDbConfiguration(haloDbConfiguration)
           .dataDirectory(dataDir())
           .miningParameters(
               new MiningParameters(coinbase, minTransactionGasPrice, extraData, isMiningEnabled))
