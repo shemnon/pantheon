@@ -12,52 +12,105 @@
  */
 package tech.pegasys.pantheon.services.kvstore;
 
-import tech.pegasys.pantheon.services.util.RocksDbUtil;
-
 import java.nio.file.Path;
 
 import picocli.CommandLine;
 
 public class HaloDbConfiguration {
 
+  private final boolean enable;
   private final Path databaseDir;
-  private final int maxOpenFiles;
   private final String label;
-  private final int maxBackgroundCompactions;
-  private final int backgroundThreadCount;
+  private final int maxFileSize;
+  private final long flushDataSizeBytes;
+  private final double compationThresholdPerFile;
+  private final int compactionJobRate;
+  private final int numberOfRecords;
+  private final boolean cleanUpTombstonesDuringOpen;
+  private final boolean cleanUpInMemoryIndexOnClose;
+  private final boolean useMemoryPool;
+  private final int memoryPoolChunkSize;
+  private final int fixedKeySize;
 
   public HaloDbConfiguration(
+      final boolean enable,
       final Path databaseDir,
-      final int maxOpenFiles,
-      final int maxBackgroundCompactions,
-      final int backgroundThreadCount,
-      final String label) {
-    this.maxBackgroundCompactions = maxBackgroundCompactions;
-    this.backgroundThreadCount = backgroundThreadCount;
-    RocksDbUtil.loadNativeLibrary();
+      final String label,
+      final int maxFileSize,
+      final long flushDataSizeBytes,
+      final double compationThresholdPerFile,
+      final int compactionJobRate,
+      final int numberOfRecords,
+      final boolean cleanUpTombstonesDuringOpen,
+      final boolean cleanUpInMemoryIndexOnClose,
+      final boolean useMemoryPool,
+      final int memoryPoolChunkSize,
+      final int fixedKeySize) {
+    this.enable = enable;
     this.databaseDir = databaseDir;
-    this.maxOpenFiles = maxOpenFiles;
     this.label = label;
+    this.maxFileSize = maxFileSize;
+    this.flushDataSizeBytes = flushDataSizeBytes;
+    this.compationThresholdPerFile = compationThresholdPerFile;
+    this.compactionJobRate = compactionJobRate;
+    this.numberOfRecords = numberOfRecords;
+    this.cleanUpTombstonesDuringOpen = cleanUpTombstonesDuringOpen;
+    this.cleanUpInMemoryIndexOnClose = cleanUpInMemoryIndexOnClose;
+    this.useMemoryPool = useMemoryPool;
+    this.memoryPoolChunkSize = memoryPoolChunkSize;
+    this.fixedKeySize = fixedKeySize;
+  }
+
+  public boolean isEnabled() {
+    return enable;
   }
 
   public Path getDatabaseDir() {
     return databaseDir;
   }
 
-  public int getMaxOpenFiles() {
-    return maxOpenFiles;
-  }
-
-  public int getMaxBackgroundCompactions() {
-    return maxBackgroundCompactions;
-  }
-
-  public int getBackgroundThreadCount() {
-    return backgroundThreadCount;
-  }
-
   public String getLabel() {
     return label;
+  }
+
+  public int getMaxFileSize() {
+    return maxFileSize;
+  }
+
+  public long getFlushDataSizeBytes() {
+    return flushDataSizeBytes;
+  }
+
+  public double getCompationThresholdPerFile() {
+    return compationThresholdPerFile;
+  }
+
+  public int getCompactionJobRate() {
+    return compactionJobRate;
+  }
+
+  public int getNumberOfRecords() {
+    return numberOfRecords;
+  }
+
+  public boolean isCleanUpTombstonesDuringOpen() {
+    return cleanUpTombstonesDuringOpen;
+  }
+
+  public boolean isCleanUpInMemoryIndexOnClose() {
+    return cleanUpInMemoryIndexOnClose;
+  }
+
+  public boolean isUseMemoryPool() {
+    return useMemoryPool;
+  }
+
+  public int getMemoryPoolChunkSize() {
+    return memoryPoolChunkSize;
+  }
+
+  public int getFixedKeySize() {
+    return fixedKeySize;
   }
 
   public static class Builder {
@@ -66,45 +119,99 @@ public class HaloDbConfiguration {
     String label = "blockchain";
 
     @CommandLine.Option(
-        names = {"--Xrocksdb-max-open-files"},
+        names = {"--Xhalodb-enable"},
         hidden = true,
-        defaultValue = "1024",
-        paramLabel = "<INTEGER>",
-        description = "Max number of files RocksDB will open (default: ${DEFAULT-VALUE})")
-    int maxOpenFiles;
+        defaultValue = "false", // 1 GiB
+        paramLabel = "<BOOLEAN>",
+        description = "Use HaloDB instead of RocksDB(default: ${DEFAULT-VALUE})")
+    boolean enable = false;
 
     @CommandLine.Option(
-        names = {"--Xrocksdb-cache-capacity"},
+        names = {"--Xhalodb-max-file-size"},
         hidden = true,
-        defaultValue = "8388608",
+        defaultValue = "1073741824", // 1 GiB
+        paramLabel = "<INTEGER>",
+        description = "The size of each data file (default: ${DEFAULT-VALUE})")
+    int maxFileSize = 1073741824;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-flush-data-size-bytes"},
+        hidden = true,
+        defaultValue = "10485760", // 10 MiB
         paramLabel = "<LONG>",
-        description = "Cache capacity of RocksDB (default: ${DEFAULT-VALUE})")
-    long cacheCapacity;
-
-    @CommandLine.Option(
-        names = {"--Xrocksdb-max-background-compactions"},
-        hidden = true,
-        defaultValue = "4",
-        paramLabel = "<INTEGER>",
         description =
-            "Maximum number of RocksDB background compactions (default: ${DEFAULT-VALUE})")
-    int maxBackgroundCompactions;
+            "the threshold at which page cache is synced to disk (default: ${DEFAULT-VALUE})")
+    long flushDataSizeBytes = 10485760;
 
     @CommandLine.Option(
-        names = {"--Xrocksdb-background-thread-count"},
+        names = {"--Xhalodb-compaction-threshold-per-file"},
         hidden = true,
-        defaultValue = "4",
+        defaultValue = "0.7",
+        paramLabel = "<DOUBLE>",
+        description =
+            "The percentage of stale data in a data file at which the file will be compacted (default: ${DEFAULT-VALUE})")
+    double compationThresholdPerFile = 0.7D;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-compaction-job-rate"},
+        hidden = true,
+        defaultValue = "52428800", // 50 MiB
+        paramLabel = "<DOUBLE>",
+        description =
+            "Maximum amount of data in bytes which will be copied by the compaction thread per second (default: ${DEFAULT-VALUE})")
+    int compactionJobRate = 52428800;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-number-of-records"},
+        hidden = true,
+        defaultValue = "500000000", // 500 million
         paramLabel = "<INTEGER>",
-        description = "Number of RocksDB background threads (default: ${DEFAULT-VALUE})")
-    int backgroundThreadCount;
+        description = "Preallocated number of records (default: ${DEFAULT-VALUE})")
+    int numberOfRecords = 500_000_000;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-clean-up-tombstones-during-open"},
+        hidden = true,
+        defaultValue = "true",
+        paramLabel = "<BOOLEAN>",
+        description =
+            "During startup delete outdated tombstone records (default: ${DEFAULT-VALUE})")
+    boolean cleanUpTombstonesDuringOpen = true;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-clean-up-in-memory-index-on-close"},
+        hidden = true,
+        defaultValue = "false",
+        paramLabel = "<BOOLEAN>",
+        description = "Release native memory when database is closed (default: ${DEFAULT-VALUE})")
+    boolean cleanUpInMemoryIndexOnClose = false;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-use-memory-pool"},
+        hidden = true,
+        defaultValue = "true",
+        paramLabel = "<BOOLEAN>",
+        description = "Enable memory pool (default: ${DEFAULT-VALUE})")
+    boolean useMemoryPool = true;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-memory-pool-chunk-size"},
+        hidden = true,
+        defaultValue = "2097152", // 2 MiB
+        paramLabel = "<INTEGER>",
+        description = "Size of memory pool chunks (default: ${DEFAULT-VALUE})")
+    int memoryPoolChunkSize = 2097152;
+
+    @CommandLine.Option(
+        names = {"--Xhalodb-fixed-key-size"},
+        hidden = true,
+        defaultValue = "35",
+        paramLabel = "<INTEGER>",
+        description = "Size of keys for memory pool (default: ${DEFAULT-VALUE})")
+    int fixedKeySize = 35;
 
     public Builder databaseDir(final Path databaseDir) {
       this.databaseDir = databaseDir;
-      return this;
-    }
-
-    public Builder maxOpenFiles(final int maxOpenFiles) {
-      this.maxOpenFiles = maxOpenFiles;
       return this;
     }
 
@@ -113,24 +220,71 @@ public class HaloDbConfiguration {
       return this;
     }
 
-    public Builder cacheCapacity(final long cacheCapacity) {
-      this.cacheCapacity = cacheCapacity;
+    public Builder MaxFileSize(final int maxFileSize) {
+      this.maxFileSize = maxFileSize;
       return this;
     }
 
-    public Builder maxBackgroundCompactions(final int maxBackgroundCompactions) {
-      this.maxBackgroundCompactions = maxBackgroundCompactions;
+    public Builder FlushDataSizeBytes(final long flushDataSizeBytes) {
+      this.flushDataSizeBytes = flushDataSizeBytes;
       return this;
     }
 
-    public Builder backgroundThreadCount(final int backgroundThreadCount) {
-      this.backgroundThreadCount = backgroundThreadCount;
+    public Builder CompationThresholdPerFile(final double compationThresholdPerFile) {
+      this.compationThresholdPerFile = compationThresholdPerFile;
+      return this;
+    }
+
+    public Builder CompactionJobRate(final int compactionJobRate) {
+      this.compactionJobRate = compactionJobRate;
+      return this;
+    }
+
+    public Builder NumberOfRecords(final int numberOfRecords) {
+      this.numberOfRecords = numberOfRecords;
+      return this;
+    }
+
+    public Builder CleanUpTombstonesDuringOpen(final boolean cleanUpTombstonesDuringOpen) {
+      this.cleanUpTombstonesDuringOpen = cleanUpTombstonesDuringOpen;
+      return this;
+    }
+
+    public Builder CleanUpInMemoryIndexOnClose(final boolean cleanUpInMemoryIndexOnClose) {
+      this.cleanUpInMemoryIndexOnClose = cleanUpInMemoryIndexOnClose;
+      return this;
+    }
+
+    public Builder UseMemoryPool(final boolean useMemoryPool) {
+      this.useMemoryPool = useMemoryPool;
+      return this;
+    }
+
+    public Builder MemoryPoolChunkSize(final int memoryPoolChunkSize) {
+      this.memoryPoolChunkSize = memoryPoolChunkSize;
+      return this;
+    }
+
+    public Builder FixedKeySize(final int fixedKeySize) {
+      this.fixedKeySize = fixedKeySize;
       return this;
     }
 
     public HaloDbConfiguration build() {
       return new HaloDbConfiguration(
-          databaseDir, maxOpenFiles, maxBackgroundCompactions, backgroundThreadCount, label);
+          enable,
+          databaseDir,
+          label,
+          maxFileSize,
+          flushDataSizeBytes,
+          compationThresholdPerFile,
+          compactionJobRate,
+          numberOfRecords,
+          cleanUpTombstonesDuringOpen,
+          cleanUpInMemoryIndexOnClose,
+          useMemoryPool,
+          memoryPoolChunkSize,
+          fixedKeySize);
     }
   }
 }

@@ -43,6 +43,7 @@ import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.p2p.config.SubProtocolConfiguration;
 import tech.pegasys.pantheon.ethereum.storage.StorageProvider;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.HaloDbStorageProvider;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.RocksDbStorageProvider;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.services.kvstore.HaloDbConfiguration;
@@ -179,18 +180,18 @@ public abstract class PantheonControllerBuilder<C> {
     checkNotNull(maxPendingTransactions, "Missing max pending transactions");
     checkNotNull(nodeKeys, "Missing node keys");
     checkArgument(
-        storageProvider != null || rocksDbConfiguration != null,
-        "Must supply either a storage provider or RocksDB configuration");
-    checkArgument(
-        storageProvider == null || rocksDbConfiguration == null,
-        "Must supply either storage provider or RocksDB confguration, but not both");
+        ((storageProvider != null ? 1 : 0)
+                + (rocksDbConfiguration != null ? 1 : 0)
+                + (haloDbConfiguration != null ? 1 : 0))
+            == 1,
+        "Must supply exactly only one of a storage provider, a RocksDB configuration, or a HaloDB configuration");
     privacyParameters.setSigningKeyPair(nodeKeys);
 
-    //    if (storageProvider == null && rocksDbConfiguration != null) {
-    //      storageProvider = RocksDbStorageProvider.create(rocksDbConfiguration, metricsSystem);
-    //    }
-    if (storageProvider == null && haloDbConfiguration != null) {
+    if (storageProvider == null && haloDbConfiguration != null && haloDbConfiguration.isEnabled()) {
       storageProvider = HaloDbStorageProvider.create(haloDbConfiguration, metricsSystem);
+    }
+    if (storageProvider == null && rocksDbConfiguration != null) {
+      storageProvider = RocksDbStorageProvider.create(rocksDbConfiguration, metricsSystem);
     }
 
     prepForBuild();
