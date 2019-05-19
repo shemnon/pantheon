@@ -65,9 +65,9 @@ import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
 import tech.pegasys.pantheon.metrics.prometheus.PrometheusMetricsSystem;
 import tech.pegasys.pantheon.metrics.vertx.VertxMetricsAdapterFactory;
-import tech.pegasys.pantheon.services.kvstore.HaloDbConfiguration;
 import tech.pegasys.pantheon.plugins.internal.PantheonPluginContextImpl;
 import tech.pegasys.pantheon.plugins.services.PicoCLIOptions;
+import tech.pegasys.pantheon.services.kvstore.HaloDbConfiguration;
 import tech.pegasys.pantheon.services.kvstore.RocksDbConfiguration;
 import tech.pegasys.pantheon.util.BlockImporter;
 import tech.pegasys.pantheon.util.InvalidConfigurationException;
@@ -552,11 +552,11 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
 
     @Override
     public List<Object> handleParseException(final ParameterException ex, final String[] args) {
-//      if (logLevel != null && Level.DEBUG.isMoreSpecificThan(logLevel)) {
-        ex.printStackTrace(err());
-//      } else {
-//        err().println(ex.getMessage());
-//      }
+      //      if (logLevel != null && Level.DEBUG.isMoreSpecificThan(logLevel)) {
+      ex.printStackTrace(err());
+      //      } else {
+      //        err().println(ex.getMessage());
+      //      }
       if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, err())) {
         ex.getCommandLine().usage(err(), ansi());
       }
