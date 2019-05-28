@@ -635,8 +635,6 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
     commandLine.registerConverter(UInt256.class, (arg) -> UInt256.of(new BigInteger(arg)));
     commandLine.registerConverter(Wei.class, (arg) -> Wei.of(Long.parseUnsignedLong(arg)));
     commandLine.registerConverter(PositiveNumber.class, PositiveNumber::fromString);
-    commandLine.registerConverter(
-        Path.class, s -> Paths.get(s.replaceFirst("~", System.getProperty("user.home"))));
 
     // Add performance options
     UnstableOptionsSubCommand.createUnstableOptions(
