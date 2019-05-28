@@ -328,7 +328,9 @@ public class PantheonCommandTest extends CommandTestAbstract {
             .setGenesisConfig(encodeJsonGenesis(GENESIS_VALID_JSON))
             .setBootNodes(nodes)
             .build();
-    verify(mockControllerBuilder).dataDirectory(eq(Paths.get("~/pantheondata").toAbsolutePath()));
+    verify(mockControllerBuilder)
+        .dataDirectory(
+            eq(Paths.get(System.getProperty("user.home"), "pantheondata").toAbsolutePath()));
     verify(mockControllerBuilderFactory).fromEthNetworkConfig(eq(networkConfig));
 
     verify(mockSyncConfBuilder).syncMode(eq(SyncMode.FAST));
