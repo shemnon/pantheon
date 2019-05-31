@@ -16,9 +16,6 @@ import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockBroadcaster;
 import tech.pegasys.pantheon.plugin.services.PantheonEvents;
 
-import com.google.common.collect.ImmutableMap;
-import io.vertx.core.json.Json;
-
 public class PantheonEventsImpl implements PantheonEvents {
   private final BlockBroadcaster blockBroadcaster;
 
@@ -41,13 +38,6 @@ public class PantheonEventsImpl implements PantheonEvents {
 
   private void dispatchNewBlockPropagatedMessage(
       final Block block, final NewBlockPropagatedListener listener) {
-    final ImmutableMap<Object, Object> result =
-        new ImmutableMap.Builder<>()
-            .put("type", "NewBlock")
-            .put("blockHash", block.getHash().toString())
-            .put("blockNumber", block.getHeader().getNumber())
-            .put("timestamp", block.getHeader().getTimestamp())
-            .build();
-    listener.newBlockPropagated(Json.encode(result));
+    listener.newBlockPropagated(block.getHeader());
   }
 }

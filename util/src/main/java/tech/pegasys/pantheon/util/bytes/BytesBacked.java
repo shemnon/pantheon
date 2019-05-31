@@ -12,8 +12,20 @@
  */
 package tech.pegasys.pantheon.util.bytes;
 
+import tech.pegasys.pantheon.plugin.data.Quantity;
+
 /** Base interface for a value whose content is stored as bytes. */
-public interface BytesBacked {
+public interface BytesBacked extends Quantity {
   /** @return The underlying backing bytes of the value. */
   BytesValue getBytes();
+
+  @Override
+  default byte[] getByteArray() {
+    return getBytes().getByteArray();
+  }
+
+  @Override
+  default String getHexString() {
+    return getBytes().getHexString();
+  }
 }
