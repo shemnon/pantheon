@@ -12,190 +12,79 @@
  */
 package tech.pegasys.pantheon.metrics.prometheus;
 
-import static tech.pegasys.pantheon.metrics.MetricCategory.DEFAULT_METRIC_CATEGORIES;
-
 import tech.pegasys.pantheon.metrics.MetricCategory;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 
-public class MetricsConfiguration {
+@AutoValue
+public abstract class MetricsConfiguration {
   private static final String DEFAULT_METRICS_HOST = "127.0.0.1";
   public static final int DEFAULT_METRICS_PORT = 9545;
 
   private static final String DEFAULT_METRICS_PUSH_HOST = "127.0.0.1";
   public static final int DEFAULT_METRICS_PUSH_PORT = 9001;
 
-  private boolean enabled;
-  private int port;
-  private String host;
-  private Set<MetricCategory> metricCategories;
-  private boolean pushEnabled;
-  private int pushPort;
-  private String pushHost;
-  private int pushInterval;
-  private String prometheusJob;
-  private List<String> hostsWhitelist = Arrays.asList("localhost", "127.0.0.1");
+  public abstract boolean isEnabled();
 
-  public static MetricsConfiguration createDefault() {
-    final MetricsConfiguration metricsConfiguration = new MetricsConfiguration();
-    metricsConfiguration.setEnabled(false);
-    metricsConfiguration.setPort(DEFAULT_METRICS_PORT);
-    metricsConfiguration.setHost(DEFAULT_METRICS_HOST);
-    metricsConfiguration.setMetricCategories(DEFAULT_METRIC_CATEGORIES);
-    metricsConfiguration.setPushEnabled(false);
-    metricsConfiguration.setPushPort(DEFAULT_METRICS_PUSH_PORT);
-    metricsConfiguration.setPushHost(DEFAULT_METRICS_PUSH_HOST);
-    metricsConfiguration.setPushInterval(15);
-    metricsConfiguration.setPrometheusJob("pantheon-client");
+  public abstract int getPort();
 
-    return metricsConfiguration;
+  public abstract String getHost();
+
+  public abstract ImmutableSet<MetricCategory> getMetricCategories();
+
+  public abstract int getPushPort();
+
+  public abstract String getPushHost();
+
+  public abstract boolean isPushEnabled();
+
+  public abstract int getPushInterval();
+
+  public abstract String getPrometheusJob();
+
+  public abstract ImmutableSet<String> getHostsWhitelist();
+
+  public static Builder builder() {
+    return new AutoValue_MetricsConfiguration.Builder()
+        .enabled(false)
+        .port(DEFAULT_METRICS_PORT)
+        .host(DEFAULT_METRICS_HOST)
+        .hostsWhitelist(ImmutableSet.of("localhost", "127.0.0.1"))
+        .metricCategories(MetricCategory.DEFAULT_METRIC_CATEGORIES)
+        .pushEnabled(false)
+        .pushPort(DEFAULT_METRICS_PUSH_PORT)
+        .pushHost(DEFAULT_METRICS_PUSH_HOST)
+        .pushInterval(15)
+        .prometheusJob("pantheon-client");
   }
 
-  private MetricsConfiguration() {}
+  @AutoValue.Builder
+  public abstract static class Builder {
+    public abstract Builder enabled(boolean enabled);
 
-  public boolean isEnabled() {
-    return enabled;
-  }
+    public abstract Builder port(int port);
 
-  public void setEnabled(final boolean enabled) {
-    this.enabled = enabled;
-  }
+    public abstract Builder host(String host);
 
-  public int getPort() {
-    return port;
-  }
+    public abstract Builder metricCategories(ImmutableSet<MetricCategory> metricCategories);
 
-  public void setPort(final int port) {
-    this.port = port;
-  }
+    public abstract Builder metricCategories(MetricCategory... metricCategories);
 
-  public String getHost() {
-    return host;
-  }
+    public abstract Builder pushPort(int pushPort);
 
-  public void setHost(final String host) {
-    this.host = host;
-  }
+    public abstract Builder pushHost(String pushHost);
 
-  public Set<MetricCategory> getMetricCategories() {
-    return metricCategories;
-  }
+    public abstract Builder pushEnabled(boolean pushEnabled);
 
-  public void setMetricCategories(final Set<MetricCategory> metricCategories) {
-    this.metricCategories = metricCategories;
-  }
+    public abstract Builder pushInterval(int pushInterval);
 
-  public int getPushPort() {
-    return pushPort;
-  }
+    public abstract Builder prometheusJob(String prometheusJob);
 
-  public void setPushPort(final int pushPort) {
-    this.pushPort = pushPort;
-  }
+    public abstract Builder hostsWhitelist(ImmutableSet<String> hostsWhitelist);
 
-  public String getPushHost() {
-    return pushHost;
-  }
+    public abstract Builder hostsWhitelist(String... hostsWhitelist);
 
-  public void setPushHost(final String pushHost) {
-    this.pushHost = pushHost;
-  }
-
-  public boolean isPushEnabled() {
-    return pushEnabled;
-  }
-
-  public void setPushEnabled(final boolean pushEnabled) {
-    this.pushEnabled = pushEnabled;
-  }
-
-  public int getPushInterval() {
-    return pushInterval;
-  }
-
-  public void setPushInterval(final int pushInterval) {
-    this.pushInterval = pushInterval;
-  }
-
-  public String getPrometheusJob() {
-    return prometheusJob;
-  }
-
-  public void setPrometheusJob(final String prometheusJob) {
-    this.prometheusJob = prometheusJob;
-  }
-
-  Collection<String> getHostsWhitelist() {
-    return Collections.unmodifiableCollection(this.hostsWhitelist);
-  }
-
-  public void setHostsWhitelist(final List<String> hostsWhitelist) {
-    this.hostsWhitelist = hostsWhitelist;
-  }
-
-  @Override
-  public String toString() {
-    return "MetricsConfiguration{"
-        + "enabled="
-        + enabled
-        + ", port="
-        + port
-        + ", host='"
-        + host
-        + '\''
-        + ", categories="
-        + metricCategories.toString()
-        + ", pushEnabled="
-        + pushEnabled
-        + ", pushPort="
-        + pushPort
-        + ", pushHost='"
-        + pushHost
-        + '\''
-        + ", pushInterval="
-        + pushInterval
-        + ", prometheusJob='"
-        + prometheusJob
-        + '\''
-        + ", hostsWhitelist="
-        + hostsWhitelist
-        + '}';
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    final MetricsConfiguration that = (MetricsConfiguration) o;
-    return enabled == that.enabled
-        && port == that.port
-        && Objects.equals(metricCategories, that.metricCategories)
-        && pushEnabled == that.pushEnabled
-        && pushPort == that.pushPort
-        && pushInterval == that.pushInterval
-        && Objects.equals(host, that.host)
-        && Objects.equals(pushHost, that.pushHost)
-        && Objects.equals(prometheusJob, that.prometheusJob)
-        && Objects.equals(hostsWhitelist, that.hostsWhitelist);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        enabled,
-        port,
-        host,
-        metricCategories,
-        pushEnabled,
-        pushPort,
-        pushHost,
-        pushInterval,
-        prometheusJob,
-        hostsWhitelist);
+    public abstract MetricsConfiguration build();
   }
 }

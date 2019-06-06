@@ -15,7 +15,6 @@ package tech.pegasys.pantheon.metrics.prometheus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.Properties;
 
 import io.vertx.core.Vertx;
@@ -53,18 +52,14 @@ public class MetricsHttpServiceTest {
   }
 
   private static MetricsHttpService createMetricsHttpService() {
-    final MetricsConfiguration metricsConfiguration = createMetricsConfig();
-    metricsConfiguration.setEnabled(true);
+    final MetricsConfiguration metricsConfiguration =
+        MetricsConfiguration.builder().enabled(true).build();
     return new MetricsHttpService(
         vertx, metricsConfiguration, PrometheusMetricsSystem.init(metricsConfiguration));
   }
 
-  private static MetricsConfiguration createMetricsConfig() {
-    final MetricsConfiguration config = MetricsConfiguration.createDefault();
-    config.setEnabled(true);
-    config.setPort(0);
-    config.setHostsWhitelist(Collections.singletonList("*"));
-    return config;
+  private static MetricsConfiguration.Builder createMetricsConfigBuilder() {
+    return MetricsConfiguration.builder().enabled(true).port(0).hostsWhitelist("*");
   }
 
   /** Tears down the HTTP server. */
@@ -114,9 +109,9 @@ public class MetricsHttpServiceTest {
 
   @Test
   public void getSocketAddressWhenBindingToAllInterfaces() {
-    final MetricsConfiguration config = createMetricsConfig();
-    config.setHost("0.0.0.0");
-    final MetricsHttpService service = createMetricsHttpService(config);
+    final MetricsConfiguration.Builder configBuilder = createMetricsConfigBuilder();
+    configBuilder.host("0.0.0.0");
+    final MetricsHttpService service = createMetricsHttpService(configBuilder.build());
     service.start().join();
 
     try {
