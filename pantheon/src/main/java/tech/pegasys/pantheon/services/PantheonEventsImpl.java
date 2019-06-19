@@ -12,9 +12,9 @@
  */
 package tech.pegasys.pantheon.services;
 
+import tech.pegasys.pantheon.api.services.PantheonEvents;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockBroadcaster;
-import tech.pegasys.pantheon.plugin.services.PantheonEvents;
 
 public class PantheonEventsImpl implements PantheonEvents {
   private final BlockBroadcaster blockBroadcaster;

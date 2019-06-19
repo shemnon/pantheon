@@ -26,8 +26,8 @@ jar {
 }
 
 dependencies {
-  api 'tech.pegasys.pantheon:plugin-api'
-  
+  api 'tech.pegasys.pantheon:api'
+
   implementation project(':ethereum:p2p')
   implementation project(':ethereum:permissioning')
   implementation project(':util')

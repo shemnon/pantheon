@@ -16,6 +16,8 @@ import static tech.pegasys.pantheon.cli.NetworkName.DEV;
 
 import tech.pegasys.pantheon.Runner;
 import tech.pegasys.pantheon.RunnerBuilder;
+import tech.pegasys.pantheon.api.services.PantheonEvents;
+import tech.pegasys.pantheon.api.services.PicoCLIOptions;
 import tech.pegasys.pantheon.cli.EthNetworkConfig;
 import tech.pegasys.pantheon.controller.KeyPairUtil;
 import tech.pegasys.pantheon.controller.PantheonController;
@@ -28,8 +30,6 @@ import tech.pegasys.pantheon.ethereum.p2p.peers.EnodeURL;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
-import tech.pegasys.pantheon.plugin.services.PantheonEvents;
-import tech.pegasys.pantheon.plugin.services.PicoCLIOptions;
 import tech.pegasys.pantheon.services.PantheonEventsImpl;
 import tech.pegasys.pantheon.services.PantheonPluginContextImpl;
 import tech.pegasys.pantheon.services.PicoCLIOptionsImpl;
@@ -64,7 +64,7 @@ public class ThreadPantheonNodeRunner implements PantheonNodeRunner {
   private final Map<Node, PantheonPluginContextImpl> pantheonPluginContextMap = new HashMap<>();
 
   private PantheonPluginContextImpl buildPluginContext(final PantheonNode node) {
-    PantheonPluginContextImpl pantheonPluginContext = new PantheonPluginContextImpl();
+    final PantheonPluginContextImpl pantheonPluginContext = new PantheonPluginContextImpl();
     final Path pluginsPath = node.homeDirectory().resolve("plugins");
     final File pluginsDirFile = pluginsPath.toFile();
     if (!pluginsDirFile.isDirectory()) {
@@ -126,7 +126,7 @@ public class ThreadPantheonNodeRunner implements PantheonNodeRunner {
 
     final RunnerBuilder runnerBuilder = new RunnerBuilder();
     if (node.getPermissioningConfiguration().isPresent()) {
-      PermissioningConfiguration permissioningConfiguration =
+      final PermissioningConfiguration permissioningConfiguration =
           node.getPermissioningConfiguration().get();
 
       runnerBuilder.permissioningConfiguration(permissioningConfiguration);
@@ -162,7 +162,7 @@ public class ThreadPantheonNodeRunner implements PantheonNodeRunner {
 
   @Override
   public void stopNode(final PantheonNode node) {
-    PantheonPluginContextImpl pluginContext = pantheonPluginContextMap.remove(node);
+    final PantheonPluginContextImpl pluginContext = pantheonPluginContextMap.remove(node);
     if (pluginContext != null) {
       pluginContext.stopPlugins();
     }

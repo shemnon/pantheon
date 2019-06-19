@@ -15,8 +15,8 @@ package tech.pegasys.pantheon.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
-import tech.pegasys.pantheon.plugin.PantheonContext;
-import tech.pegasys.pantheon.plugin.PantheonPlugin;
+import tech.pegasys.pantheon.api.PantheonContext;
+import tech.pegasys.pantheon.api.PantheonPlugin;
 
 import java.io.IOException;
 import java.net.MalformedURLException;

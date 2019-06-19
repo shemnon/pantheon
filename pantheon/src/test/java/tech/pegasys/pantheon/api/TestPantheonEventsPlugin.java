@@ -10,12 +10,10 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.pantheon.plugins;
+package tech.pegasys.pantheon.api;
 
-import tech.pegasys.pantheon.plugin.PantheonContext;
-import tech.pegasys.pantheon.plugin.PantheonPlugin;
-import tech.pegasys.pantheon.plugin.data.BlockHeader;
-import tech.pegasys.pantheon.plugin.services.PantheonEvents;
+import tech.pegasys.pantheon.api.data.BlockHeader;
+import tech.pegasys.pantheon.api.services.PantheonEvents;
 
 import java.io.File;
 import java.io.IOException;

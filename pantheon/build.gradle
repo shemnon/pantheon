@@ -52,7 +52,7 @@ dependencies {
   implementation 'net.consensys.cava:cava-toml'
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.springframework.security:spring-security-crypto'
-  implementation 'tech.pegasys.pantheon:plugin-api'
+  implementation 'tech.pegasys.pantheon:api'
 
   runtime 'org.apache.logging.log4j:log4j-core'
   runtime 'org.apache.logging.log4j:log4j-slf4j-impl'
