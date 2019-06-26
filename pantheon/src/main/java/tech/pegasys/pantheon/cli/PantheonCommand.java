@@ -24,15 +24,17 @@ import static tech.pegasys.pantheon.ethereum.graphql.GraphQLConfiguration.DEFAUL
 import static tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration.DEFAULT_JSON_RPC_PORT;
 import static tech.pegasys.pantheon.ethereum.jsonrpc.RpcApis.DEFAULT_JSON_RPC_APIS;
 import static tech.pegasys.pantheon.ethereum.jsonrpc.websocket.WebSocketConfiguration.DEFAULT_WEBSOCKET_PORT;
-import static tech.pegasys.pantheon.metrics.MetricCategory.DEFAULT_METRIC_CATEGORIES;
+import static tech.pegasys.pantheon.metrics.PantheonMetricCategory.DEFAULT_METRIC_CATEGORIES;
 import static tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration.DEFAULT_METRICS_PORT;
 import static tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration.DEFAULT_METRICS_PUSH_PORT;
 
+import tech.pegasys.pantheon.PantheonInfo;
 import tech.pegasys.pantheon.Runner;
 import tech.pegasys.pantheon.RunnerBuilder;
 import tech.pegasys.pantheon.api.services.PantheonEvents;
 import tech.pegasys.pantheon.api.services.PicoCLIOptions;
 import tech.pegasys.pantheon.cli.PublicKeySubCommand.KeyLoader;
+import tech.pegasys.pantheon.cli.converter.MetricCategoryConverter;
 import tech.pegasys.pantheon.cli.converter.RpcApisConverter;
 import tech.pegasys.pantheon.cli.custom.CorsAllowedOriginsProperty;
 import tech.pegasys.pantheon.cli.custom.JsonRPCWhitelistHostsProperty;
@@ -51,6 +53,7 @@ import tech.pegasys.pantheon.ethereum.eth.sync.SyncMode;
 import tech.pegasys.pantheon.ethereum.eth.sync.SynchronizerConfiguration;
 import tech.pegasys.pantheon.ethereum.eth.sync.TrailingPeerRequirements;
 import tech.pegasys.pantheon.ethereum.eth.transactions.PendingTransactions;
+import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPool;
 import tech.pegasys.pantheon.ethereum.graphql.GraphQLConfiguration;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration;
 import tech.pegasys.pantheon.ethereum.jsonrpc.RpcApi;
@@ -65,6 +68,8 @@ import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfigurationBu
 import tech.pegasys.pantheon.ethereum.permissioning.SmartContractPermissioningConfiguration;
 import tech.pegasys.pantheon.metrics.MetricCategory;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
+import tech.pegasys.pantheon.metrics.PantheonMetricCategory;
+import tech.pegasys.pantheon.metrics.StandardMetricCategory;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
 import tech.pegasys.pantheon.metrics.prometheus.PrometheusMetricsSystem;
 import tech.pegasys.pantheon.metrics.vertx.VertxMetricsAdapterFactory;
@@ -91,6 +96,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -141,6 +147,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
   private final RunnerBuilder runnerBuilder;
   private final PantheonController.Builder controllerBuilderFactory;
   private final PantheonPluginContextImpl pantheonPluginContext;
+  private final Map<String, String> environment;
 
   protected KeyLoader getKeyLoader() {
     return KeyPairUtil::loadKeyPair;
@@ -517,13 +524,15 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
   @Option(
       names = {"--permissions-accounts-contract-address"},
       description = "Address of the account permissioning smart contract",
-      arity = "1")
+      arity = "1",
+      hidden = true)
   private final Address permissionsAccountsContractAddress = null;
 
   @Option(
       names = {"--permissions-accounts-contract-enabled"},
       description =
-          "Enable account level permissions via smart contract (default: ${DEFAULT-VALUE})")
+          "Enable account level permissions via smart contract (default: ${DEFAULT-VALUE})",
+      hidden = true)
   private final Boolean permissionsAccountsContractEnabled = false;
 
   @Option(
@@ -557,6 +566,13 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
           "Maximum retention period of pending transactions in hours (default: ${DEFAULT-VALUE})",
       arity = "1")
   private final Integer pendingTxRetentionPeriod = PendingTransactions.DEFAULT_TX_RETENTION_HOURS;
+
+  @Option(
+      names = {"--tx-pool-keep-alive-seconds"},
+      paramLabel = MANDATORY_INTEGER_FORMAT_HELP,
+      description = "Keep alive of transactions in seconds (default: ${DEFAULT-VALUE})",
+      arity = "1")
+  private final Integer txMessageKeepAliveSeconds = TransactionPool.DEFAULT_TX_MSG_KEEP_ALIVE;
 
   // Inner class so we can get to loggingLevel.
   public class PantheonExceptionHandler
@@ -601,7 +617,8 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
       final SynchronizerConfiguration.Builder synchronizerConfigurationBuilder,
       final EthereumWireProtocolConfiguration.Builder ethereumWireConfigurationBuilder,
       final RocksDbConfiguration.Builder rocksDbConfigurationBuilder,
-      final PantheonPluginContextImpl pantheonPluginContext) {
+      final PantheonPluginContextImpl pantheonPluginContext,
+      final Map<String, String> environment) {
     this.logger = logger;
     this.blockImporter = blockImporter;
     this.runnerBuilder = runnerBuilder;
@@ -610,6 +627,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
     this.ethereumWireConfigurationBuilder = ethereumWireConfigurationBuilder;
     this.rocksDbConfigurationBuilder = rocksDbConfigurationBuilder;
     this.pantheonPluginContext = pantheonPluginContext;
+    this.environment = environment;
   }
 
   private StandaloneCommand standaloneCommands;
@@ -650,6 +668,11 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
     commandLine.registerConverter(Wei.class, (arg) -> Wei.of(Long.parseUnsignedLong(arg)));
     commandLine.registerConverter(PositiveNumber.class, PositiveNumber::fromString);
 
+    final MetricCategoryConverter metricCategoryConverter = new MetricCategoryConverter();
+    metricCategoryConverter.addCategories(PantheonMetricCategory.class);
+    metricCategoryConverter.addCategories(StandardMetricCategory.class);
+    commandLine.registerConverter(MetricCategory.class, metricCategoryConverter);
+
     // Add performance options
     UnstableOptionsSubCommand.createUnstableOptions(
         commandLine,
@@ -669,7 +692,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
     // and eventually it will run regular parsing of the remaining options.
     final ConfigOptionSearchAndRunHandler configParsingHandler =
         new ConfigOptionSearchAndRunHandler(
-            resultHandler, exceptionHandler, CONFIG_FILE_OPTION_NAME, isDocker);
+            resultHandler, exceptionHandler, CONFIG_FILE_OPTION_NAME, environment, isDocker);
     commandLine.parseWithHandlers(configParsingHandler, exceptionHandler, args);
   }
 
@@ -680,6 +703,8 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
       System.out.println("Setting logging level to " + logLevel.name());
       Configurator.setAllLevels("", logLevel);
     }
+
+    logger.info("Starting Pantheon version: {}", PantheonInfo.version());
 
     // Check that P2P options are able to work or send an error
     checkOptionDependencies(
@@ -800,6 +825,7 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
               new MiningParameters(coinbase, minTransactionGasPrice, extraData, isMiningEnabled))
           .maxPendingTransactions(txPoolMaxSize)
           .pendingTransactionRetentionPeriod(pendingTxRetentionPeriod)
+          .txMessageKeepAliveSeconds(txMessageKeepAliveSeconds)
           .nodePrivateKeyFile(nodePrivateKeyFile())
           .metricsSystem(metricsSystem.get())
           .privacyParameters(privacyParameters())

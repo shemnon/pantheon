@@ -49,7 +49,7 @@ import tech.pegasys.pantheon.ethereum.p2p.peers.EnodeURL;
 import tech.pegasys.pantheon.ethereum.permissioning.LocalPermissioningConfiguration;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
 import tech.pegasys.pantheon.ethereum.permissioning.SmartContractPermissioningConfiguration;
-import tech.pegasys.pantheon.metrics.MetricCategory;
+import tech.pegasys.pantheon.metrics.StandardMetricCategory;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
@@ -730,6 +730,42 @@ public class PantheonCommandTest extends CommandTestAbstract {
 
     assertThat(commandOutput.toString()).isEmpty();
     assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void envVariableOverridesValueFromConfigFile() {
+    assumeTrue(isFullInstantiation());
+
+    final String configFile = this.getClass().getResource("/partial_config.toml").getFile();
+    final String expectedCoinbase = "0x0000000000000000000000000000000000000004";
+    setEnvironemntVariable("PANTHEON_MINER_COINBASE", expectedCoinbase);
+    parseCommand("--config-file", configFile);
+
+    verify(mockControllerBuilder)
+        .miningParameters(
+            new MiningParameters(
+                Address.fromHexString(expectedCoinbase),
+                DefaultCommandValues.DEFAULT_MIN_TRANSACTION_GAS_PRICE,
+                DefaultCommandValues.DEFAULT_EXTRA_DATA,
+                false));
+  }
+
+  @Test
+  public void cliOptionOverridesEnvVariableAndConfig() {
+    assumeTrue(isFullInstantiation());
+
+    final String configFile = this.getClass().getResource("/partial_config.toml").getFile();
+    final String expectedCoinbase = "0x0000000000000000000000000000000000000006";
+    setEnvironemntVariable("PANTHEON_MINER_COINBASE", "0x0000000000000000000000000000000000000004");
+    parseCommand("--config-file", configFile, "--miner-coinbase", expectedCoinbase);
+
+    verify(mockControllerBuilder)
+        .miningParameters(
+            new MiningParameters(
+                Address.fromHexString(expectedCoinbase),
+                DefaultCommandValues.DEFAULT_MIN_TRANSACTION_GAS_PRICE,
+                DefaultCommandValues.DEFAULT_EXTRA_DATA,
+                false));
   }
 
   @Test
@@ -2054,13 +2090,13 @@ public class PantheonCommandTest extends CommandTestAbstract {
 
   @Test
   public void metricsCategoryPropertyMustBeUsed() {
-    parseCommand("--metrics-enabled", "--metrics-category", MetricCategory.JVM.toString());
+    parseCommand("--metrics-enabled", "--metrics-category", StandardMetricCategory.JVM.toString());
 
     verify(mockRunnerBuilder).metricsConfiguration(metricsConfigArgumentCaptor.capture());
     verify(mockRunnerBuilder).build();
 
     assertThat(metricsConfigArgumentCaptor.getValue().getMetricCategories())
-        .containsExactly(MetricCategory.JVM);
+        .containsExactly(StandardMetricCategory.JVM);
 
     assertThat(commandOutput.toString()).isEmpty();
     assertThat(commandErrorOutput.toString()).isEmpty();
@@ -2584,5 +2620,28 @@ public class PantheonCommandTest extends CommandTestAbstract {
 
     assertThat(commandOutput.toString()).isEmpty();
     assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void txMessageKeepAliveSeconds() {
+    final int txMessageKeepAliveSeconds = 999;
+    parseCommand("--tx-pool-keep-alive-seconds", String.valueOf(txMessageKeepAliveSeconds));
+
+    verify(mockControllerBuilder).txMessageKeepAliveSeconds(intArgumentCaptor.capture());
+    verify(mockControllerBuilder).txMessageKeepAliveSeconds(eq(txMessageKeepAliveSeconds));
+
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  public void txMessageKeepAliveSecondsWithInvalidInputShouldFail() {
+    parseCommand("--tx-pool-keep-alive-seconds", "acbd");
+
+    verifyZeroInteractions(mockRunnerBuilder);
+
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString())
+        .contains("Invalid value for option '--tx-pool-keep-alive-seconds': 'acbd' is not an int");
   }
 }
