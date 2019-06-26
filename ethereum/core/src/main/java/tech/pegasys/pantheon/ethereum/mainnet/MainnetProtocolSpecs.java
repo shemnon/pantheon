@@ -258,9 +258,21 @@ public abstract class MainnetProtocolSpecs {
 
   public static ProtocolSpecBuilder<Void> istanbulDefinition(
       final Optional<BigInteger> chainId,
-      final OptionalInt contractSizeLimit,
+      final OptionalInt configContractSizeLimit,
       final OptionalInt configStackSizeLimit) {
-    return constantinopleFixDefinition(chainId, contractSizeLimit, configStackSizeLimit)
+    final int contractSizeLimit =
+        configContractSizeLimit.orElse(SPURIOUS_DRAGON_CONTRACT_SIZE_LIMIT);
+    return constantinopleFixDefinition(chainId, configContractSizeLimit, configStackSizeLimit)
+        .contractCreationProcessorBuilder(
+            (gasCalculator, evm) ->
+                new MainnetContractCreationProcessor(
+                    gasCalculator,
+                    evm,
+                    true,
+                    contractSizeLimit,
+                    1,
+                    SPURIOUS_DRAGON_FORCE_DELETE_WHEN_EMPTY_ADDRESSES,
+                    1))
         .name("Istanbul");
   }
 

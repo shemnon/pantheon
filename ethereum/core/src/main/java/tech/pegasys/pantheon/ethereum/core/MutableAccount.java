@@ -79,8 +79,9 @@ public interface MutableAccount extends Account {
    * Sets the code for the account.
    *
    * @param code the code to set for the account.
+   * @param version the version of the code being set
    */
-  void setCode(BytesValue code);
+  void setCode(BytesValue code, long version);
 
   /**
    * Sets a particular key-value pair in the account storage.

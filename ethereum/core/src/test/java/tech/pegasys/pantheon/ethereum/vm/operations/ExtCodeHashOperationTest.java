@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import tech.pegasys.pantheon.ethereum.chain.Blockchain;
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.AddressHelpers;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
@@ -82,7 +83,7 @@ public class ExtCodeHashOperationTest {
   @Test
   public void shouldGetHashOfAccountCodeWhenCodeIsPresent() {
     final BytesValue code = BytesValue.fromHexString("0xabcdef");
-    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS).setCode(code);
+    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS).setCode(code, Account.DEFAULT_VERSION);
     assertThat(executeOperation(REQUESTED_ADDRESS)).isEqualTo(Hash.hash(code));
   }
 
@@ -90,7 +91,7 @@ public class ExtCodeHashOperationTest {
   public void shouldZeroOutLeftMostBitsToGetAddress() {
     // If EXTCODEHASH of A is X, then EXTCODEHASH of A + 2**160 is X.
     final BytesValue code = BytesValue.fromHexString("0xabcdef");
-    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS).setCode(code);
+    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS).setCode(code, Account.DEFAULT_VERSION);
     final Bytes32 value =
         Words.fromAddress(REQUESTED_ADDRESS)
             .asUInt256()

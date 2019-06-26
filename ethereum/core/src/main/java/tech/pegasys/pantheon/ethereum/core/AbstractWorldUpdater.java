@@ -163,6 +163,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
 
     private long nonce;
     private Wei balance;
+    private long version;
 
     @Nullable private BytesValue updatedCode; // Null if the underlying code has not been updated.
     @Nullable private Hash updatedCodeHash;
@@ -179,6 +180,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
 
       this.nonce = 0;
       this.balance = Wei.ZERO;
+      this.version = Account.DEFAULT_VERSION;
 
       this.updatedCode = BytesValue.EMPTY;
       this.updatedStorage = new TreeMap<>();
@@ -192,6 +194,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
 
       this.nonce = account.getNonce();
       this.balance = account.getBalance();
+      this.version = account.getVersion();
 
       this.updatedStorage = new TreeMap<>();
     }
@@ -279,8 +282,14 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
     }
 
     @Override
-    public void setCode(final BytesValue code) {
+    public void setCode(final BytesValue code, final long version) {
       this.updatedCode = code;
+      this.version = version;
+    }
+
+    @Override
+    public long getVersion() {
+      return version;
     }
 
     @Override
@@ -358,7 +367,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
   static class StackedUpdater<W extends WorldView, A extends Account>
       extends AbstractWorldUpdater<AbstractWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
-    protected StackedUpdater(final AbstractWorldUpdater<W, A> world) {
+    StackedUpdater(final AbstractWorldUpdater<W, A> world) {
       super(world);
     }
 
@@ -418,7 +427,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
         existing.setNonce(update.getNonce());
         existing.setBalance(update.getBalance());
         if (update.codeWasUpdated()) {
-          existing.setCode(update.getCode());
+          existing.setCode(update.getCode(), update.getVersion());
         }
         if (update.getStorageWasCleared()) {
           existing.clearStorage();
