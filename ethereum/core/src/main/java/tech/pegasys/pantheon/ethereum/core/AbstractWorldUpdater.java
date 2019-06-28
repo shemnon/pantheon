@@ -282,8 +282,12 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
     }
 
     @Override
-    public void setCode(final BytesValue code, final long version) {
+    public void setCode(final BytesValue code) {
       this.updatedCode = code;
+    }
+
+    @Override
+    public void setVersion(final long version) {
       this.version = version;
     }
 
@@ -427,7 +431,8 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
         existing.setNonce(update.getNonce());
         existing.setBalance(update.getBalance());
         if (update.codeWasUpdated()) {
-          existing.setCode(update.getCode(), update.getVersion());
+          existing.setCode(update.getCode());
+          existing.setVersion(update.getVersion());
         }
         if (update.getStorageWasCleared()) {
           existing.clearStorage();

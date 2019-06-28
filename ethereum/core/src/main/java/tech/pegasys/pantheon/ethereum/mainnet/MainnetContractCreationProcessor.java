@@ -152,7 +152,8 @@ public class MainnetContractCreationProcessor extends AbstractMessageProcessor {
         // Finalize contract creation, setting the contract code.
         final MutableAccount contract =
             frame.getWorldState().getOrCreate(frame.getContractAddress());
-        contract.setCode(contractCode, accountVersion);
+        contract.setCode(contractCode);
+        contract.setVersion(accountVersion);
         LOG.trace(
             "Successful creation of contract {} with code of size {} (Gas remaining: {})",
             frame.getContractAddress(),

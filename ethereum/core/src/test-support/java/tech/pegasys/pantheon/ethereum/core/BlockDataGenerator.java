@@ -117,7 +117,8 @@ public class BlockDataGenerator {
       MutableAccount account = updater.getOrCreate(address());
       if (random.nextFloat() < percentContractAccounts) {
         // Some percentage of accounts are contract accounts
-        account.setCode(bytesValue(5, 50), Account.DEFAULT_VERSION);
+        account.setCode(bytesValue(5, 50));
+        account.setVersion(Account.DEFAULT_VERSION);
         if (random.nextFloat() < percentContractAccountsWithNonEmptyStorage) {
           // Add some storage for contract accounts
           int storageValues = random.nextInt(20) + 10;

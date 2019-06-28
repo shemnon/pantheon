@@ -111,7 +111,8 @@ public final class GenesisState {
         genesisAccount -> {
           final MutableAccount account = updater.getOrCreate(genesisAccount.address);
           account.setBalance(genesisAccount.balance);
-          account.setCode(genesisAccount.code, genesisAccount.version);
+          account.setCode(genesisAccount.code);
+          account.setVersion(genesisAccount.version);
           genesisAccount.storage.forEach(account::setStorageValue);
         });
     updater.commit();

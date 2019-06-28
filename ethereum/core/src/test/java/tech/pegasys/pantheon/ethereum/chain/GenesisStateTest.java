@@ -89,8 +89,8 @@ public final class GenesisStateTest {
     assertThat(header.getParentHash()).isEqualTo(Hash.ZERO);
   }
 
-  private void assertContractInvariants(final String sourceFile, final String blockHash, final int version)
-      throws Exception {
+  private void assertContractInvariants(
+      final String sourceFile, final String blockHash, final int version) throws Exception {
     final GenesisState genesisState =
         GenesisState.fromJson(
             Resources.toString(GenesisStateTest.class.getResource(sourceFile), Charsets.UTF_8),
