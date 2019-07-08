@@ -32,6 +32,8 @@ import java.util.Optional;
 
 public abstract class AbstractCreateOperation extends AbstractOperation {
 
+  final int accountVersion;
+
   public AbstractCreateOperation(
       final int opcode,
       final String name,
@@ -39,7 +41,8 @@ public abstract class AbstractCreateOperation extends AbstractOperation {
       final int stackItemsProduced,
       final boolean updatesProgramCounter,
       final int opSize,
-      final GasCalculator gasCalculator) {
+      final GasCalculator gasCalculator,
+      final int accountVersion) {
     super(
         opcode,
         name,
@@ -48,6 +51,7 @@ public abstract class AbstractCreateOperation extends AbstractOperation {
         updatesProgramCounter,
         opSize,
         gasCalculator);
+    this.accountVersion = accountVersion;
   }
 
   @Override
@@ -111,6 +115,7 @@ public abstract class AbstractCreateOperation extends AbstractOperation {
             .address(contractAddress)
             .originator(frame.getOriginatorAddress())
             .contract(contractAddress)
+            .contractAccountVersionIndex(accountVersion)
             .gasPrice(frame.getGasPrice())
             .inputData(BytesValue.EMPTY)
             .sender(frame.getRecipientAddress())

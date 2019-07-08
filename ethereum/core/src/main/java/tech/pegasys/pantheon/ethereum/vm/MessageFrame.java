@@ -206,6 +206,7 @@ public class MessageFrame {
   private final Address recipient;
   private final Address originator;
   private final Address contract;
+  private final int contractAccountVersionIndex;
   private final Wei gasPrice;
   private final BytesValue inputData;
   private final Address sender;
@@ -238,6 +239,7 @@ public class MessageFrame {
       final Address recipient,
       final Address originator,
       final Address contract,
+      final int contractAccountVersionIndex,
       final Wei gasPrice,
       final BytesValue inputData,
       final Address sender,
@@ -271,6 +273,7 @@ public class MessageFrame {
     this.recipient = recipient;
     this.originator = originator;
     this.contract = contract;
+    this.contractAccountVersionIndex = contractAccountVersionIndex;
     this.gasPrice = gasPrice;
     this.inputData = inputData;
     this.sender = sender;
@@ -846,6 +849,10 @@ public class MessageFrame {
     this.currentOperation = currentOperation;
   }
 
+  public int getContractAccountVersionIndex() {
+    return contractAccountVersionIndex;
+  }
+
   public static class Builder {
 
     private Type type;
@@ -856,6 +863,7 @@ public class MessageFrame {
     private Address address;
     private Address originator;
     private Address contract;
+    private int contractAccountVersionIndex = -1;
     private Wei gasPrice;
     private BytesValue inputData;
     private Address sender;
@@ -909,6 +917,11 @@ public class MessageFrame {
 
     public Builder contract(final Address contract) {
       this.contract = contract;
+      return this;
+    }
+
+    public Builder contractAccountVersionIndex(final int contractAccountVersionIndex) {
+      this.contractAccountVersionIndex = contractAccountVersionIndex;
       return this;
     }
 
@@ -1008,6 +1021,7 @@ public class MessageFrame {
       checkState(miningBeneficiary != null, "Missing mining beneficiary");
       checkState(blockHashLookup != null, "Missing block hash lookup");
       checkState(isPersistingState != null, "Missing isPersistingState");
+      checkState(contractAccountVersionIndex != -1, "Missing contractAccountVersionIndex");
     }
 
     public MessageFrame build() {
@@ -1022,6 +1036,7 @@ public class MessageFrame {
           address,
           originator,
           contract,
+          contractAccountVersionIndex,
           gasPrice,
           inputData,
           sender,

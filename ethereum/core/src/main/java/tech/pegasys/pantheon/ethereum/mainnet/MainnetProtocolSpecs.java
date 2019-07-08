@@ -16,6 +16,7 @@ import static tech.pegasys.pantheon.ethereum.vm.MessageFrame.DEFAULT_MAX_STACK_S
 
 import tech.pegasys.pantheon.ethereum.MainnetBlockValidator;
 import tech.pegasys.pantheon.ethereum.chain.Blockchain;
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.MutableAccount;
@@ -36,6 +37,7 @@ import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import io.vertx.core.json.JsonArray;
@@ -91,7 +93,8 @@ public abstract class MainnetProtocolSpecs {
                     contractCreationProcessor,
                     messageCallProcessor,
                     false,
-                    stackSizeLimit))
+                    stackSizeLimit,
+                    Account.DEFAULT_VERSION))
         .privateTransactionProcessorBuilder(
             (gasCalculator,
                 transactionValidator,
@@ -205,7 +208,8 @@ public abstract class MainnetProtocolSpecs {
                     contractCreationProcessor,
                     messageCallProcessor,
                     true,
-                    stackSizeLimit))
+                    stackSizeLimit,
+                    Account.DEFAULT_VERSION))
         .privateTransactionProcessorBuilder(
             (gasCalculator,
                 transactionValidator,
@@ -268,10 +272,25 @@ public abstract class MainnetProtocolSpecs {
       final OptionalInt configContractSizeLimit,
       final OptionalInt configStackSizeLimit,
       final boolean enableRevertReason) {
+    Preconditions.checkArgument(chainId.isPresent(), "Istanbul requires a chainId");
     final int contractSizeLimit =
         configContractSizeLimit.orElse(SPURIOUS_DRAGON_CONTRACT_SIZE_LIMIT);
+    final int stackSizeLimit = configStackSizeLimit.orElse(DEFAULT_MAX_STACK_SIZE);
     return constantinopleFixDefinition(
             chainId, configContractSizeLimit, configStackSizeLimit, enableRevertReason)
+        .transactionProcessorBuilder(
+            (gasCalculator,
+                transactionValidator,
+                contractCreationProcessor,
+                messageCallProcessor) ->
+                new MainnetTransactionProcessor(
+                    gasCalculator,
+                    transactionValidator,
+                    contractCreationProcessor,
+                    messageCallProcessor,
+                    true,
+                    stackSizeLimit,
+                    Account.DEFAULT_VERSION))
         .contractCreationProcessorBuilder(
             (gasCalculator, evm) ->
                 new MainnetContractCreationProcessor(
@@ -282,6 +301,7 @@ public abstract class MainnetProtocolSpecs {
                     1,
                     SPURIOUS_DRAGON_FORCE_DELETE_WHEN_EMPTY_ADDRESSES,
                     1))
+        .evmBuilder(gasCalculator -> MainnetEvmRegistries.istanbul(gasCalculator, chainId.get()))
         .name("Istanbul");
   }
 

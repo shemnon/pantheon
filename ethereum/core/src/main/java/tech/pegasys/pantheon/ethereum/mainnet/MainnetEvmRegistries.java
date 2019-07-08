@@ -12,6 +12,7 @@
  */
 package tech.pegasys.pantheon.ethereum.mainnet;
 
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.vm.EVM;
 import tech.pegasys.pantheon.ethereum.vm.GasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.Operation;
@@ -30,6 +31,7 @@ import tech.pegasys.pantheon.ethereum.vm.operations.CallDataSizeOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.CallOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.CallValueOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.CallerOperation;
+import tech.pegasys.pantheon.ethereum.vm.operations.ChainIdOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.CodeCopyOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.CodeSizeOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.CoinbaseOperation;
@@ -91,11 +93,16 @@ import tech.pegasys.pantheon.ethereum.vm.operations.SubOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.SwapOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.TimestampOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.XorOperation;
+import tech.pegasys.pantheon.util.bytes.Bytes32;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /** Provides EVMs supporting the appropriate operations for mainnet hard forks. */
 public abstract class MainnetEvmRegistries {
@@ -127,6 +134,23 @@ public abstract class MainnetEvmRegistries {
     return new EVM(registry, new InvalidOperation(gasCalculator));
   }
 
+  private static EVM createAndPopulate(
+      final Map<Integer, List<OperationFactory>> factories, final GasCalculator gasCalculator) {
+    final OperationRegistry[] registries =
+        new OperationRegistry[factories.keySet().stream().max(Integer::compare).orElse(0) + 1];
+    for (final Map.Entry<Integer, List<OperationFactory>> versionedFactory : factories.entrySet()) {
+      final OperationRegistry registry = new OperationRegistry();
+      registries[versionedFactory.getKey()] = registry;
+
+      for (final OperationFactory factory : versionedFactory.getValue()) {
+        final Operation operation = factory.apply(gasCalculator);
+        registry.put(operation.getOpcode(), operation);
+      }
+    }
+
+    return new EVM(registries, new InvalidOperation(gasCalculator));
+  }
+
   public static EVM frontier(final GasCalculator gasCalculator) {
     return createAndPopulate(FRONTIER_OPERATION_FACTORIES, gasCalculator);
   }
@@ -141,6 +165,10 @@ public abstract class MainnetEvmRegistries {
 
   public static EVM constantinople(final GasCalculator gasCalculator) {
     return createAndPopulate(CONSTANTINOPLE_OPERATION_FACTORIES, gasCalculator);
+  }
+
+  public static EVM istanbul(final GasCalculator gasCalculator, final BigInteger chainId) {
+    return createAndPopulate(istanbulFactories(chainId), gasCalculator);
   }
 
   private static List<OperationFactory> buildFrontierFactories() {
@@ -205,7 +233,7 @@ public abstract class MainnetEvmRegistries {
     builder.add(InvalidOperation::new);
     builder.add(StopOperation::new);
     builder.add(SelfDestructOperation::new);
-    builder.add(CreateOperation::new);
+    builder.add(gasCalculator -> new CreateOperation(gasCalculator, Account.DEFAULT_VERSION));
     builder.add(CallOperation::new);
     builder.add(CallCodeOperation::new);
 
@@ -265,12 +293,29 @@ public abstract class MainnetEvmRegistries {
     final ImmutableList.Builder<OperationFactory> builder = ImmutableList.builder();
 
     builder.addAll(factories);
-    builder.add(Create2Operation::new);
+    builder.add(gasCalculator -> new Create2Operation(gasCalculator, Account.DEFAULT_VERSION));
     builder.add(SarOperation::new);
     builder.add(ShlOperation::new);
     builder.add(ShrOperation::new);
     builder.add(ExtCodeHashOperation::new);
 
     return builder.build();
+  }
+
+  private static Map<Integer, List<OperationFactory>> istanbulFactories(final BigInteger chainId) {
+
+    final ImmutableList.Builder<OperationFactory> v0Builder = ImmutableList.builder();
+    final Bytes32 chainIdAsBytes32 = Bytes32.leftPad(BytesValue.of(chainId.toByteArray()));
+    v0Builder.addAll(CONSTANTINOPLE_OPERATION_FACTORIES);
+    v0Builder.add(gasCalculator -> new CreateOperation(gasCalculator, 1));
+    v0Builder.add(gasCalculator -> new Create2Operation(gasCalculator, 1));
+    final ImmutableList<OperationFactory> v0Operations = v0Builder.build();
+
+    final ImmutableList.Builder<OperationFactory> v1Builder = ImmutableList.builder();
+    v1Builder.addAll(v0Builder.build());
+    v1Builder.add(gasCalculator -> new ChainIdOperation(gasCalculator, chainIdAsBytes32));
+    final ImmutableList<OperationFactory> v1Operations = v1Builder.build();
+
+    return ImmutableMap.of(0, v0Operations, 1, v1Operations);
   }
 }

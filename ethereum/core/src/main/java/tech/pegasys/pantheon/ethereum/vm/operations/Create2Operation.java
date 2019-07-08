@@ -25,8 +25,8 @@ public class Create2Operation extends AbstractCreateOperation {
 
   private static final BytesValue PREFIX = BytesValue.fromHexString("0xFF");
 
-  public Create2Operation(final GasCalculator gasCalculator) {
-    super(0xF5, "CREATE2", 4, 1, false, 1, gasCalculator);
+  public Create2Operation(final GasCalculator gasCalculator, final int accountVersion) {
+    super(0xF5, "CREATE2", 4, 1, false, 1, gasCalculator, accountVersion);
   }
 
   @Override

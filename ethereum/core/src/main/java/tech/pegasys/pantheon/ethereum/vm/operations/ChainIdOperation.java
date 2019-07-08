@@ -12,27 +12,28 @@
  */
 package tech.pegasys.pantheon.ethereum.vm.operations;
 
-import tech.pegasys.pantheon.ethereum.core.Account;
-import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Gas;
+import tech.pegasys.pantheon.ethereum.vm.AbstractOperation;
 import tech.pegasys.pantheon.ethereum.vm.GasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
+import tech.pegasys.pantheon.util.bytes.Bytes32;
 
-public class CreateOperation extends AbstractCreateOperation {
+public class ChainIdOperation extends AbstractOperation {
 
-  public CreateOperation(final GasCalculator gasCalculator, final int accountVersion) {
-    super(0xF0, "CREATE", 3, 1, false, 1, gasCalculator, accountVersion);
+  private final Bytes32 chainId;
+
+  public ChainIdOperation(final GasCalculator gasCalculator, final Bytes32 chainId) {
+    super(0x46, "CHAINID", 0, 1, false, 1, gasCalculator);
+    this.chainId = chainId;
   }
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().createOperationGasCost(frame);
+    return gasCalculator().getBaseTierGasCost();
   }
 
   @Override
-  protected Address targetContractAddress(final MessageFrame frame) {
-    final Account sender = frame.getWorldState().get(frame.getRecipientAddress());
-    // Decrement nonce by 1 to normalize the effect of transaction execution
-    return Address.contractAddress(frame.getRecipientAddress(), sender.getNonce() - 1L);
+  public void execute(final MessageFrame frame) {
+    frame.pushStackItem(chainId);
   }
 }

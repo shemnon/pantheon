@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.mainnet.ConstantinopleGasCalculator;
@@ -41,7 +42,7 @@ public class Create2OperationTest {
   private final int expectedGas;
   private final MessageFrame messageFrame = mock(MessageFrame.class);
   private final Create2Operation operation =
-      new Create2Operation(new ConstantinopleGasCalculator());
+      new Create2Operation(new ConstantinopleGasCalculator(), Account.DEFAULT_VERSION);
 
   @Parameters(name = "sender: {0}, salt: {1}, code: {2}")
   public static Object[][] params() {

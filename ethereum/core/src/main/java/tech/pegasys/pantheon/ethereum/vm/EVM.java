@@ -31,11 +31,17 @@ public class EVM {
   private static final Logger LOG = getLogger();
 
   private static final int STOP_OPCODE = 0x00;
-  private final OperationRegistry operations;
+  private final OperationRegistry[] operationsByVersion;
   private final Operation invalidOperation;
 
-  public EVM(final OperationRegistry operations, final Operation invalidOperation) {
-    this.operations = operations;
+  // TODO map from code version to version index
+  public EVM(final OperationRegistry[] operationsByVersion, final Operation invalidOperation) {
+    this.operationsByVersion = operationsByVersion;
+    this.invalidOperation = invalidOperation;
+  }
+
+  public EVM(final OperationRegistry operationsByVersion, final Operation invalidOperation) {
+    this.operationsByVersion = new OperationRegistry[] {operationsByVersion};
     this.invalidOperation = invalidOperation;
   }
 
@@ -47,12 +53,14 @@ public class EVM {
   }
 
   public void forEachOperation(
-      final Code code, final BiConsumer<Operation, Integer> operationDelegate) {
+      final Code code,
+      final int codeVersionIndex,
+      final BiConsumer<Operation, Integer> operationDelegate) {
     int pc = 0;
     final int length = code.getSize();
 
     while (pc < length) {
-      final Operation curOp = operationAtOffset(code, pc);
+      final Operation curOp = operationAtOffset(code, codeVersionIndex, pc);
       operationDelegate.accept(curOp, pc);
       pc += curOp.getOpSize();
     }
@@ -60,7 +68,8 @@ public class EVM {
 
   private void executeNextOperation(final MessageFrame frame, final OperationTracer operationTracer)
       throws ExceptionalHaltException {
-    frame.setCurrentOperation(operationAtOffset(frame.getCode(), frame.getPC()));
+    frame.setCurrentOperation(
+        operationAtOffset(frame.getCode(), frame.getContractAccountVersionIndex(), frame.getPC()));
     evaluateExceptionalHaltReasons(frame);
     final Optional<Gas> currentGasCost = calculateGasCost(frame);
     operationTracer.traceExecution(
@@ -135,13 +144,15 @@ public class EVM {
     }
   }
 
-  private Operation operationAtOffset(final Code code, final int offset) {
+  private Operation operationAtOffset(
+      final Code code, final int codeVersionIndex, final int offset) {
     final BytesValue bytecode = code.getBytes();
     // If the length of the program code is shorter than the required offset, halt execution.
     if (offset >= bytecode.size()) {
-      return operations.get(STOP_OPCODE);
+      return operationsByVersion[codeVersionIndex].get(STOP_OPCODE);
     }
 
-    return operations.getOrDefault(bytecode.get(offset), invalidOperation);
+    return operationsByVersion[codeVersionIndex].getOrDefault(
+        bytecode.get(offset), invalidOperation);
   }
 }

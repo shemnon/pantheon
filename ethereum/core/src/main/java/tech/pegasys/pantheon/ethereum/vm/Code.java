@@ -75,7 +75,8 @@ public class Code {
    * @param destination The destination we're checking for validity.
    * @return Whether or not this location is a valid jump destination.
    */
-  public boolean isValidJumpDestination(final EVM evm, final UInt256 destination) {
+  public boolean isValidJumpDestination(
+      final EVM evm, final MessageFrame frame, final UInt256 destination) {
     if (!destination.fitsInt()) return false;
 
     final int jumpDestination = destination.toInt();
@@ -86,6 +87,7 @@ public class Code {
       validJumpDestinations = new BitSet(getSize());
       evm.forEachOperation(
           this,
+          frame.getContractAccountVersionIndex(),
           (final Operation op, final Integer offset) -> {
             if (op.getOpcode() == JumpDestOperation.OPCODE) {
               validJumpDestinations.set(offset);
