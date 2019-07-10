@@ -26,8 +26,8 @@ public class SHA256PrecompiledContract extends AbstractPrecompiledContract {
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().sha256PrecompiledContractGasCost(input);
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
+    return getGasCalculator().sha256PrecompiledContractGasCost(input);
   }
 
   @Override

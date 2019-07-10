@@ -27,8 +27,8 @@ public class RIPEMD160PrecompiledContract extends AbstractPrecompiledContract {
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().ripemd160PrecompiledContractGasCost(input);
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
+    return getGasCalculator().ripemd160PrecompiledContractGasCost(input);
   }
 
   @Override

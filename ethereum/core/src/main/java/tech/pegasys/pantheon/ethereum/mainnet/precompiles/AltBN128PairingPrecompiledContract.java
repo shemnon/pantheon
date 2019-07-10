@@ -41,14 +41,28 @@ public class AltBN128PairingPrecompiledContract extends AbstractPrecompiledContr
       BytesValue.fromHexString(
           "0x0000000000000000000000000000000000000000000000000000000000000001");
 
+  public static final Gas V0_PAIRING_CHECK_PARAMETER_COST = Gas.of(80_000);
+  public static final Gas V0_PAIRING_CHECK_BASE_COST = Gas.of(100_000);
+
+  public static final Gas V1_PAIRING_CHECK_PARAMETER_COST = Gas.of(34_000);
+  public static final Gas V1_PAIRING_CHECK_BASE_COST = Gas.of(45_000);
+
   public AltBN128PairingPrecompiledContract(final GasCalculator gasCalculator) {
     super("AltBN128Pairing", gasCalculator);
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
     final int parameters = input.size() / PARAMETER_LENGTH;
-    return Gas.of(80_000L).times(Gas.of(parameters)).plus(Gas.of(100_000L));
+    if (messageFrame.getContractAccountVersionIndex() >= 1) {
+      return V1_PAIRING_CHECK_PARAMETER_COST
+          .times(Gas.of(parameters))
+          .plus(V1_PAIRING_CHECK_BASE_COST);
+    } else {
+      return V0_PAIRING_CHECK_PARAMETER_COST
+          .times(Gas.of(parameters))
+          .plus(V0_PAIRING_CHECK_BASE_COST);
+    }
   }
 
   @Override

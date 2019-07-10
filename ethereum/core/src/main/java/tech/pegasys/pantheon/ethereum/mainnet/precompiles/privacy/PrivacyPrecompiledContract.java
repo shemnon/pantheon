@@ -89,7 +89,7 @@ public class PrivacyPrecompiledContract extends AbstractPrecompiledContract {
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
     return Gas.of(40_000L); // Not sure
   }
 
@@ -98,10 +98,10 @@ public class PrivacyPrecompiledContract extends AbstractPrecompiledContract {
     final String key = new String(input.extractArray(), UTF_8);
     final ReceiveRequest receiveRequest = new ReceiveRequest(key, enclavePublicKey);
 
-    ReceiveResponse receiveResponse;
+    final ReceiveResponse receiveResponse;
     try {
       receiveResponse = enclave.receive(receiveRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.error("Enclave probably does not have private transaction with key {}.", key, e);
       return BytesValue.EMPTY;
     }

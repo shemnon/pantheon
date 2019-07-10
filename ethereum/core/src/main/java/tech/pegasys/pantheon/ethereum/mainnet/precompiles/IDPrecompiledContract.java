@@ -25,8 +25,8 @@ public class IDPrecompiledContract extends AbstractPrecompiledContract {
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().idPrecompiledContractGasCost(input);
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
+    return getGasCalculator().idPrecompiledContractGasCost(input);
   }
 
   @Override

@@ -52,7 +52,7 @@ public class BigIntegerModularExponentiationPrecompiledContract
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
     // Typically gas calculations are delegated to a GasCalculator instance,
     // but the complexity and coupling wih other parts of the precompile seem
     // like reasonable reasons to do the math here instead.

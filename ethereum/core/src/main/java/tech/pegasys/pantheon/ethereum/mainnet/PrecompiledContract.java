@@ -36,9 +36,11 @@ public interface PrecompiledContract {
    *
    * @param input the input for the pre-compiled contract (on which the gas requirement may or may
    *     not depend).
+   * @param messageFrame context for this message (on which the gas requirement may or may not
+   *     depend).
    * @return the gas requirement (cost) for the pre-compiled contract.
    */
-  Gas gasRequirement(BytesValue input);
+  Gas gasRequirement(BytesValue input, MessageFrame messageFrame);
 
   /**
    * Executes the pre-compiled contract.

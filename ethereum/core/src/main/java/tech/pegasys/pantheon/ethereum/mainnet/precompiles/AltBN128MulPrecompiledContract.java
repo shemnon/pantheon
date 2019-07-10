@@ -30,13 +30,20 @@ public class AltBN128MulPrecompiledContract extends AbstractPrecompiledContract 
       new BigInteger(
           "115792089237316195423570985008687907853269984665640564039457584007913129639935");
 
+  public static final Gas V0_ECMUL_COST = Gas.of(40_000);
+  public static final Gas V1_ECMUL_COST = Gas.of(6_000);
+
   public AltBN128MulPrecompiledContract(final GasCalculator gasCalculator) {
     super("AltBn128Mul", gasCalculator);
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
-    return Gas.of(40_000L);
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
+    if (messageFrame.getContractAccountVersionIndex() >= 1) {
+      return V1_ECMUL_COST;
+    } else {
+      return V0_ECMUL_COST;
+    }
   }
 
   @Override

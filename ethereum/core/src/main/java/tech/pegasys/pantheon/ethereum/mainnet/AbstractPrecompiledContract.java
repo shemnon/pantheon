@@ -29,7 +29,7 @@ public abstract class AbstractPrecompiledContract implements PrecompiledContract
     this.gasCalculator = gasCalculator;
   }
 
-  protected GasCalculator gasCalculator() {
+  protected GasCalculator getGasCalculator() {
     return gasCalculator;
   }
 
@@ -39,7 +39,7 @@ public abstract class AbstractPrecompiledContract implements PrecompiledContract
   }
 
   @Override
-  public abstract Gas gasRequirement(BytesValue input);
+  public abstract Gas gasRequirement(BytesValue input, MessageFrame messageFrame);
 
   @Override
   public abstract BytesValue compute(BytesValue input, MessageFrame messageFrame);

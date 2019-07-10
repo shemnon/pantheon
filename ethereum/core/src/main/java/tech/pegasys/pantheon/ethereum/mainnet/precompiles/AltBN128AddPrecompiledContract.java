@@ -26,13 +26,20 @@ import java.util.Arrays;
 
 public class AltBN128AddPrecompiledContract extends AbstractPrecompiledContract {
 
+  public static final Gas V0_ECADD_COST = Gas.of(500);
+  public static final Gas V1_ECADD_COST = Gas.of(150);
+
   public AltBN128AddPrecompiledContract(final GasCalculator gasCalculator) {
     super("AltBN128Add", gasCalculator);
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
-    return Gas.of(500);
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
+    if (messageFrame.getContractAccountVersionIndex() >= 1) {
+      return V1_ECADD_COST;
+    } else {
+      return V0_ECADD_COST;
+    }
   }
 
   @Override

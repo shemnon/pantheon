@@ -37,8 +37,8 @@ public class ECRECPrecompiledContract extends AbstractPrecompiledContract {
   }
 
   @Override
-  public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().getEcrecPrecompiledContractGasCost();
+  public Gas gasRequirement(final BytesValue input, final MessageFrame messageFrame) {
+    return getGasCalculator().getEcrecPrecompiledContractGasCost();
   }
 
   @Override

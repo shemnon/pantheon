@@ -106,7 +106,7 @@ public class MainnetMessageCallProcessor extends AbstractMessageProcessor {
    * @param contract The contract this is a message call to.
    */
   private void executePrecompile(final PrecompiledContract contract, final MessageFrame frame) {
-    final Gas gasRequirement = contract.gasRequirement(frame.getInputData());
+    final Gas gasRequirement = contract.gasRequirement(frame.getInputData(), frame);
     if (frame.getRemainingGas().compareTo(gasRequirement) < 0) {
       LOG.trace(
           "Not enough gas available for pre-compiled contract code {}: requiring "
