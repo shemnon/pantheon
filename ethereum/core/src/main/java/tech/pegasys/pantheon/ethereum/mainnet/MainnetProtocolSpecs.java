@@ -50,6 +50,8 @@ public abstract class MainnetProtocolSpecs {
 
   public static final int SPURIOUS_DRAGON_CONTRACT_SIZE_LIMIT = 24576;
 
+  public static final int ISTANBUL_ACCOUNT_VERSION = 1;
+
   private static final Address RIPEMD160_PRECOMPILE =
       Address.fromHexString("0x0000000000000000000000000000000000000003");
 
@@ -289,6 +291,7 @@ public abstract class MainnetProtocolSpecs {
     return constantinopleFixDefinition(
             chainId, configContractSizeLimit, configStackSizeLimit, enableRevertReason)
         .evmBuilder(MainnetEvmRegistries::istanbul)
+        .precompileContractRegistryBuilder(MainnetPrecompiledContractRegistries::istanbul)
         .transactionProcessorBuilder(
             (gasCalculator,
                 transactionValidator,
@@ -301,7 +304,7 @@ public abstract class MainnetProtocolSpecs {
                     messageCallProcessor,
                     true,
                     stackSizeLimit,
-                    Account.ISTANBUL_VERSION))
+                    ISTANBUL_ACCOUNT_VERSION))
         .privateTransactionProcessorBuilder(
             (gasCalculator,
                 transactionValidator,
@@ -314,7 +317,7 @@ public abstract class MainnetProtocolSpecs {
                     messageCallProcessor,
                     false,
                     stackSizeLimit,
-                    Account.ISTANBUL_VERSION))
+                    ISTANBUL_ACCOUNT_VERSION))
         .contractCreationProcessorBuilder(
             (gasCalculator, evm) ->
                 new MainnetContractCreationProcessor(
@@ -324,7 +327,7 @@ public abstract class MainnetProtocolSpecs {
                     Collections.singletonList(MaxCodeSizeRule.of(contractSizeLimit)),
                     1,
                     SPURIOUS_DRAGON_FORCE_DELETE_WHEN_EMPTY_ADDRESSES,
-                    Account.ISTANBUL_VERSION))
+                    ISTANBUL_ACCOUNT_VERSION))
         .name("Istanbul");
   }
 
