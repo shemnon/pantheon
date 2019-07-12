@@ -111,7 +111,8 @@ public abstract class MainnetProtocolSpecs {
                     contractCreationProcessor,
                     messageCallProcessor,
                     false,
-                    stackSizeLimit))
+                    stackSizeLimit,
+                    Account.DEFAULT_VERSION))
         .difficultyCalculator(MainnetDifficultyCalculators.FRONTIER)
         .blockHeaderValidatorBuilder(MainnetBlockHeaderValidator::create)
         .ommerHeaderValidatorBuilder(MainnetBlockHeaderValidator::createOmmerValidator)
@@ -230,7 +231,8 @@ public abstract class MainnetProtocolSpecs {
                     contractCreationProcessor,
                     messageCallProcessor,
                     false,
-                    stackSizeLimit))
+                    stackSizeLimit,
+                    Account.DEFAULT_VERSION))
         .name("SpuriousDragon");
   }
 
@@ -298,7 +300,20 @@ public abstract class MainnetProtocolSpecs {
                     messageCallProcessor,
                     true,
                     stackSizeLimit,
-                    Account.DEFAULT_VERSION))
+                    Account.ISTANBUL_VERSION))
+        .privateTransactionProcessorBuilder(
+            (gasCalculator,
+             transactionValidator,
+             contractCreationProcessor,
+             messageCallProcessor) ->
+                new PrivateTransactionProcessor(
+                    gasCalculator,
+                    transactionValidator,
+                    contractCreationProcessor,
+                    messageCallProcessor,
+                    false,
+                    stackSizeLimit,
+                    Account.ISTANBUL_VERSION))
         .contractCreationProcessorBuilder(
             (gasCalculator, evm) ->
                 new MainnetContractCreationProcessor(
@@ -308,7 +323,7 @@ public abstract class MainnetProtocolSpecs {
                     Collections.singletonList(MaxCodeSizeRule.of(contractSizeLimit)),
                     1,
                     SPURIOUS_DRAGON_FORCE_DELETE_WHEN_EMPTY_ADDRESSES,
-                    1))
+                    Account.ISTANBUL_VERSION))
         .name("Istanbul");
   }
 
