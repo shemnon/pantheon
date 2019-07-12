@@ -304,9 +304,9 @@ public abstract class MainnetProtocolSpecs {
                     Account.ISTANBUL_VERSION))
         .privateTransactionProcessorBuilder(
             (gasCalculator,
-             transactionValidator,
-             contractCreationProcessor,
-             messageCallProcessor) ->
+                transactionValidator,
+                contractCreationProcessor,
+                messageCallProcessor) ->
                 new PrivateTransactionProcessor(
                     gasCalculator,
                     transactionValidator,
