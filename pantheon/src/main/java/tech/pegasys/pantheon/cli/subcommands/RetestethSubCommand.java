@@ -27,8 +27,10 @@ import tech.pegasys.pantheon.ethereum.retesteth.RetestethRunner;
 import java.net.InetAddress;
 import java.nio.file.Path;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -48,6 +50,13 @@ public class RetestethSubCommand implements Runnable {
       paramLabel = MANDATORY_PATH_FORMAT_HELP,
       description = "The path to Pantheon data directory (default: ${DEFAULT-VALUE})")
   final Path dataPath = getDefaultPantheonDataPath(this);
+
+  @Option(
+      names = {"--logging", "-l"},
+      paramLabel = "<LOG VERBOSITY LEVEL>",
+      description =
+          "Logging verbosity levels: OFF, FATAL, WARN, INFO, DEBUG, TRACE, ALL (default: INFO)")
+  private final Level logLevel = Level.INFO;
 
   @SuppressWarnings("FieldMayBeFinal") // Because PicoCLI requires Strings to not be final.
   @Option(
@@ -80,8 +89,18 @@ public class RetestethSubCommand implements Runnable {
     return autoDiscoveredDefaultIP;
   }
 
+  private void prepareLogging() {
+    // set log level per CLI flags
+    if (logLevel != null) {
+      System.out.println("Setting logging level to " + logLevel.name());
+      Configurator.setAllLevels("", logLevel);
+    }
+  }
+
   @Override
   public void run() {
+    prepareLogging();
+
     final RetestethConfiguration retestethConfiguration = new RetestethConfiguration(dataPath);
     final JsonRpcConfiguration jsonRpcConfiguration = JsonRpcConfiguration.createDefault();
     jsonRpcConfiguration.setHost(rpcHttpHost);
