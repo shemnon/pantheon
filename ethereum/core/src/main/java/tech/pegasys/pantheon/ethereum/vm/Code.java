@@ -72,6 +72,7 @@ public class Code {
    * Determine whether a specified destination is a valid jump target.
    *
    * @param evm the EVM executing this code
+   * @param frame The current message frame
    * @param destination The destination we're checking for validity.
    * @return Whether or not this location is a valid jump destination.
    */
