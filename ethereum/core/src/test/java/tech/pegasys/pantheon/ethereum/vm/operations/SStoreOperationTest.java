@@ -84,7 +84,7 @@ public class SStoreOperationTest {
   @Parameterized.Parameters(
       name = "{index}: minimum gas {0}, initial gas {1}, remaining gas {2}, expected halt {3}")
   public static Iterable<Object[]> data() {
-    return Arrays.asList(testData);
+    return Arrays.asList((Object[][]) testData);
   }
 
   private MessageFrame createMessageFrame(
