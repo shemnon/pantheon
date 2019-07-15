@@ -130,7 +130,7 @@ abstract class MainnetEvmRegistries {
   static EVM istanbul(final GasCalculator gasCalculator) {
     final OperationRegistry registry = new OperationRegistry(2);
 
-    registerIstanbulOpcodes(registry, gasCalculator, Account.DEFAULT_VERSION);
+    registerIstanbulOpcodes(registry, gasCalculator);
 
     return new EVM(registry, new InvalidOperation(gasCalculator));
   }
@@ -187,7 +187,8 @@ abstract class MainnetEvmRegistries {
     registry.put(new MStoreOperation(gasCalculator), accountVersion);
     registry.put(new MStore8Operation(gasCalculator), accountVersion);
     registry.put(new SLoadOperation(gasCalculator), accountVersion);
-    registry.put(new SStoreOperation(gasCalculator), accountVersion);
+    registry.put(
+        new SStoreOperation(gasCalculator, SStoreOperation.FRONTIER_MINIMUM), accountVersion);
     registry.put(new JumpOperation(gasCalculator), accountVersion);
     registry.put(new JumpiOperation(gasCalculator), accountVersion);
     registry.put(new PCOperation(gasCalculator), accountVersion);
@@ -255,10 +256,15 @@ abstract class MainnetEvmRegistries {
   }
 
   private static void registerIstanbulOpcodes(
-      final OperationRegistry registry,
-      final GasCalculator gasCalculator,
-      final int accountVersion) {
-    registerConstantinopleOpcodes(registry, gasCalculator, accountVersion);
-    registerConstantinopleOpcodes(registry, gasCalculator, 1);
+      final OperationRegistry registry, final GasCalculator gasCalculator) {
+    registerConstantinopleOpcodes(registry, gasCalculator, Account.DEFAULT_VERSION);
+    registry.put(
+        new SStoreOperation(gasCalculator, SStoreOperation.EIP_1706_MINIMUM),
+        Account.DEFAULT_VERSION);
+    registerConstantinopleOpcodes(
+        registry, gasCalculator, MainnetProtocolSpecs.ISTANBUL_ACCOUNT_VERSION);
+    registry.put(
+        new SStoreOperation(gasCalculator, SStoreOperation.EIP_1706_MINIMUM),
+        MainnetProtocolSpecs.ISTANBUL_ACCOUNT_VERSION);
   }
 }
