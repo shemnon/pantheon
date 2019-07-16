@@ -31,7 +31,7 @@ public class Sha3Operation extends AbstractOperation {
     final UInt256 offset = frame.getStackItem(0).asUInt256();
     final UInt256 length = frame.getStackItem(1).asUInt256();
 
-    return gasCalculator().sha3OperationGasCost(frame, offset, length);
+    return getGasCalculator().sha3OperationGasCost(frame, offset, length);
   }
 
   @Override

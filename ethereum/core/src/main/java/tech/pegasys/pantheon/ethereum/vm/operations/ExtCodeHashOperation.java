@@ -29,7 +29,7 @@ public class ExtCodeHashOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().extCodeHashOperationGasCost();
+    return getGasCalculator().extCodeHashOperationGasCost();
   }
 
   @Override

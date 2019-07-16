@@ -26,7 +26,7 @@ public class CreateOperation extends AbstractCreateOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().createOperationGasCost(frame);
+    return getGasCalculator().createOperationGasCost(frame);
   }
 
   @Override

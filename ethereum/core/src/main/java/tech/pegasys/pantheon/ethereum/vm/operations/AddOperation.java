@@ -26,7 +26,7 @@ public class AddOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getVeryLowTierGasCost();
+    return getGasCalculator().getVeryLowTierGasCost();
   }
 
   @Override

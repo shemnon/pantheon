@@ -29,7 +29,7 @@ public class ExpOperation extends AbstractOperation {
     final UInt256 power = frame.getStackItem(1).asUInt256();
 
     final int numBytes = (power.bitLength() + 7) / 8;
-    return gasCalculator().expOperationGasCost(numBytes);
+    return getGasCalculator().expOperationGasCost(numBytes);
     //    return FrontierGasCosts.EXP.plus(FrontierGasCosts.EXP_BYTE.times(numBytes));
   }
 

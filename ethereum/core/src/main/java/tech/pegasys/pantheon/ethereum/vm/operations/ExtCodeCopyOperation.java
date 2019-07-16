@@ -33,7 +33,7 @@ public class ExtCodeCopyOperation extends AbstractOperation {
     final UInt256 offset = frame.getStackItem(1).asUInt256();
     final UInt256 length = frame.getStackItem(3).asUInt256();
 
-    return gasCalculator().extCodeCopyOperationGasCost(frame, offset, length);
+    return getGasCalculator().extCodeCopyOperationGasCost(frame, offset, length);
   }
 
   @Override

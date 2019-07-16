@@ -42,7 +42,7 @@ public abstract class AbstractOperation implements Operation {
     this.gasCalculator = gasCalculator;
   }
 
-  protected GasCalculator gasCalculator() {
+  protected GasCalculator getGasCalculator() {
     return gasCalculator;
   }
 

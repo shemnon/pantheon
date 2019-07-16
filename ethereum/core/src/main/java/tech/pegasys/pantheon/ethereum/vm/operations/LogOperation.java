@@ -43,7 +43,7 @@ public class LogOperation extends AbstractOperation {
     final UInt256 dataOffset = frame.getStackItem(0).asUInt256();
     final UInt256 dataLength = frame.getStackItem(1).asUInt256();
 
-    return gasCalculator().logOperationGasCost(frame, dataOffset, dataLength, numTopics);
+    return getGasCalculator().logOperationGasCost(frame, dataOffset, dataLength, numTopics);
   }
 
   @Override

@@ -26,7 +26,7 @@ public class DifficultyOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getBaseTierGasCost();
+    return getGasCalculator().getBaseTierGasCost();
   }
 
   @Override

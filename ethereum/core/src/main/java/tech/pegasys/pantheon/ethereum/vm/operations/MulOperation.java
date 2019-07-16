@@ -26,7 +26,7 @@ public class MulOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getLowTierGasCost();
+    return getGasCalculator().getLowTierGasCost();
   }
 
   @Override

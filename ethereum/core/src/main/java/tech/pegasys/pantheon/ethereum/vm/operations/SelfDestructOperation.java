@@ -40,7 +40,7 @@ public class SelfDestructOperation extends AbstractOperation {
     final Account recipient = frame.getWorldState().get(recipientAddress);
     final Wei inheritance = frame.getWorldState().get(frame.getRecipientAddress()).getBalance();
 
-    return gasCalculator().selfDestructOperationGasCost(recipient, inheritance);
+    return getGasCalculator().selfDestructOperationGasCost(recipient, inheritance);
   }
 
   @Override

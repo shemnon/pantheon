@@ -37,7 +37,7 @@ public class SStoreOperation extends AbstractOperation {
     final UInt256 newValue = frame.getStackItem(1).asUInt256();
 
     final Account account = frame.getWorldState().get(frame.getRecipientAddress());
-    return gasCalculator().calculateStorageCost(account, key, newValue);
+    return getGasCalculator().calculateStorageCost(account, key, newValue);
   }
 
   @Override
@@ -49,7 +49,7 @@ public class SStoreOperation extends AbstractOperation {
     assert account != null : "VM account should exists";
 
     // Increment the refund counter.
-    frame.incrementGasRefund(gasCalculator().calculateStorageRefundAmount(account, key, value));
+    frame.incrementGasRefund(getGasCalculator().calculateStorageRefundAmount(account, key, value));
 
     account.setStorageValue(key.copy(), value.copy());
   }

@@ -85,7 +85,7 @@ public class CallOperation extends AbstractCallOperation {
 
   @Override
   public Gas gasAvailableForChildCall(final MessageFrame frame) {
-    return gasCalculator().gasAvailableForChildCall(frame, gas(frame), !value(frame).isZero());
+    return getGasCalculator().gasAvailableForChildCall(frame, gas(frame), !value(frame).isZero());
   }
 
   @Override
@@ -102,7 +102,7 @@ public class CallOperation extends AbstractCallOperation {
     final UInt256 outputDataLength = outputDataLength(frame).asUInt256();
     final Account recipient = frame.getWorldState().get(address(frame));
 
-    return gasCalculator()
+    return getGasCalculator()
         .callOperationGasCost(
             frame,
             stipend,

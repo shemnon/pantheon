@@ -33,7 +33,7 @@ public class JumpiOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getHighTierGasCost();
+    return getGasCalculator().getHighTierGasCost();
   }
 
   @Override

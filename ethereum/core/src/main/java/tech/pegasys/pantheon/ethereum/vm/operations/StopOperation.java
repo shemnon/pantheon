@@ -26,7 +26,7 @@ public class StopOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getZeroTierGasCost();
+    return getGasCalculator().getZeroTierGasCost();
   }
 
   @Override

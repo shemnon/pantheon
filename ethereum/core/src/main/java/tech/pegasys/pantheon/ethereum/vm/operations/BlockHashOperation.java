@@ -33,7 +33,7 @@ public class BlockHashOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getBlockHashOperationGasCost();
+    return getGasCalculator().getBlockHashOperationGasCost();
   }
 
   @Override

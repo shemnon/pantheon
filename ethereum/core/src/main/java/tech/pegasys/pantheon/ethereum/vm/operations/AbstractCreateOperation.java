@@ -98,7 +98,7 @@ public abstract class AbstractCreateOperation extends AbstractOperation {
 
     final Address contractAddress = targetContractAddress(frame);
 
-    final Gas childGasStipend = gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
+    final Gas childGasStipend = getGasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
     frame.decrementRemainingGas(childGasStipend);
 
     final MessageFrame childFrame =

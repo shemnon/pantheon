@@ -28,7 +28,7 @@ public class ByteOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getVeryLowTierGasCost();
+    return getGasCalculator().getVeryLowTierGasCost();
   }
 
   private UInt256 getByte(final UInt256 seq, final UInt256 offset) {

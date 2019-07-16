@@ -35,7 +35,7 @@ public class ReturnDataCopyOperation extends AbstractOperation {
     final UInt256 offset = frame.getStackItem(0).asUInt256();
     final UInt256 length = frame.getStackItem(2).asUInt256();
 
-    return gasCalculator().dataCopyOperationGasCost(frame, offset, length);
+    return getGasCalculator().dataCopyOperationGasCost(frame, offset, length);
   }
 
   @Override

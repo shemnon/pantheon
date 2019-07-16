@@ -27,7 +27,7 @@ public class JumpDestOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getJumpDestOperationGasCost();
+    return getGasCalculator().getJumpDestOperationGasCost();
   }
 
   @Override

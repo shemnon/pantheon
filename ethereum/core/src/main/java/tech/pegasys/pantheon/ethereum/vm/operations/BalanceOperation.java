@@ -29,7 +29,7 @@ public class BalanceOperation extends AbstractOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return gasCalculator().getBalanceOperationGasCost();
+    return getGasCalculator().getBalanceOperationGasCost();
   }
 
   @Override
