@@ -33,6 +33,10 @@ public class LogOperation extends AbstractOperation {
 
   private final int numTopics;
 
+  private static final Gas LOG_OPERATION_BASE_GAS_COST = Gas.of(375L);
+  private static final Gas LOG_OPERATION_DATA_BYTE_GAS_COST = Gas.of(8L);
+  private static final Gas LOG_OPERATION_TOPIC_GAS_COST = Gas.of(375L);
+
   public LogOperation(final int numTopics, final GasCalculator gasCalculator) {
     super(0xA0 + numTopics, "LOG" + numTopics, numTopics + 2, 0, false, 1, gasCalculator);
     this.numTopics = numTopics;
@@ -43,7 +47,11 @@ public class LogOperation extends AbstractOperation {
     final UInt256 dataOffset = frame.getStackItem(0).asUInt256();
     final UInt256 dataLength = frame.getStackItem(1).asUInt256();
 
-    return getGasCalculator().logOperationGasCost(frame, dataOffset, dataLength, numTopics);
+    return Gas.ZERO
+        .plus(LOG_OPERATION_BASE_GAS_COST)
+        .plus(LOG_OPERATION_DATA_BYTE_GAS_COST.times(Gas.of(dataLength)))
+        .plus(LOG_OPERATION_TOPIC_GAS_COST.times(numTopics))
+        .plus(getGasCalculator().memoryExpansionGasCost(frame, dataOffset, dataLength));
   }
 
   @Override

@@ -29,7 +29,9 @@ public class MStoreOperation extends AbstractOperation {
   public Gas cost(final MessageFrame frame) {
     final UInt256 offset = frame.getStackItem(0).asUInt256();
 
-    return getGasCalculator().mStoreOperationGasCost(frame, offset);
+    return getGasCalculator()
+        .getVeryLowTierGasCost()
+        .plus(getGasCalculator().memoryExpansionGasCost(frame, offset, UInt256.U_32));
   }
 
   @Override

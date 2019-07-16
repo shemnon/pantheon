@@ -21,13 +21,20 @@ import tech.pegasys.pantheon.util.uint.UInt256;
 
 public class SLoadOperation extends AbstractOperation {
 
-  public SLoadOperation(final GasCalculator gasCalculator) {
+  private static final Gas FRONTIER_SLOAD_OPERATION_GAS_COST = Gas.of(50);
+
+  private static final Gas TANGERINE_WHISTLE_SLOAD_OPERATION_GAS_COST = Gas.of(200L);
+
+  private final Gas gasCost;
+
+  private SLoadOperation(final GasCalculator gasCalculator, final Gas gasCost) {
     super(0x54, "SLOAD", 1, 1, false, 1, gasCalculator);
+    this.gasCost = gasCost;
   }
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return getGasCalculator().getSloadOperationGasCost();
+    return gasCost;
   }
 
   @Override
@@ -38,5 +45,13 @@ public class SLoadOperation extends AbstractOperation {
     assert account != null : "VM account should exists";
 
     frame.pushStackItem(account.getStorageValue(key).getBytes());
+  }
+
+  public static SLoadOperation frontier(final GasCalculator gasCalculator) {
+    return new SLoadOperation(gasCalculator, FRONTIER_SLOAD_OPERATION_GAS_COST);
+  }
+
+  public static SLoadOperation tangerineWhistle(final GasCalculator gasCalculator) {
+    return new SLoadOperation(gasCalculator, TANGERINE_WHISTLE_SLOAD_OPERATION_GAS_COST);
   }
 }

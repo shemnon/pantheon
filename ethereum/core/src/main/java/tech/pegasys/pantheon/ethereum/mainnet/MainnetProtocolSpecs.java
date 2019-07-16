@@ -179,6 +179,7 @@ public abstract class MainnetProtocolSpecs {
       final OptionalInt contractSizeLimit, final OptionalInt configStackSizeLimit) {
     return homesteadDefinition(contractSizeLimit, configStackSizeLimit)
         .gasCalculator(TangerineWhistleGasCalculator::new)
+        .evmBuilder(MainnetEvmRegistries::tangerineWhistle)
         .name("TangerineWhistle");
   }
 
@@ -192,6 +193,7 @@ public abstract class MainnetProtocolSpecs {
 
     return tangerineWhistleDefinition(OptionalInt.empty(), configStackSizeLimit)
         .gasCalculator(SpuriousDragonGasCalculator::new)
+        .evmBuilder(MainnetEvmRegistries::spuriousDragon)
         .messageCallProcessorBuilder(
             (evm, precompileContractRegistry) ->
                 new MainnetMessageCallProcessor(

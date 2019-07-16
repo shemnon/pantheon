@@ -23,13 +23,20 @@ import tech.pegasys.pantheon.util.bytes.Bytes32;
 
 public class BalanceOperation extends AbstractOperation {
 
-  public BalanceOperation(final GasCalculator gasCalculator) {
+  public static final Gas FRONTIER_BALANCE_OPERATION_GAS_COST = Gas.of(20L);
+
+  private static final Gas TANGERINE_WHISTLE_BALANCE_OPERATION_GAS_COST = Gas.of(400L);
+
+  private final Gas cost;
+
+  private BalanceOperation(final GasCalculator gasCalculator, final Gas cost) {
     super(0x31, "BALANCE", 1, 1, false, 1, gasCalculator);
+    this.cost = cost;
   }
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return getGasCalculator().getBalanceOperationGasCost();
+    return cost;
   }
 
   @Override
@@ -37,5 +44,13 @@ public class BalanceOperation extends AbstractOperation {
     final Address accountAddress = Words.toAddress(frame.popStackItem());
     final Account account = frame.getWorldState().get(accountAddress);
     frame.pushStackItem(account == null ? Bytes32.ZERO : account.getBalance().getBytes());
+  }
+
+  public static BalanceOperation frontier(final GasCalculator gasCalculator) {
+    return new BalanceOperation(gasCalculator, FRONTIER_BALANCE_OPERATION_GAS_COST);
+  }
+
+  public static BalanceOperation tangerineWhistle(final GasCalculator gasCalculator) {
+    return new BalanceOperation(gasCalculator, TANGERINE_WHISTLE_BALANCE_OPERATION_GAS_COST);
   }
 }

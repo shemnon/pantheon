@@ -21,13 +21,15 @@ public class JumpDestOperation extends AbstractOperation {
 
   public static final int OPCODE = 0x5B;
 
+  private static final Gas JUMPDEST_OPERATION_GAS_COST = Gas.of(1);
+
   public JumpDestOperation(final GasCalculator gasCalculator) {
     super(OPCODE, "JUMPDEST", 0, 0, false, 1, gasCalculator);
   }
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return getGasCalculator().getJumpDestOperationGasCost();
+    return JUMPDEST_OPERATION_GAS_COST;
   }
 
   @Override

@@ -27,13 +27,15 @@ public class BlockHashOperation extends AbstractOperation {
 
   private static final int MAX_RELATIVE_BLOCK = 255;
 
+  private static final Gas BLOCKHASH_OPERATION_GAS_COST = Gas.of(20L);
+
   public BlockHashOperation(final GasCalculator gasCalculator) {
     super(0x40, "BLOCKHASH", 1, 1, false, 1, gasCalculator);
   }
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return getGasCalculator().getBlockHashOperationGasCost();
+    return BLOCKHASH_OPERATION_GAS_COST;
   }
 
   @Override

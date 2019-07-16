@@ -14,8 +14,6 @@ package tech.pegasys.pantheon.ethereum.mainnet;
 
 import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Gas;
-import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
-import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 public class ConstantinopleGasCalculator extends SpuriousDragonGasCalculator {
@@ -28,16 +26,6 @@ public class ConstantinopleGasCalculator extends SpuriousDragonGasCalculator {
   private static final Gas NEGATIVE_STORAGE_RESET_REFUND_AMOUNT = Gas.of(-15_000);
   private static final Gas SSTORE_DIRTY_RETURN_TO_UNUSED_REFUND_AMOUNT = Gas.of(19800);
   private static final Gas SSTORE_DIRTY_RETURN_TO_ORIGINAL_VALUE_REFUND_AMOUNT = Gas.of(4800);
-
-  private static final Gas EXTCODE_HASH_COST = Gas.of(400);
-
-  @Override
-  public Gas create2OperationGasCost(final MessageFrame frame) {
-    final UInt256 initCodeLength = frame.getStackItem(2).asUInt256();
-    final UInt256 numWords = initCodeLength.dividedCeilBy(Bytes32.SIZE);
-    final Gas initCodeHashCost = SHA3_OPERATION_WORD_GAS_COST.times(Gas.of(numWords));
-    return createOperationGasCost(frame).plus(initCodeHashCost);
-  }
 
   @Override
   // As per https://eips.ethereum.org/EIPS/eip-1283
@@ -97,10 +85,5 @@ public class ConstantinopleGasCalculator extends SpuriousDragonGasCalculator {
         return refund;
       }
     }
-  }
-
-  @Override
-  public Gas extCodeHashOperationGasCost() {
-    return EXTCODE_HASH_COST;
   }
 }

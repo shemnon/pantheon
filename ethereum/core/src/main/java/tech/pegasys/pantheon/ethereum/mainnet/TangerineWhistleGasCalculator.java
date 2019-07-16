@@ -20,8 +20,6 @@ import tech.pegasys.pantheon.util.uint.UInt256;
 
 public class TangerineWhistleGasCalculator extends HomesteadGasCalculator {
 
-  private static final Gas BALANCE_OPERATION_GAS_COST = Gas.of(400L);
-
   private static final Gas CALL_OPERATION_BASE_GAS_COST = Gas.of(700L);
 
   private static final Gas EXT_CODE_BASE_GAS_COST = Gas.of(700L);
@@ -29,13 +27,6 @@ public class TangerineWhistleGasCalculator extends HomesteadGasCalculator {
   private static final Gas SELFDESTRUCT_OPERATION_GAS_COST = Gas.of(5_000L);
 
   private static final Gas SELFDESTRUCT_OPERATION_CREATES_NEW_ACCOUNT = Gas.of(30_000L);
-
-  private static final Gas SLOAD_OPERATION_GAS_COST = Gas.of(200L);
-
-  @Override
-  public Gas getBalanceOperationGasCost() {
-    return BALANCE_OPERATION_GAS_COST;
-  }
 
   // Returns all but 1/64 (n - floor(n /16)) of the provided value
   private static Gas allButOneSixtyFourth(final Gas value) {
@@ -113,10 +104,5 @@ public class TangerineWhistleGasCalculator extends HomesteadGasCalculator {
     } else {
       return SELFDESTRUCT_OPERATION_GAS_COST;
     }
-  }
-
-  @Override
-  public Gas getSloadOperationGasCost() {
-    return SLOAD_OPERATION_GAS_COST;
   }
 }

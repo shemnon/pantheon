@@ -17,20 +17,9 @@ import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.mainnet.AbstractMessageProcessor;
-import tech.pegasys.pantheon.ethereum.vm.operations.BalanceOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.BlockHashOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.ExpOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.ExtCodeCopyOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.ExtCodeHashOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.ExtCodeSizeOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.JumpDestOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.LogOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.MLoadOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.MStore8Operation;
-import tech.pegasys.pantheon.ethereum.vm.operations.MStoreOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.SLoadOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.SelfDestructOperation;
-import tech.pegasys.pantheon.ethereum.vm.operations.Sha3Operation;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 /**
@@ -110,6 +99,12 @@ public interface GasCalculator {
    */
   Gas getHighTierGasCost();
 
+  /** The gas cost of SHA3 per byte calculations */
+  Gas getSha3WordGasCost();
+
+  /** The gas cost of SHA3 base cost */
+  Gas getSha3BaseGasCost();
+
   // Call/Create Operation Calculations
 
   /**
@@ -154,14 +149,6 @@ public interface GasCalculator {
   Gas createOperationGasCost(MessageFrame frame);
 
   /**
-   * Returns the amount of gas the CREATE2 operation will consume.
-   *
-   * @param frame The current frame
-   * @return the amount of gas the CREATE2 operation will consume
-   */
-  Gas create2OperationGasCost(MessageFrame frame);
-
-  /**
    * Returns the amount of gas parent will provide its child CREATE.
    *
    * @param stipend The gas stipend being provided by the CREATE caller
@@ -182,6 +169,23 @@ public interface GasCalculator {
   Gas dataCopyOperationGasCost(MessageFrame frame, UInt256 offset, UInt256 length);
 
   /**
+   * A general function to calculate memory metered copying costs
+   *
+   * @param frame The current frame
+   * @param baseGasCost the base cost added to all calculations
+   * @param wordGasCost the cost added per word
+   * @param offset the index to start copying
+   * @param length the total lengh to copy
+   * @return the amount of gas consumed by the data copy operation
+   */
+  Gas copyWordsToMemoryGasCost(
+      final MessageFrame frame,
+      final Gas baseGasCost,
+      final Gas wordGasCost,
+      final UInt256 offset,
+      final UInt256 length);
+
+  /**
    * Returns the cost of expanding memory for the specified access.
    *
    * @param frame The current frame
@@ -194,28 +198,6 @@ public interface GasCalculator {
   // Specific Non-call Operation Calculations
 
   /**
-   * Returns the cost for executing a {@link BalanceOperation}.
-   *
-   * @return the cost for executing the balance operation
-   */
-  Gas getBalanceOperationGasCost();
-
-  /**
-   * Returns the cost for executing a {@link BlockHashOperation}.
-   *
-   * @return the cost for executing the block hash operation
-   */
-  Gas getBlockHashOperationGasCost();
-
-  /**
-   * Returns the cost for executing a {@link ExpOperation}.
-   *
-   * @param numBytes The number of bytes for the exponent parameter
-   * @return the cost for executing the exp operation
-   */
-  Gas expOperationGasCost(int numBytes);
-
-  /**
    * Returns the cost for executing a {@link ExtCodeCopyOperation}.
    *
    * @param frame The current frame
@@ -226,64 +208,11 @@ public interface GasCalculator {
   Gas extCodeCopyOperationGasCost(MessageFrame frame, UInt256 offset, UInt256 length);
 
   /**
-   * Returns the cost for executing a {@link ExtCodeHashOperation}.
-   *
-   * @return the cost for executing the external code hash operation
-   */
-  Gas extCodeHashOperationGasCost();
-
-  /**
    * Returns the cost for executing a {@link ExtCodeSizeOperation}.
    *
    * @return the cost for executing the external code size operation
    */
   Gas getExtCodeSizeOperationGasCost();
-
-  /**
-   * Returns the cost for executing a {@link JumpDestOperation}.
-   *
-   * @return the cost for executing the jump destination operation
-   */
-  Gas getJumpDestOperationGasCost();
-
-  /**
-   * Returns the cost for executing a {@link LogOperation}.
-   *
-   * @param frame The current frame
-   * @param dataOffset The offset in memory where the log data exists
-   * @param dataLength The length of the log data to read from memory
-   * @param numTopics The number of topics in the log
-   * @return the cost for executing the external code size operation
-   */
-  Gas logOperationGasCost(
-      MessageFrame frame, UInt256 dataOffset, UInt256 dataLength, int numTopics);
-
-  /**
-   * Returns the cost for executing a {@link MLoadOperation}.
-   *
-   * @param frame The current frame
-   * @param offset The offset in memory where the access takes place
-   * @return the cost for executing the memory load operation
-   */
-  Gas mLoadOperationGasCost(MessageFrame frame, UInt256 offset);
-
-  /**
-   * Returns the cost for executing a {@link MStoreOperation}.
-   *
-   * @param frame The current frame
-   * @param offset The offset in memory where the access takes place
-   * @return the cost for executing the memory store operation
-   */
-  Gas mStoreOperationGasCost(MessageFrame frame, UInt256 offset);
-
-  /**
-   * Returns the cost for executing a {@link MStore8Operation}.
-   *
-   * @param frame The current frame
-   * @param offset The offset in memory where the access takes place
-   * @return the cost for executing the memory byte store operation
-   */
-  Gas mStore8OperationGasCost(MessageFrame frame, UInt256 offset);
 
   /**
    * Returns the cost for executing a {@link SelfDestructOperation}.
@@ -293,23 +222,6 @@ public interface GasCalculator {
    * @return the cost for executing the self destruct operation
    */
   Gas selfDestructOperationGasCost(Account recipient, Wei inheritance);
-
-  /**
-   * Returns the cost for executing a {@link Sha3Operation}.
-   *
-   * @param frame The current frame
-   * @param offset The offset in memory where the data to be hashed exists
-   * @param length The hashed data length
-   * @return the cost for executing the memory byte store operation
-   */
-  Gas sha3OperationGasCost(MessageFrame frame, UInt256 offset, UInt256 length);
-
-  /**
-   * Returns the cost for executing a {@link SLoadOperation}.
-   *
-   * @return the cost for executing the storage load operation
-   */
-  Gas getSloadOperationGasCost();
 
   /**
    * Returns the cost for an SSTORE operation.

@@ -23,13 +23,15 @@ import tech.pegasys.pantheon.util.bytes.Bytes32;
 
 public class ExtCodeHashOperation extends AbstractOperation {
 
+  private static final Gas EXTCODE_HASH_COST = Gas.of(400);
+
   public ExtCodeHashOperation(final GasCalculator gasCalculator) {
     super(0x3F, "EXTCODEHASH", 1, 1, false, 1, gasCalculator);
   }
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return getGasCalculator().extCodeHashOperationGasCost();
+    return EXTCODE_HASH_COST;
   }
 
   @Override

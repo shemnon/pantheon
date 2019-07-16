@@ -111,6 +111,22 @@ abstract class MainnetEvmRegistries {
     return new EVM(registry, new InvalidOperation(gasCalculator));
   }
 
+  static EVM tangerineWhistle(final GasCalculator gasCalculator) {
+    final OperationRegistry registry = new OperationRegistry();
+
+    registerTangerineWhistleOpcodes(registry, gasCalculator, Account.DEFAULT_VERSION);
+
+    return new EVM(registry, new InvalidOperation(gasCalculator));
+  }
+
+  static EVM spuriousDragon(final GasCalculator gasCalculator) {
+    final OperationRegistry registry = new OperationRegistry();
+
+    registerSpuriousDragonOpcodes(registry, gasCalculator, Account.DEFAULT_VERSION);
+
+    return new EVM(registry, new InvalidOperation(gasCalculator));
+  }
+
   static EVM byzantium(final GasCalculator gasCalculator) {
     final OperationRegistry registry = new OperationRegistry();
 
@@ -147,7 +163,7 @@ abstract class MainnetEvmRegistries {
     registry.put(new SDivOperation(gasCalculator), accountVersion);
     registry.put(new ModOperation(gasCalculator), accountVersion);
     registry.put(new SModOperation(gasCalculator), accountVersion);
-    registry.put(new ExpOperation(gasCalculator), accountVersion);
+    registry.put(ExpOperation.frontier(gasCalculator), accountVersion);
     registry.put(new AddModOperation(gasCalculator), accountVersion);
     registry.put(new MulModOperation(gasCalculator), accountVersion);
     registry.put(new SignExtendOperation(gasCalculator), accountVersion);
@@ -164,7 +180,7 @@ abstract class MainnetEvmRegistries {
     registry.put(new ByteOperation(gasCalculator), accountVersion);
     registry.put(new Sha3Operation(gasCalculator), accountVersion);
     registry.put(new AddressOperation(gasCalculator), accountVersion);
-    registry.put(new BalanceOperation(gasCalculator), accountVersion);
+    registry.put(BalanceOperation.frontier(gasCalculator), accountVersion);
     registry.put(new OriginOperation(gasCalculator), accountVersion);
     registry.put(new CallerOperation(gasCalculator), accountVersion);
     registry.put(new CallValueOperation(gasCalculator), accountVersion);
@@ -186,7 +202,7 @@ abstract class MainnetEvmRegistries {
     registry.put(new MLoadOperation(gasCalculator), accountVersion);
     registry.put(new MStoreOperation(gasCalculator), accountVersion);
     registry.put(new MStore8Operation(gasCalculator), accountVersion);
-    registry.put(new SLoadOperation(gasCalculator), accountVersion);
+    registry.put(SLoadOperation.frontier(gasCalculator), accountVersion);
     registry.put(new SStoreOperation(gasCalculator), accountVersion);
     registry.put(new JumpOperation(gasCalculator), accountVersion);
     registry.put(new JumpiOperation(gasCalculator), accountVersion);
@@ -231,11 +247,28 @@ abstract class MainnetEvmRegistries {
     registry.put(new DelegateCallOperation(gasCalculator), accountVersion);
   }
 
-  private static void registerByzantiumOpcodes(
+  private static void registerTangerineWhistleOpcodes(
       final OperationRegistry registry,
       final GasCalculator gasCalculator,
       final int accountVersion) {
     registerHomesteadOpcodes(registry, gasCalculator, accountVersion);
+    registry.put(BalanceOperation.tangerineWhistle(gasCalculator), accountVersion);
+    registry.put(SLoadOperation.tangerineWhistle(gasCalculator), accountVersion);
+  }
+
+  private static void registerSpuriousDragonOpcodes(
+      final OperationRegistry registry,
+      final GasCalculator gasCalculator,
+      final int accountVersion) {
+    registerTangerineWhistleOpcodes(registry, gasCalculator, accountVersion);
+    registry.put(ExpOperation.spuriousDragon(gasCalculator), accountVersion);
+  }
+
+  private static void registerByzantiumOpcodes(
+      final OperationRegistry registry,
+      final GasCalculator gasCalculator,
+      final int accountVersion) {
+    registerSpuriousDragonOpcodes(registry, gasCalculator, accountVersion);
     registry.put(new ReturnDataCopyOperation(gasCalculator), accountVersion);
     registry.put(new ReturnDataSizeOperation(gasCalculator), accountVersion);
     registry.put(new RevertOperation(gasCalculator), accountVersion);

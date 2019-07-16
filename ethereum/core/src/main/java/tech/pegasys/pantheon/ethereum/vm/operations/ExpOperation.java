@@ -20,17 +20,24 @@ import tech.pegasys.pantheon.util.uint.UInt256;
 
 public class ExpOperation extends AbstractOperation {
 
-  public ExpOperation(final GasCalculator gasCalculator) {
+  private static final Gas EXP_OPERATION_BASE_GAS_COST = Gas.of(10);
+  private static final Gas FRONTIER_EXP_OPERATION_BYTE_GAS_COST = Gas.of(10);
+  private static final Gas SPURIOUS_DRAGON_EXP_OPERATION_BYTE_GAS_COST = Gas.of(50L);
+
+  private final Gas baseCost;
+  private final Gas byteCost;
+
+  private ExpOperation(final GasCalculator gasCalculator, final Gas baseCost, final Gas byteCost) {
     super(0x0A, "EXP", 2, 1, false, 1, gasCalculator);
+    this.baseCost = baseCost;
+    this.byteCost = byteCost;
   }
 
   @Override
   public Gas cost(final MessageFrame frame) {
     final UInt256 power = frame.getStackItem(1).asUInt256();
-
     final int numBytes = (power.bitLength() + 7) / 8;
-    return getGasCalculator().expOperationGasCost(numBytes);
-    //    return FrontierGasCosts.EXP.plus(FrontierGasCosts.EXP_BYTE.times(numBytes));
+    return byteCost.times(Gas.of(numBytes)).plus(baseCost);
   }
 
   @Override
@@ -41,5 +48,15 @@ public class ExpOperation extends AbstractOperation {
     final UInt256 result = value0.pow(value1);
 
     frame.pushStackItem(result.getBytes());
+  }
+
+  public static ExpOperation frontier(final GasCalculator gasCalculator) {
+    return new ExpOperation(
+        gasCalculator, EXP_OPERATION_BASE_GAS_COST, FRONTIER_EXP_OPERATION_BYTE_GAS_COST);
+  }
+
+  public static ExpOperation spuriousDragon(final GasCalculator gasCalculator) {
+    return new ExpOperation(
+        gasCalculator, EXP_OPERATION_BASE_GAS_COST, SPURIOUS_DRAGON_EXP_OPERATION_BYTE_GAS_COST);
   }
 }

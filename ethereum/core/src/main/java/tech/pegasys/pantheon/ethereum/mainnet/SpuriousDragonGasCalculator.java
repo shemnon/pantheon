@@ -20,7 +20,9 @@ import tech.pegasys.pantheon.util.uint.UInt256;
 
 public class SpuriousDragonGasCalculator extends TangerineWhistleGasCalculator {
 
-  private static final Gas EXP_OPERATION_BYTE_GAS_COST = Gas.of(50L);
+  private static final Gas SELFDESTRUCT_OPERATION_GAS_COST = Gas.of(5_000L);
+
+  private static final Gas SELFDESTRUCT_OPERATION_CREATES_NEW_ACCOUNT = Gas.of(30_000L);
 
   @Override
   public Gas callOperationGasCost(
@@ -50,15 +52,6 @@ public class SpuriousDragonGasCalculator extends TangerineWhistleGasCalculator {
 
     return cost;
   }
-
-  @Override
-  protected Gas expOperationByteGasCost() {
-    return EXP_OPERATION_BYTE_GAS_COST;
-  }
-
-  private static final Gas SELFDESTRUCT_OPERATION_GAS_COST = Gas.of(5_000L);
-
-  private static final Gas SELFDESTRUCT_OPERATION_CREATES_NEW_ACCOUNT = Gas.of(30_000L);
 
   @Override
   public Gas selfDestructOperationGasCost(final Account recipient, final Wei inheritance) {

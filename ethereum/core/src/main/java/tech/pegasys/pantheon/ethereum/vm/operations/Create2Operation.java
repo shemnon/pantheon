@@ -42,6 +42,9 @@ public class Create2Operation extends AbstractCreateOperation {
 
   @Override
   public Gas cost(final MessageFrame frame) {
-    return getGasCalculator().create2OperationGasCost(frame);
+    final UInt256 initCodeLength = frame.getStackItem(2).asUInt256();
+    final UInt256 numWords = initCodeLength.dividedCeilBy(Bytes32.SIZE);
+    final Gas initCodeHashCost = getGasCalculator().getSha3WordGasCost().times(Gas.of(numWords));
+    return getGasCalculator().createOperationGasCost(frame).plus(initCodeHashCost);
   }
 }

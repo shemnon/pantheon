@@ -18,7 +18,6 @@ import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.vm.GasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
-import tech.pegasys.pantheon.ethereum.vm.operations.ExpOperation;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.uint.UInt256;
@@ -59,31 +58,13 @@ public class FrontierGasCalculator implements GasCalculator {
 
   private static final Gas MEMORY_WORD_GAS_COST = Gas.of(3L);
 
-  private static final Gas BALANCE_OPERATION_GAS_COST = Gas.of(20L);
-
-  private static final Gas BLOCKHASH_OPERATION_GAS_COST = Gas.of(20L);
-
-  private static final Gas EXP_OPERATION_BASE_GAS_COST = Gas.of(10);
-
-  private static final Gas EXP_OPERATION_BYTE_GAS_COST = Gas.of(10);
-
   private static final Gas EXT_CODE_BASE_GAS_COST = Gas.of(20L);
-
-  private static final Gas JUMPDEST_OPERATION_GAS_COST = Gas.of(1);
-
-  private static final Gas LOG_OPERATION_BASE_GAS_COST = Gas.of(375L);
-
-  private static final Gas LOG_OPERATION_DATA_BYTE_GAS_COST = Gas.of(8L);
-
-  private static final Gas LOG_OPERATION_TOPIC_GAS_COST = Gas.of(375L);
 
   private static final Gas SELFDESTRUCT_OPERATION_GAS_COST = Gas.of(0);
 
   private static final Gas SHA3_OPERATION_BASE_GAS_COST = Gas.of(30L);
 
-  static final Gas SHA3_OPERATION_WORD_GAS_COST = Gas.of(6L);
-
-  private static final Gas SLOAD_OPERATION_GAS_COST = Gas.of(50);
+  private static final Gas SHA3_OPERATION_WORD_GAS_COST = Gas.of(6L);
 
   private static final Gas STORAGE_SET_GAS_COST = Gas.of(20_000L);
 
@@ -159,6 +140,16 @@ public class FrontierGasCalculator implements GasCalculator {
   @Override
   public Gas getHighTierGasCost() {
     return HIGH_TIER_GAS_COST;
+  }
+
+  @Override
+  public Gas getSha3BaseGasCost() {
+    return SHA3_OPERATION_BASE_GAS_COST;
+  }
+
+  @Override
+  public Gas getSha3WordGasCost() {
+    return SHA3_OPERATION_WORD_GAS_COST;
   }
 
   /**
@@ -267,30 +258,6 @@ public class FrontierGasCalculator implements GasCalculator {
     return post.minus(pre);
   }
 
-  @Override
-  public Gas getBalanceOperationGasCost() {
-    return BALANCE_OPERATION_GAS_COST;
-  }
-
-  @Override
-  public Gas getBlockHashOperationGasCost() {
-    return BLOCKHASH_OPERATION_GAS_COST;
-  }
-
-  /**
-   * Returns the gas cost for a byte in the {@link ExpOperation}.
-   *
-   * @return the gas cost for a byte in the exponent operation
-   */
-  protected Gas expOperationByteGasCost() {
-    return EXP_OPERATION_BYTE_GAS_COST;
-  }
-
-  @Override
-  public Gas expOperationGasCost(final int numBytes) {
-    return expOperationByteGasCost().times(Gas.of(numBytes)).plus(EXP_OPERATION_BASE_GAS_COST);
-  }
-
   /**
    * Returns the base gas cost for external code accesses.
    *
@@ -308,70 +275,13 @@ public class FrontierGasCalculator implements GasCalculator {
   }
 
   @Override
-  public Gas extCodeHashOperationGasCost() {
-    throw new UnsupportedOperationException(
-        "EXTCODEHASH not supported by " + getClass().getSimpleName());
-  }
-
-  @Override
   public Gas getExtCodeSizeOperationGasCost() {
     return extCodeBaseGasCost();
   }
 
   @Override
-  public Gas getJumpDestOperationGasCost() {
-    return JUMPDEST_OPERATION_GAS_COST;
-  }
-
-  @Override
-  public Gas logOperationGasCost(
-      final MessageFrame frame,
-      final UInt256 dataOffset,
-      final UInt256 dataLength,
-      final int numTopics) {
-    return Gas.ZERO
-        .plus(LOG_OPERATION_BASE_GAS_COST)
-        .plus(LOG_OPERATION_DATA_BYTE_GAS_COST.times(Gas.of(dataLength)))
-        .plus(LOG_OPERATION_TOPIC_GAS_COST.times(numTopics))
-        .plus(memoryExpansionGasCost(frame, dataOffset, dataLength));
-  }
-
-  @Override
-  public Gas mLoadOperationGasCost(final MessageFrame frame, final UInt256 offset) {
-    return VERY_LOW_TIER_GAS_COST.plus(memoryExpansionGasCost(frame, offset, UInt256.U_32));
-  }
-
-  @Override
-  public Gas mStoreOperationGasCost(final MessageFrame frame, final UInt256 offset) {
-    return VERY_LOW_TIER_GAS_COST.plus(memoryExpansionGasCost(frame, offset, UInt256.U_32));
-  }
-
-  @Override
-  public Gas mStore8OperationGasCost(final MessageFrame frame, final UInt256 offset) {
-    return VERY_LOW_TIER_GAS_COST.plus(memoryExpansionGasCost(frame, offset, UInt256.ONE));
-  }
-
-  @Override
   public Gas selfDestructOperationGasCost(final Account recipient, final Wei inheritance) {
     return SELFDESTRUCT_OPERATION_GAS_COST;
-  }
-
-  @Override
-  public Gas sha3OperationGasCost(
-      final MessageFrame frame, final UInt256 offset, final UInt256 length) {
-    return copyWordsToMemoryGasCost(
-        frame, SHA3_OPERATION_BASE_GAS_COST, SHA3_OPERATION_WORD_GAS_COST, offset, length);
-  }
-
-  @Override
-  public Gas create2OperationGasCost(final MessageFrame frame) {
-    throw new UnsupportedOperationException(
-        "CREATE2 operation not supported by " + getClass().getSimpleName());
-  }
-
-  @Override
-  public Gas getSloadOperationGasCost() {
-    return SLOAD_OPERATION_GAS_COST;
   }
 
   @Override
@@ -395,7 +305,8 @@ public class FrontierGasCalculator implements GasCalculator {
     return SELF_DESTRUCT_REFUND_AMOUNT;
   }
 
-  private Gas copyWordsToMemoryGasCost(
+  @Override
+  public Gas copyWordsToMemoryGasCost(
       final MessageFrame frame,
       final Gas baseGasCost,
       final Gas wordGasCost,
