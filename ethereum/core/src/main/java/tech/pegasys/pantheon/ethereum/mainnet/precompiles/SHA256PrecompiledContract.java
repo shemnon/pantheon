@@ -17,9 +17,14 @@ import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.mainnet.AbstractPrecompiledContract;
 import tech.pegasys.pantheon.ethereum.vm.GasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
+import tech.pegasys.pantheon.ethereum.vm.Words;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 public class SHA256PrecompiledContract extends AbstractPrecompiledContract {
+
+  private static final Gas SHA256_PRECOMPILED_BASE_GAS_COST = Gas.of(60L);
+
+  private static final Gas SHA256_PRECOMPILED_WORD_GAS_COST = Gas.of(12L);
 
   public SHA256PrecompiledContract(final GasCalculator gasCalculator) {
     super("SHA256", gasCalculator);
@@ -27,7 +32,9 @@ public class SHA256PrecompiledContract extends AbstractPrecompiledContract {
 
   @Override
   public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().sha256PrecompiledContractGasCost(input);
+    return SHA256_PRECOMPILED_WORD_GAS_COST
+        .times(Words.numWords(input))
+        .plus(SHA256_PRECOMPILED_BASE_GAS_COST);
   }
 
   @Override

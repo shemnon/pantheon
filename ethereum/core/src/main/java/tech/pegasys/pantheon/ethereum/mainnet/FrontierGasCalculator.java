@@ -18,7 +18,6 @@ import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.vm.GasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
-import tech.pegasys.pantheon.ethereum.vm.Words;
 import tech.pegasys.pantheon.ethereum.vm.operations.ExpOperation;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -35,20 +34,6 @@ public class FrontierGasCalculator implements GasCalculator {
   private static final Gas TX_CREATE_EXTRA_COST = Gas.of(0L);
 
   private static final Gas CODE_DEPOSIT_BYTE_COST = Gas.of(200L);
-
-  private static final Gas ID_PRECOMPILED_BASE_GAS_COST = Gas.of(15L);
-
-  private static final Gas ID_PRECOMPILED_WORD_GAS_COST = Gas.of(3L);
-
-  private static final Gas ECREC_PRECOMPILED_GAS_COST = Gas.of(3_000L);
-
-  private static final Gas SHA256_PRECOMPILED_BASE_GAS_COST = Gas.of(60L);
-
-  private static final Gas SHA256_PRECOMPILED_WORD_GAS_COST = Gas.of(12L);
-
-  private static final Gas RIPEMD160_PRECOMPILED_WORD_GAS_COST = Gas.of(120L);
-
-  private static final Gas RIPEMD160_PRECOMPILED_BASE_GAS_COST = Gas.of(600L);
 
   private static final Gas VERY_LOW_TIER_GAS_COST = Gas.of(3L);
 
@@ -144,32 +129,6 @@ public class FrontierGasCalculator implements GasCalculator {
   @Override
   public Gas codeDepositGasCost(final int codeSize) {
     return CODE_DEPOSIT_BYTE_COST.times(codeSize);
-  }
-
-  @Override
-  public Gas idPrecompiledContractGasCost(final BytesValue input) {
-    return ID_PRECOMPILED_WORD_GAS_COST
-        .times(Words.numWords(input))
-        .plus(ID_PRECOMPILED_BASE_GAS_COST);
-  }
-
-  @Override
-  public Gas getEcrecPrecompiledContractGasCost() {
-    return ECREC_PRECOMPILED_GAS_COST;
-  }
-
-  @Override
-  public Gas sha256PrecompiledContractGasCost(final BytesValue input) {
-    return SHA256_PRECOMPILED_WORD_GAS_COST
-        .times(Words.numWords(input))
-        .plus(SHA256_PRECOMPILED_BASE_GAS_COST);
-  }
-
-  @Override
-  public Gas ripemd160PrecompiledContractGasCost(final BytesValue input) {
-    return RIPEMD160_PRECOMPILED_WORD_GAS_COST
-        .times(Words.numWords(input))
-        .plus(RIPEMD160_PRECOMPILED_BASE_GAS_COST);
   }
 
   @Override

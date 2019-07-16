@@ -17,10 +17,6 @@ import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.mainnet.AbstractMessageProcessor;
-import tech.pegasys.pantheon.ethereum.mainnet.precompiles.ECRECPrecompiledContract;
-import tech.pegasys.pantheon.ethereum.mainnet.precompiles.IDPrecompiledContract;
-import tech.pegasys.pantheon.ethereum.mainnet.precompiles.RIPEMD160PrecompiledContract;
-import tech.pegasys.pantheon.ethereum.mainnet.precompiles.SHA256PrecompiledContract;
 import tech.pegasys.pantheon.ethereum.vm.operations.BalanceOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.BlockHashOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.ExpOperation;
@@ -35,7 +31,6 @@ import tech.pegasys.pantheon.ethereum.vm.operations.MStoreOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.SLoadOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.SelfDestructOperation;
 import tech.pegasys.pantheon.ethereum.vm.operations.Sha3Operation;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 /**
@@ -70,39 +65,6 @@ public interface GasCalculator {
    * @return the code deposit cost
    */
   Gas codeDepositGasCost(int codeSize);
-
-  // Precompiled Contract Gas Calculations
-
-  /**
-   * Returns the gas cost to execute the {@link IDPrecompiledContract}.
-   *
-   * @param input The input to the ID precompiled contract
-   * @return the gas cost to execute the ID precompiled contract
-   */
-  Gas idPrecompiledContractGasCost(BytesValue input);
-
-  /**
-   * Returns the gas cost to execute the {@link ECRECPrecompiledContract}.
-   *
-   * @return the gas cost to execute the ECREC precompiled contract
-   */
-  Gas getEcrecPrecompiledContractGasCost();
-
-  /**
-   * Returns the gas cost to execute the {@link SHA256PrecompiledContract}.
-   *
-   * @param input The input to the SHA256 precompiled contract
-   * @return the gas cost to execute the SHA256 precompiled contract
-   */
-  Gas sha256PrecompiledContractGasCost(BytesValue input);
-
-  /**
-   * Returns the gas cost to execute the {@link RIPEMD160PrecompiledContract}.
-   *
-   * @param input The input to the RIPEMD160 precompiled contract
-   * @return the gas cost to execute the RIPEMD160 precompiled contract
-   */
-  Gas ripemd160PrecompiledContractGasCost(BytesValue input);
 
   // Gas Tier Lookups
 

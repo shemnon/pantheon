@@ -16,9 +16,14 @@ import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.mainnet.AbstractPrecompiledContract;
 import tech.pegasys.pantheon.ethereum.vm.GasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
+import tech.pegasys.pantheon.ethereum.vm.Words;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 public class IDPrecompiledContract extends AbstractPrecompiledContract {
+
+  public static final Gas ID_PRECOMPILED_BASE_GAS_COST = Gas.of(15L);
+
+  private static final Gas ID_PRECOMPILED_WORD_GAS_COST = Gas.of(3L);
 
   public IDPrecompiledContract(final GasCalculator gasCalculator) {
     super("ID", gasCalculator);
@@ -26,7 +31,9 @@ public class IDPrecompiledContract extends AbstractPrecompiledContract {
 
   @Override
   public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().idPrecompiledContractGasCost(input);
+    return ID_PRECOMPILED_WORD_GAS_COST
+        .times(Words.numWords(input))
+        .plus(ID_PRECOMPILED_BASE_GAS_COST);
   }
 
   @Override

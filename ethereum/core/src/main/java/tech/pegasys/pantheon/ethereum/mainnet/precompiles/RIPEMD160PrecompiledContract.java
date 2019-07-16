@@ -17,10 +17,15 @@ import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.mainnet.AbstractPrecompiledContract;
 import tech.pegasys.pantheon.ethereum.vm.GasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
+import tech.pegasys.pantheon.ethereum.vm.Words;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 public class RIPEMD160PrecompiledContract extends AbstractPrecompiledContract {
+
+  private static final Gas RIPEMD160_PRECOMPILED_WORD_GAS_COST = Gas.of(120L);
+
+  private static final Gas RIPEMD160_PRECOMPILED_BASE_GAS_COST = Gas.of(600L);
 
   public RIPEMD160PrecompiledContract(final GasCalculator gasCalculator) {
     super("RIPEMD160", gasCalculator);
@@ -28,7 +33,9 @@ public class RIPEMD160PrecompiledContract extends AbstractPrecompiledContract {
 
   @Override
   public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().ripemd160PrecompiledContractGasCost(input);
+    return RIPEMD160_PRECOMPILED_WORD_GAS_COST
+        .times(Words.numWords(input))
+        .plus(RIPEMD160_PRECOMPILED_BASE_GAS_COST);
   }
 
   @Override

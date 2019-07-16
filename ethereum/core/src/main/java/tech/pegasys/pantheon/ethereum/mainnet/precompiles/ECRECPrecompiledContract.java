@@ -30,6 +30,8 @@ import java.util.Optional;
 
 public class ECRECPrecompiledContract extends AbstractPrecompiledContract {
 
+  private static final Gas ECREC_PRECOMPILED_GAS_COST = Gas.of(3_000L);
+
   private static final int V_BASE = 27;
 
   public ECRECPrecompiledContract(final GasCalculator gasCalculator) {
@@ -38,7 +40,7 @@ public class ECRECPrecompiledContract extends AbstractPrecompiledContract {
 
   @Override
   public Gas gasRequirement(final BytesValue input) {
-    return gasCalculator().getEcrecPrecompiledContractGasCost();
+    return ECREC_PRECOMPILED_GAS_COST;
   }
 
   @Override
