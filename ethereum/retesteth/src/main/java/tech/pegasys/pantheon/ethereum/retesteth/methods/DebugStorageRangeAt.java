@@ -20,18 +20,24 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.RpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.TransactionWithMetadata;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.DebugStorageRangeAtResult;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
+import tech.pegasys.pantheon.ethereum.worldstate.DebuggableMutableWorldState;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.util.NavigableMap;
 import java.util.Optional;
 
+import io.vertx.core.json.Json;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class DebugStorageRangeAt implements JsonRpcMethod {
+
+  private static final Logger LOG = LogManager.getLogger();
 
   private final JsonRpcParameter parameters = new JsonRpcParameter();
   RetestethContext context;
@@ -55,31 +61,72 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
     final int limit = parameters.required(request.getParams(), 4, Integer.class);
 
     final UInt256 blockId = UInt256.fromHexString(blockHashOrNumber);
-    final Optional<TransactionWithMetadata> optional;
+    //    final Optional<TransactionWithMetadata> optional;
+    final Optional<Hash> blockHash;
     if (blockId.fitsLong()) {
-      optional =
-          context
-              .getBlockchainQueries()
-              .transactionByBlockNumberAndIndex(blockId.toLong(), transactionIndex);
+      blockHash = context.getBlockchainQueries().getBlockHashByNumber(blockId.toLong());
     } else {
-      optional =
-          context
-              .getBlockchainQueries()
-              .transactionByBlockHashAndIndex(
-                  Hash.fromHexString(blockHashOrNumber), transactionIndex);
+      blockHash = Optional.of(Hash.fromHexStringLenient(blockHashOrNumber));
     }
-    return optional
-        .map(
-            transactionWithMetadata ->
-                (context
-                    .getBlockReplay()
-                    .afterTransactionInBlock(
-                        transactionWithMetadata.getBlockHash(),
-                        transactionWithMetadata.getTransaction().hash(),
-                        (transaction, blockHeader, blockchain, worldState, transactionProcessor) ->
-                            extractStorageAt(request, accountAddress, startKey, limit, worldState))
-                    .orElseGet(() -> new JsonRpcSuccessResponse(request.getId(), null))))
-        .orElseGet(() -> new JsonRpcSuccessResponse(request.getId(), null));
+
+    if (blockHash.isPresent()) {
+      if (context.getBlockchainQueries().getTransactionCount(blockHash.get()) >= transactionIndex) {
+        // post block state
+      } else {
+        // sub-block state
+      }
+    }
+
+    return extractStorageAt(
+        request,
+        accountAddress,
+        startKey,
+        limit,
+        context
+            .getProtocolContext()
+            .getWorldStateArchive()
+            .getMutable(
+                context
+                    .getBlockchainQueries()
+                    .blockByHash(blockHash.get())
+                    .get()
+                    .getHeader()
+                    .getStateRoot())
+            .get());
+    //    blockHash.map(blockHash -> context.getBlockReplay());
+    //      Optional<BlockWithMetadata<Hash, Hash>> block =
+    // context.getBlockchainQueries().blockByNumberWithTxHashes(blockId.toLong());
+    //      if (block.isPresent()) {
+    //        blockHash = block.get().getHeader().getHash();
+    //        optional =
+    //            context
+    //                .getBlockchainQueries()
+    //                .transactionByBlockNumberAndIndex(blockId.toLong(), transactionIndex);
+    //      } else {
+    //        optional = Optional.empty();
+    //      }
+    //    } else {
+    //      optional =
+    //          context
+    //              .getBlockchainQueries()
+    //              .transactionByBlockHashAndIndex(
+    //                  Hash.fromHexString(blockHashOrNumber), transactionIndex);
+    //      blockHash = optional.map(tx -> tx.getBlockHash()).orElse(null);
+    //    }
+    //    return optional
+    //        .map(
+    //            transactionWithMetadata ->
+    //                (context
+    //                    .getBlockReplay()
+    //                    .afterTransactionInBlock(
+    //                        blockHash,
+    //                        transactionWithMetadata.getTransaction().hash(),
+    //                        (transaction, blockHeader, blockchain, worldState,
+    // transactionProcessor) ->
+    //                            extractStorageAt(request, accountAddress, startKey, limit,
+    // worldState))
+    //                    .orElseGet(() -> new JsonRpcSuccessResponse(request.getId(), null))))
+    //        .orElseGet(() -> new JsonRpcSuccessResponse(request.getId(), null));
   }
 
   private JsonRpcSuccessResponse extractStorageAt(
@@ -96,7 +143,11 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
       nextKey = entries.lastKey();
       entries.remove(nextKey);
     }
-    return new JsonRpcSuccessResponse(
-        request.getId(), new DebugStorageRangeAtResult(entries, nextKey));
+    JsonRpcSuccessResponse result = new JsonRpcSuccessResponse(
+        request.getId(),
+        new DebugStorageRangeAtResult(
+            entries, nextKey, ((DebuggableMutableWorldState) worldState).getPreimages()));
+    LOG.info(Json.encodePrettily(result));
+    return result;
   }
 }

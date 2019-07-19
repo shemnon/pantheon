@@ -13,6 +13,7 @@
 package tech.pegasys.pantheon.ethereum.jsonrpc.internal.results;
 
 import tech.pegasys.pantheon.util.bytes.Bytes32;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.util.HashMap;
@@ -28,8 +29,13 @@ public class DebugStorageRangeAtResult implements JsonRpcResult {
   private final Map<String, StorageEntry> storage = new HashMap<>();
   private final String nextKey;
 
-  public DebugStorageRangeAtResult(final Map<Bytes32, UInt256> entries, final Bytes32 nextKey) {
-    entries.forEach((keyHash, value) -> storage.put(keyHash.toString(), new StorageEntry(value)));
+  public DebugStorageRangeAtResult(
+      final Map<Bytes32, UInt256> entries,
+      final Bytes32 nextKey,
+      final Map<BytesValue, BytesValue> preimages) {
+    entries.forEach(
+        (keyHash, value) ->
+            storage.put(keyHash.toString(), new StorageEntry(preimages.get(keyHash), value)));
     this.nextKey = nextKey != null ? nextKey.toString() : null;
   }
 
@@ -45,15 +51,31 @@ public class DebugStorageRangeAtResult implements JsonRpcResult {
 
   @JsonPropertyOrder(value = {"key", "value"})
   public static class StorageEntry {
+    private final String key;
     private final String value;
 
-    public StorageEntry(final UInt256 value) {
-      this.value = value.toHexString();
+    public StorageEntry(final BytesValue key, final UInt256 value) {
+      this.key = key == null ? null : strictShortHex(key.toString());
+      this.value = strictShortHex(value.toHexString());
+    }
+
+    String strictShortHex(final String hexString) {
+      String workString = hexString;
+      if (workString.startsWith(("0x"))) {
+        workString = workString.substring(2);
+      }
+      while (workString.startsWith("00")) {
+        workString = workString.substring(2);
+      }
+      if (workString.length() == 0) {
+        workString = "00";
+      }
+      return "0x" + workString;
     }
 
     @JsonGetter(value = "key")
     public String getKey() {
-      return null;
+      return key;
     }
 
     @JsonGetter(value = "value")

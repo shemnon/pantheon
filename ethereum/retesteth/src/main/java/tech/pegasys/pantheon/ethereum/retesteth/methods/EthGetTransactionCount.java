@@ -13,23 +13,18 @@
 package tech.pegasys.pantheon.ethereum.retesteth.methods;
 
 import tech.pegasys.pantheon.ethereum.core.Address;
-import tech.pegasys.pantheon.ethereum.eth.transactions.PendingTransactions;
 import tech.pegasys.pantheon.ethereum.jsonrpc.RpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.BlockParameter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockchainQueries;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.Quantity;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
-
-import java.util.OptionalLong;
 
 public class EthGetTransactionCount extends AbstractBlockParameterMethod {
 
   private final JsonRpcParameter parameters = new JsonRpcParameter();
 
-  public EthGetTransactionCount(
-      final RetestethContext context) {
+  public EthGetTransactionCount(final RetestethContext context) {
     super(context);
   }
 

@@ -28,6 +28,7 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.DebugStorageRange
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 
@@ -88,7 +89,8 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
       nextKey = entries.lastKey();
       entries.remove(nextKey);
     }
-    return new JsonRpcSuccessResponse(
-        request.getId(), new DebugStorageRangeAtResult(entries, nextKey));
+    JsonRpcSuccessResponse result = new JsonRpcSuccessResponse(
+        request.getId(), new DebugStorageRangeAtResult(entries, nextKey, Map.of()));
+    return result;
   }
 }
