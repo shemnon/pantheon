@@ -26,13 +26,26 @@ jar {
 }
 
 dependencies {
+  implementation(project(':config'))
+  implementation(project(':ethereum:core'))
+  implementation(project(':ethereum:eth'))
+  implementation(project(':ethereum:graphql'))
   implementation(project(':ethereum:jsonrpc'))
+  implementation(project(':ethereum:rlp'))
+  implementation(project(':ethereum:p2p'))
+  //  implementation(project(':pantheon'))
   implementation(project(':metrics:core'))
   implementation(project(':nat'))
+  implementation(project(':services:kvstore'))
+  implementation(project(':util'))
 
+  implementation 'com.google.guava:guava'
   implementation 'io.vertx:vertx-core'
   implementation 'io.vertx:vertx-web'
   implementation 'org.apache.logging.log4j:log4j-api'
+
+  testImplementation 'junit:junit'
+  testImplementation 'org.assertj:assertj-core'
 
   runtime 'org.apache.logging.log4j:log4j-core'
 }

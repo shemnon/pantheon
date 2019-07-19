@@ -19,6 +19,10 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.health.HealthService;
 import tech.pegasys.pantheon.ethereum.jsonrpc.health.LivenessCheck;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.Web3ClientVersion;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.EthBlockNumber;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetBlockByNumber;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.TestImportRawBlock;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.TestSetChainParams;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 
 import java.util.HashMap;
@@ -26,21 +30,29 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 
-public class RetestethRunner {
+public class RetestethService {
 
   private final JsonRpcHttpService jsonRpcHttpService;
   private final Vertx vertx;
 
-  public RetestethRunner(
+  private final RetestethContext retestethContext;
+
+  public RetestethService(
       final String clientVersion,
       final RetestethConfiguration retestethConfiguration,
       final JsonRpcConfiguration jsonRpcConfiguration) {
     vertx = Vertx.vertx();
+    retestethContext = new RetestethContext();
 
     final Map<String, JsonRpcMethod> jsonRpcMethods = new HashMap<>();
-    JsonRpcMethodsFactory.addMethods(jsonRpcMethods, new Web3ClientVersion(clientVersion));
+    JsonRpcMethodsFactory.addMethods(
+        jsonRpcMethods,
+        new Web3ClientVersion(clientVersion),
+        new TestSetChainParams(retestethContext),
+        new TestImportRawBlock(retestethContext),
+        new EthBlockNumber(retestethContext),
+        new EthGetBlockByNumber(retestethContext));
 
     jsonRpcHttpService =
         new JsonRpcHttpService(
@@ -56,9 +68,6 @@ public class RetestethRunner {
 
   public void start() {
     jsonRpcHttpService.start();
-  }
-
-  public void awaitTermination() {
   }
 
   public void close() {

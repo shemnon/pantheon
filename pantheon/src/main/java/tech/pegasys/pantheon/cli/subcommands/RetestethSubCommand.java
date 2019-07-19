@@ -22,7 +22,8 @@ import static tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration.DEFAUL
 import tech.pegasys.pantheon.PantheonInfo;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethConfiguration;
-import tech.pegasys.pantheon.ethereum.retesteth.RetestethRunner;
+import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
+import tech.pegasys.pantheon.ethereum.retesteth.RetestethService;
 
 import java.net.InetAddress;
 import java.nio.file.Path;
@@ -106,21 +107,21 @@ public class RetestethSubCommand implements Runnable {
     jsonRpcConfiguration.setHost(rpcHttpHost);
     jsonRpcConfiguration.setPort(rpcHttpPort);
 
-    final RetestethRunner runner =
-        new RetestethRunner(PantheonInfo.version(), retestethConfiguration, jsonRpcConfiguration);
+    final RetestethService retestethService =
+        new RetestethService(PantheonInfo.version(), retestethConfiguration, jsonRpcConfiguration);
 
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
                   try {
-                    runner.close();
+                    retestethService.close();
                     LogManager.shutdown();
                   } catch (final Exception e) {
                     LOG.error("Failed to stop Pantheon Retesteth");
                   }
                 }));
-    runner.start();
+    retestethService.start();
     try {
       // when
       Thread.sleep(Long.MAX_VALUE); // once we have the synronizer up we won't need this
