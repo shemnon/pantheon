@@ -32,10 +32,10 @@ public class TestSetChainParams implements JsonRpcMethod {
   private static final Logger LOG = LogManager.getLogger();
 
   public static final String METHOD_NAME = "test_setChainParams";
-  private final RetestethContext runner;
+  private final RetestethContext context;
 
-  public TestSetChainParams(final RetestethContext runner) {
-    this.runner = runner;
+  public TestSetChainParams(final RetestethContext context) {
+    this.context = context;
   }
 
   @Override
@@ -53,7 +53,7 @@ public class TestSetChainParams implements JsonRpcMethod {
       LOG.trace("ChainParams {}", chainParamsAsString);
       final String genesisFileAsString = modifyGenesisFile(chainParamsAsString);
       LOG.trace("Genesis {}", genesisFileAsString);
-      final boolean result = runner.resetRunner(genesisFileAsString);
+      final boolean result = context.resetRunner(genesisFileAsString);
 
       return new JsonRpcSuccessResponse(request.getId(), result);
     } catch (final Exception e) {
@@ -78,7 +78,7 @@ public class TestSetChainParams implements JsonRpcMethod {
     }
   }
 
-  public static String modifyGenesisFile(final String initialGenesis) {
+  private static String modifyGenesisFile(final String initialGenesis) {
     final JsonObject chainParamsJson = new JsonObject(initialGenesis);
     final JsonObject config = new JsonObject();
     chainParamsJson.put("config", config);

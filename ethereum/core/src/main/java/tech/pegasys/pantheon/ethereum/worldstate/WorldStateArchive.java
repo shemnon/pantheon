@@ -21,7 +21,7 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
 import java.util.Optional;
 
 public class WorldStateArchive {
-  private final WorldStateStorage storage;
+  final WorldStateStorage storage;
   private static final Hash EMPTY_ROOT_HASH = Hash.wrap(MerklePatriciaTrie.EMPTY_TRIE_NODE_HASH);
 
   public WorldStateArchive(final WorldStateStorage storage) {

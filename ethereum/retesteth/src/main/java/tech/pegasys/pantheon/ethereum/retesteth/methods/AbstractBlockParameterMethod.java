@@ -36,10 +36,10 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 public abstract class AbstractBlockParameterMethod implements JsonRpcMethod {
 
-  private final RetestethContext runner;
+  private final RetestethContext context;
 
-  AbstractBlockParameterMethod(final RetestethContext runner) {
-    this.runner = runner;
+  AbstractBlockParameterMethod(final RetestethContext context) {
+    this.context = context;
   }
 
   protected abstract BlockParameter blockParameter(JsonRpcRequest request);
@@ -47,7 +47,7 @@ public abstract class AbstractBlockParameterMethod implements JsonRpcMethod {
   protected abstract Object resultByBlockNumber(JsonRpcRequest request, long blockNumber);
 
   BlockchainQueries getBlockchainQueries() {
-    return runner.getBlockchainQueries();
+    return context.getBlockchainQueries();
   }
 
   private Object pendingResult() {

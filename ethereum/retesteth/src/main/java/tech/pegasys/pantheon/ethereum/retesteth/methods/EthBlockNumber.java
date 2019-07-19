@@ -22,10 +22,10 @@ import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 
 public class EthBlockNumber implements JsonRpcMethod {
 
-  private final RetestethContext runner;
+  private final RetestethContext context;
 
-  public EthBlockNumber(final RetestethContext runner) {
-    this.runner = runner;
+  public EthBlockNumber(final RetestethContext context) {
+    this.context = context;
   }
 
   @Override
@@ -36,6 +36,6 @@ public class EthBlockNumber implements JsonRpcMethod {
   @Override
   public JsonRpcResponse response(final JsonRpcRequest req) {
     return new JsonRpcSuccessResponse(
-        req.getId(), Quantity.create(runner.getBlockchainQueries().headBlockNumber()));
+        req.getId(), Quantity.create(context.getBlockchainQueries().headBlockNumber()));
   }
 }

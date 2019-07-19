@@ -16,6 +16,7 @@ import static tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule.fro
 
 import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
+import tech.pegasys.pantheon.ethereum.chain.Blockchain;
 import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.MutableBlockchain;
 import tech.pegasys.pantheon.ethereum.core.Address;
@@ -35,7 +36,7 @@ import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStoragePrefixedKeyBlockchainStorage;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStateKeyValueStorage;
-import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
+import tech.pegasys.pantheon.ethereum.worldstate.DebuggableWorldStateArchive;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -54,7 +55,7 @@ public class RetestethContext {
 
   private static final Logger LOG = LogManager.getLogger();
 
-  private final ReentrantLock runnerLock = new ReentrantLock();
+  private final ReentrantLock contextLock = new ReentrantLock();
   private MutableBlockchain blockchain;
   private ProtocolContext<Void> protocolContext;
   private BlockchainQueries blockchainQueries;
@@ -63,9 +64,11 @@ public class RetestethContext {
   public boolean resetRunner(final String genesisConfigString) {
     final JsonObject genesisConfig = normalizeKeys(new JsonObject(genesisConfigString));
 
-    runnerLock.lock();
+    contextLock.lock();
     try {
-      final WorldStateArchive worldStateArchive = createInMemoryWorldStateArchive();
+      final DebuggableWorldStateArchive worldStateArchive =
+          new DebuggableWorldStateArchive(
+              new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()));
 
       final MutableWorldState worldState = worldStateArchive.getMutable();
       final WorldUpdater updater = worldState.updater();
@@ -121,7 +124,7 @@ public class RetestethContext {
       LOG.error("Error shutting down existing runner", e);
       return false;
     } finally {
-      runnerLock.unlock();
+      contextLock.unlock();
     }
   }
 
@@ -136,10 +139,6 @@ public class RetestethContext {
         genesisBlock,
         new KeyValueStoragePrefixedKeyBlockchainStorage(keyValueStorage, blockHeaderFunctions),
         new NoOpMetricsSystem());
-  }
-
-  private static WorldStateArchive createInMemoryWorldStateArchive() {
-    return new WorldStateArchive(new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()));
   }
 
   @SuppressWarnings("unchecked")

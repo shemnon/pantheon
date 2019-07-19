@@ -20,6 +20,7 @@ import tech.pegasys.pantheon.ethereum.core.WorldState;
 import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStateKeyValueStorage;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
+import tech.pegasys.pantheon.util.bytes.Bytes32;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -39,7 +40,7 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
   // hashes at all, just the hashtoAddress map (this is also why things are separated this way,
   // it will make it easier to update later).
 
-  private static class DebugInfo {
+  static class DebugInfo {
     private final Set<Address> accounts = new HashSet<>();
 
     private void addAll(final DebugInfo other) {
@@ -47,14 +48,22 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
     }
   }
 
-  private final DebugInfo info = new DebugInfo();
+  private final DebugInfo info;
 
   public DebuggableMutableWorldState() {
     super(new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()));
+    this.info = new DebugInfo();
+  }
+
+  DebuggableMutableWorldState(
+      final Bytes32 rootHash, final WorldStateStorage worldStateStorage, final DebugInfo debugInfo) {
+    super(rootHash, worldStateStorage);
+    this.info = debugInfo;
   }
 
   public DebuggableMutableWorldState(final WorldState worldState) {
     super(worldState);
+    this.info = new DebugInfo();
 
     if (worldState instanceof DebuggableMutableWorldState) {
       final DebuggableMutableWorldState dws = ((DebuggableMutableWorldState) worldState);

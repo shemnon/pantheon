@@ -21,10 +21,10 @@ import tech.pegasys.pantheon.ethereum.retesteth.results.BlockResult;
 
 public class EthGetBlockByNumber extends AbstractBlockParameterMethod {
 
-  JsonRpcParameter parameter = new JsonRpcParameter();
+  private JsonRpcParameter parameter = new JsonRpcParameter();
 
-  public EthGetBlockByNumber(final RetestethContext runner) {
-    super(runner);
+  public EthGetBlockByNumber(final RetestethContext context) {
+    super(context);
   }
 
   @Override

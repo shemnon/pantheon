@@ -37,11 +37,11 @@ public class TestImportRawBlock implements JsonRpcMethod {
 
   private static final String METHOD_NAME = "test_importRawBlock";
 
-  private final RetestethContext runner;
-  JsonRpcParameter parameter = new JsonRpcParameter();
+  private final RetestethContext context;
+  private final JsonRpcParameter parameter = new JsonRpcParameter();
 
-  public TestImportRawBlock(final RetestethContext runner) {
-    this.runner = runner;
+  public TestImportRawBlock(final RetestethContext context) {
+    this.context = context;
   }
 
   @Override
@@ -52,8 +52,8 @@ public class TestImportRawBlock implements JsonRpcMethod {
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
     final String input = parameter.required(request.getParams(), 0, String.class);
-    final ProtocolSpec<Void> protocolSpec = runner.getProtocolSpec(runner.getBlockHeight());
-    final ProtocolContext<Void> context = runner.getProtocolContext();
+    final ProtocolSpec<Void> protocolSpec = context.getProtocolSpec(context.getBlockHeight());
+    final ProtocolContext<Void> context = this.context.getProtocolContext();
 
     final Block block;
     try {
