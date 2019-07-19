@@ -16,7 +16,6 @@ import static tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule.fro
 
 import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
-import tech.pegasys.pantheon.ethereum.chain.Blockchain;
 import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.MutableBlockchain;
 import tech.pegasys.pantheon.ethereum.core.Address;
@@ -30,6 +29,7 @@ import tech.pegasys.pantheon.ethereum.core.MutableAccount;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.processor.BlockReplay;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockchainQueries;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHeaderFunctions;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
@@ -60,6 +60,7 @@ public class RetestethContext {
   private ProtocolContext<Void> protocolContext;
   private BlockchainQueries blockchainQueries;
   private ProtocolSchedule<Void> protocolSchedule;
+  private BlockReplay blockReplay;
 
   public boolean resetRunner(final String genesisConfigString) {
     final JsonObject genesisConfig = normalizeKeys(new JsonObject(genesisConfigString));
@@ -118,6 +119,12 @@ public class RetestethContext {
       protocolContext = new ProtocolContext<>(blockchain, worldStateArchive, null);
 
       blockchainQueries = new BlockchainQueries(blockchain, worldStateArchive);
+
+      blockReplay =
+          new BlockReplay(
+              protocolSchedule,
+              blockchainQueries.getBlockchain(),
+              blockchainQueries.getWorldStateArchive());
 
       return true;
     } catch (final Exception e) {
@@ -203,5 +210,9 @@ public class RetestethContext {
 
   public BlockchainQueries getBlockchainQueries() {
     return blockchainQueries;
+  }
+
+  public BlockReplay getBlockReplay() {
+    return blockReplay;
   }
 }

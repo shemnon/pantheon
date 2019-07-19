@@ -20,8 +20,12 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.health.LivenessCheck;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.Web3ClientVersion;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.DebugAccountRangeAt;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.DebugStorageRangeAt;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.EthBlockNumber;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetBalance;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetBlockByNumber;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetCode;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetTransactionCount;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestImportRawBlock;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestSetChainParams;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
@@ -54,7 +58,11 @@ public class RetestethService {
         new TestImportRawBlock(retestethContext),
         new EthBlockNumber(retestethContext),
         new EthGetBlockByNumber(retestethContext),
-        new DebugAccountRangeAt(retestethContext));
+        new DebugAccountRangeAt(retestethContext),
+        new EthGetBalance(retestethContext),
+        new EthGetCode(retestethContext),
+        new EthGetTransactionCount(retestethContext),
+        new DebugStorageRangeAt(retestethContext));
 
     jsonRpcHttpService =
         new JsonRpcHttpService(

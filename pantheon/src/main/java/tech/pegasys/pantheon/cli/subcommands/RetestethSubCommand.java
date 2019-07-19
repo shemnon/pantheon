@@ -22,7 +22,6 @@ import static tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration.DEFAUL
 import tech.pegasys.pantheon.PantheonInfo;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethConfiguration;
-import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethService;
 
 import java.net.InetAddress;
@@ -126,7 +125,7 @@ public class RetestethSubCommand implements Runnable {
       // when
       Thread.sleep(Long.MAX_VALUE); // once we have the synronizer up we won't need this
     } catch (InterruptedException e) {
-      //e.printStackTrace();
+      // e.printStackTrace();
     }
   }
 }

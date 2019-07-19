@@ -51,9 +51,7 @@ public abstract class AbstractBlockParameterMethod implements JsonRpcMethod {
   }
 
   private Object pendingResult() {
-    // TODO: Update once we mine and better understand pending semantics.
-    // This may also be worth always returning null for.
-    return null;
+    throw new UnsupportedOperationException("Retesteth mode does not support mining");
   }
 
   private Object latestResult(final JsonRpcRequest request) {

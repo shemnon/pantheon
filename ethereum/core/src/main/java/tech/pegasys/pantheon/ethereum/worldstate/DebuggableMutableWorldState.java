@@ -56,7 +56,9 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
   }
 
   DebuggableMutableWorldState(
-      final Bytes32 rootHash, final WorldStateStorage worldStateStorage, final DebugInfo debugInfo) {
+      final Bytes32 rootHash,
+      final WorldStateStorage worldStateStorage,
+      final DebugInfo debugInfo) {
     super(rootHash, worldStateStorage);
     this.info = debugInfo;
   }
