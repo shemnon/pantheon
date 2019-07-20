@@ -44,7 +44,7 @@ public class DebugStorageRangeAtTest {
   }
 
   @Test
-  public void shouldRetrieveStorageRange_partial() {
+  public void shouldRetrieveStorageRange_partialByHash() {
     final JsonRpcRequest request =
         new JsonRpcRequest(
             "2.0",
@@ -75,12 +75,92 @@ public class DebugStorageRangeAtTest {
   }
 
   @Test
-  public void shouldRetrieveStorageRange_complete() {
+  public void shouldRetrieveStorageRange_completeByHash() {
     final JsonRpcRequest request =
         new JsonRpcRequest(
             "2.0",
             "debug_storageRangeAt",
             new Object[] {BLOCK_HASH, TRANSACTION_INDEX, ACCOUNT_ADDRESS, "0x00", 100});
+
+    final JsonRpcSuccessResponse response =
+        (JsonRpcSuccessResponse) debugStorageRangeAt.response(request);
+    final DebugStorageRangeAtResult result = (DebugStorageRangeAtResult) response.getResult();
+
+    assertThat(result).isNotNull();
+    assertThat(result.getStorage())
+        .containsOnly(
+            entry(
+                Hash.hash(Bytes32.fromHexString("0x00")).toString(),
+                new StorageEntry(
+                    Bytes32.fromHexString("0x00"),
+                    UInt256.fromHexString(
+                        "0x000000000000000000000000000000000000000000000000000000000008fa01"))),
+            entry(
+                Hash.hash(Bytes32.fromHexString("0x01")).toString(),
+                new StorageEntry(
+                    Bytes32.fromHexString("0x01"),
+                    UInt256.fromHexString(
+                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+            entry(
+                Hash.hash(Bytes32.fromHexString("0x02")).toString(),
+                new StorageEntry(
+                    Bytes32.fromHexString("0x02"),
+                    UInt256.fromHexString(
+                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+            entry(
+                Hash.hash(Bytes32.fromHexString("0x03")).toString(),
+                new StorageEntry(
+                    Bytes32.fromHexString("0x03"),
+                    UInt256.fromHexString(
+                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+            entry(
+                Hash.hash(Bytes32.fromHexString("0x04")).toString(),
+                new StorageEntry(
+                    Bytes32.fromHexString("0x04"),
+                    UInt256.fromHexString(
+                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))));
+    assertThat(result.getNextKey()).isNull();
+    assertThat(result.getComplete()).isTrue();
+  }
+
+  @Test
+  public void shouldRetrieveStorageRange_partialByNumber() {
+    final JsonRpcRequest request =
+        new JsonRpcRequest(
+            "2.0",
+            "debug_storageRangeAt",
+            new Object[] {"0x10", TRANSACTION_INDEX, ACCOUNT_ADDRESS, START_KEY_HASH, 2});
+
+    final JsonRpcSuccessResponse response =
+        (JsonRpcSuccessResponse) debugStorageRangeAt.response(request);
+    final DebugStorageRangeAtResult result = (DebugStorageRangeAtResult) response.getResult();
+
+    assertThat(result).isNotNull();
+    assertThat(result.getStorage())
+        .containsOnly(
+            entry(
+                Hash.hash(Bytes32.fromHexString("0x02")).toString(),
+                new StorageEntry(
+                    Bytes32.fromHexString("0x02"),
+                    UInt256.fromHexString(
+                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+            entry(
+                Hash.hash(Bytes32.fromHexString("0x04")).toString(),
+                new StorageEntry(
+                    Bytes32.fromHexString("0x04"),
+                    UInt256.fromHexString(
+                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))));
+    assertThat(result.getNextKey()).isEqualTo(Hash.hash(Bytes32.fromHexString("0x01")).toString());
+    assertThat(result.getComplete()).isFalse();
+  }
+
+  @Test
+  public void shouldRetrieveStorageRange_completeByNumber() {
+    final JsonRpcRequest request =
+        new JsonRpcRequest(
+            "2.0",
+            "debug_storageRangeAt",
+            new Object[] {"0x10", TRANSACTION_INDEX, ACCOUNT_ADDRESS, "0x00", 100});
 
     final JsonRpcSuccessResponse response =
         (JsonRpcSuccessResponse) debugStorageRangeAt.response(request);

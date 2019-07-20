@@ -21,9 +21,11 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockWithMetadata
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
+import tech.pegasys.pantheon.ethereum.retesteth.results.DebugAccountRangeAtResult;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -86,26 +88,20 @@ public class DebugAccountRangeAt implements JsonRpcMethod {
                         account -> account.getAddressHash().toUnprefixedString(),
                         account1 -> account1.getAddress().toUnprefixedString())));
 
-    final Map<String, String> addressMap = new TreeMap<>();
     int remaining = maxResults;
-    String lastKey = addressHash;
-    for (final Map.Entry<String, String> entry : sortedAnswers.entrySet()) {
-      final String hash = entry.getKey();
-      if (remaining < 0) {
-        lastKey = hash;
-        break;
-      }
-      if (lastKey.compareTo(hash) <= 0) {
-        lastKey = hash;
+    final Map<String, String> addressMap = new TreeMap<>();
+    final Iterator<Map.Entry<String, String>> addressIter = sortedAnswers.entrySet().iterator();
+    while (addressIter.hasNext() && remaining > 0) {
+      final Map.Entry<String, String> entry = addressIter.next();
+      if (entry.getKey().compareTo(addressHash) >= 0) {
         addressMap.put(entry.getKey(), entry.getValue());
         remaining--;
       }
     }
-    if (remaining > 0) {
-      lastKey = Bytes32.ZERO.toUnprefixedString();
-    }
+    final String nextKey =
+        addressIter.hasNext() ? addressIter.next().getKey() : Bytes32.ZERO.toUnprefixedString();
 
     return new JsonRpcSuccessResponse(
-        request.getId(), Map.of("addressMap", addressMap, "nextKey", lastKey));
+        request.getId(), new DebugAccountRangeAtResult(addressMap, nextKey));
   }
 }
