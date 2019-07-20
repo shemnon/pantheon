@@ -62,6 +62,9 @@ public class DebugAccountRangeAt implements JsonRpcMethod {
               .blockByHashWithTxHashes(Hash.fromHexString(blockHashOrNumber));
     }
     final Hash stateRoot;
+    if (block.isEmpty()) {
+      return new JsonRpcSuccessResponse(request.getId(), Map.of());
+    }
     if (txIndex >= block.get().getTransactions().size()) {
       stateRoot = block.get().getHeader().getStateRoot();
     } else {
