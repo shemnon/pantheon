@@ -53,7 +53,7 @@ public class RetestethContext {
   private ProtocolSchedule<Void> protocolSchedule;
   private BlockReplay blockReplay;
 
-  public boolean resetRunner(final String genesisConfigString) {
+  public boolean resetContext(final String genesisConfigString) {
     final JsonObject genesisConfig = normalizeKeys(new JsonObject(genesisConfigString));
 
     contextLock.lock();
@@ -62,7 +62,8 @@ public class RetestethContext {
           MainnetProtocolSchedule.fromConfig(
               JsonGenesisConfigOptions.fromJsonObject(genesisConfig.getJsonObject("config")));
 
-      final GenesisState genesisState = GenesisState.fromJson(genesisConfigString, protocolSchedule);
+      final GenesisState genesisState =
+          GenesisState.fromJson(genesisConfigString, protocolSchedule);
 
       final DebuggableWorldStateArchive worldStateArchive =
           new DebuggableWorldStateArchive(
@@ -123,7 +124,7 @@ public class RetestethContext {
     return new JsonObject(normalized);
   }
 
-  private ProtocolSchedule<Void> getProtocolSchedule() {
+  public ProtocolSchedule<Void> getProtocolSchedule() {
     return protocolSchedule;
   }
 

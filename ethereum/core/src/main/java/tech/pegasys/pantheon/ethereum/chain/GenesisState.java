@@ -195,10 +195,7 @@ public final class GenesisState {
   }
 
   private static long parseNonce(final GenesisConfigFile genesis) {
-    return withNiceErrorMessage(
-        "nonce",
-        genesis.getNonce(),
-        GenesisState::parseUnsignedLong);
+    return withNiceErrorMessage("nonce", genesis.getNonce(), GenesisState::parseUnsignedLong);
   }
 
   private static long parseUnsignedLong(final String value) {

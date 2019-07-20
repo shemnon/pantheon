@@ -55,12 +55,12 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
       this.preimages.putAll(other.preimages);
     }
 
-    private void addAddress(Address address) {
+    private void addAddress(final Address address) {
       accounts.add(address);
       preimages.put(Hash.hash(address), address);
     }
 
-    void addKey(BytesValue key) {
+    void addKey(final BytesValue key) {
       preimages.put(Hash.hash(key), key);
     }
   }
@@ -101,7 +101,7 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
 
   @Override
   public WorldUpdater updater() {
-    return new InfoCollectingUpdater((Updater) super.updater(), info);
+    return new InfoCollectingUpdater(super.updater(), info);
   }
 
   @Override
@@ -130,7 +130,7 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
     return builder.toString();
   }
 
-  private class InfoCollectingUpdater implements WorldUpdater {
+  private static class InfoCollectingUpdater implements WorldUpdater {
     private final WorldUpdater wrapped;
     private final DebugInfo commitInfo;
     private DebugInfo ownInfo = new DebugInfo();
@@ -189,16 +189,16 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
     public void commit() {
       WorldUpdater root = wrapped;
       while (root instanceof InfoCollectingUpdater) {
-        root = ((InfoCollectingUpdater)root).wrapped;
+        root = ((InfoCollectingUpdater) root).wrapped;
       }
       if (root instanceof AbstractWorldUpdater) {
         ((AbstractWorldUpdater<?, ?>) root)
             .updatedAccounts()
-                .forEach(
-                    account ->
-                        account
-                            .getUpdatedStorage()
-                            .forEach((key, value) -> ownInfo.addKey(key.getBytes())));
+            .forEach(
+                account ->
+                    account
+                        .getUpdatedStorage()
+                        .forEach((key, value) -> ownInfo.addKey(key.getBytes())));
       } else {
         throw new RuntimeException("Sad Trombone");
       }

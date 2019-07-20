@@ -49,6 +49,11 @@ public class DebugStorageRangeAtResult implements JsonRpcResult {
     return nextKey;
   }
 
+  @JsonGetter(value = "complete")
+  public boolean getComplete() {
+    return nextKey == null;
+  }
+
   @JsonPropertyOrder(value = {"key", "value"})
   public static class StorageEntry {
     private final String key;
@@ -85,7 +90,7 @@ public class DebugStorageRangeAtResult implements JsonRpcResult {
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper(this).add("value", value).toString();
+      return MoreObjects.toStringHelper(this).add("key", key).add("value", value).toString();
     }
 
     @Override

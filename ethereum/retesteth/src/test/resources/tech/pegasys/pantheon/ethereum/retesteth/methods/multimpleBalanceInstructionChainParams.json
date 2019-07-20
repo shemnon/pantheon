@@ -1,5 +1,5 @@
 {
-  "xaccounts": {
+  "accounts": {
     "0x0000000000000000000000000000000000000001": {
       "precompiled": {
         "linear": {
@@ -63,9 +63,7 @@
       "precompiled": {
         "name": "alt_bn128_pairing_product"
       }
-    }
-  },
-  "accounts": {
+    },
     "0x095e7baea6a6c7c4c2dfeb977efac326af552d87": {
       "balance": "0x0186a0",
       "code": "0x73a94f5374fce5edbc8e2a8697c15331677e6ebf0b31600055738888f1f195afa192cfee860698584c030f4c9db13160015573a94f5374fce5edbc8e2a8697c15331677e6ebf0b31600255738888f1f195afa192cfee860698584c030f4c9db13160035573095e7baea6a6c7c4c2dfeb977efac326af552d8731600555",

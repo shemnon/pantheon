@@ -29,13 +29,13 @@ import org.junit.Test;
 
 public class TestSetChainParamsTest {
 
-  private static RetestethContext runner;
+  private static RetestethContext context;
   private static TestSetChainParams test_setChainParams;
 
   @BeforeClass
   public static void setupClass() {
-    runner = new RetestethContext();
-    test_setChainParams = new TestSetChainParams(runner);
+    context = new RetestethContext();
+    test_setChainParams = new TestSetChainParams(context);
   }
 
   @Test
@@ -53,7 +53,7 @@ public class TestSetChainParamsTest {
     assertThat(test_setChainParams.response(request))
         .isEqualTo(new JsonRpcSuccessResponse(null, true));
 
-    final BlockHeader blockHeader = runner.getBlockHeader(0);
+    final BlockHeader blockHeader = context.getBlockHeader(0);
 
     assertThat(blockHeader.getLogsBloom().toString())
         .isEqualTo(

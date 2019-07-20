@@ -48,7 +48,7 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
     final String blockHashOrNumber = parameters.required(request.getParams(), 0, String.class);
-    //final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
+    // final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
     final Address accountAddress = parameters.required(request.getParams(), 2, Address.class);
     final Hash startKey =
         Hash.fromHexStringLenient(parameters.required(request.getParams(), 3, String.class));
@@ -64,13 +64,14 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
     }
 
     // TODO deal with in-block locations
-    //if (blockHash.isPresent()) {
-    //  if (context.getBlockchainQueries().getTransactionCount(blockHash.get()) >= transactionIndex) {
+    // if (blockHash.isPresent()) {
+    //  if (context.getBlockchainQueries().getTransactionCount(blockHash.get()) >= transactionIndex)
+    // {
     //    // post block state
     //  } else {
     //    // sub-block state
     //  }
-    //}
+    // }
 
     return extractStorageAt(
         request,

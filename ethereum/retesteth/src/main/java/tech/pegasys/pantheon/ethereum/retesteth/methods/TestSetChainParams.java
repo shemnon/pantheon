@@ -53,7 +53,7 @@ public class TestSetChainParams implements JsonRpcMethod {
       LOG.trace("ChainParams {}", chainParamsAsString);
       final String genesisFileAsString = modifyGenesisFile(chainParamsAsString);
       LOG.trace("Genesis {}", genesisFileAsString);
-      final boolean result = context.resetRunner(genesisFileAsString);
+      final boolean result = context.resetContext(genesisFileAsString);
 
       return new JsonRpcSuccessResponse(request.getId(), result);
     } catch (final Exception e) {

@@ -109,13 +109,13 @@ public class DebugStorageRangeAtTest {
     assertThat(result.getNextKey()).isNull();
     assertThat(result.getStorage())
         .containsExactly(
-            entry(Bytes32.fromHexString("0x33").toString(), new StorageEntry(UInt256.of(6))),
-            entry(Bytes32.fromHexString("0x44").toString(), new StorageEntry(UInt256.of(7))));
+            entry(Bytes32.fromHexString("0x33").toString(), new StorageEntry(null, UInt256.of(6))),
+            entry(Bytes32.fromHexString("0x44").toString(), new StorageEntry(null, UInt256.of(7))));
   }
 
   private Object callAction(final InvocationOnMock invocation) {
     return Optional.of(
-        ((TransactionAction) invocation.getArgument(2))
+        ((TransactionAction<?>) invocation.getArgument(2))
             .performAction(transaction, blockHeader, blockchain, worldState, transactionProcessor));
   }
 }

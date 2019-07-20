@@ -46,6 +46,7 @@ dependencies {
 
   testImplementation 'junit:junit'
   testImplementation 'org.assertj:assertj-core'
+  testImplementation 'org.mockito:mockito-core'
 
   runtime 'org.apache.logging.log4j:log4j-core'
 }
