@@ -110,6 +110,7 @@ public final class GenesisState {
     genesisAccounts.forEach(
         genesisAccount -> {
           final MutableAccount account = updater.getOrCreate(genesisAccount.address);
+          account.setNonce(genesisAccount.nonce);
           account.setBalance(genesisAccount.balance);
           account.setCode(genesisAccount.code);
           account.setVersion(genesisAccount.version);
@@ -197,13 +198,15 @@ public final class GenesisState {
     return withNiceErrorMessage(
         "nonce",
         genesis.getNonce(),
-        value -> {
-          String nonce = value.toLowerCase(Locale.US);
-          if (nonce.startsWith("0x")) {
-            nonce = nonce.substring(2);
-          }
-          return Long.parseUnsignedLong(nonce, 16);
-        });
+        GenesisState::parseUnsignedLong);
+  }
+
+  private static long parseUnsignedLong(final String value) {
+    String nonce = value.toLowerCase(Locale.US);
+    if (nonce.startsWith("0x")) {
+      nonce = nonce.substring(2);
+    }
+    return Long.parseUnsignedLong(nonce, 16);
   }
 
   @Override
@@ -216,6 +219,7 @@ public final class GenesisState {
 
   private static final class GenesisAccount {
 
+    final long nonce;
     final Address address;
     final Wei balance;
     final Map<UInt256, UInt256> storage;
@@ -224,6 +228,7 @@ public final class GenesisState {
 
     static GenesisAccount fromAllocation(final GenesisAllocation allocation) {
       return new GenesisAccount(
+          allocation.getNonce(),
           allocation.getAddress(),
           allocation.getBalance(),
           allocation.getStorage(),
@@ -232,11 +237,13 @@ public final class GenesisState {
     }
 
     private GenesisAccount(
+        final String hexNonce,
         final String hexAddress,
         final String balance,
         final Map<String, Object> storage,
         final String hexCode,
         final String version) {
+      this.nonce = withNiceErrorMessage("nonce", hexNonce, GenesisState::parseUnsignedLong);
       this.address = withNiceErrorMessage("address", hexAddress, Address::fromHexString);
       this.balance = withNiceErrorMessage("balance", balance, this::parseBalance);
       this.code = hexCode != null ? BytesValue.fromHexString(hexCode) : null;
@@ -270,6 +277,7 @@ public final class GenesisState {
     public String toString() {
       return MoreObjects.toStringHelper(this)
           .add("address", address)
+          .add("nonce", nonce)
           .add("balance", balance)
           .add("storage", storage)
           .add("code", code)

@@ -12,26 +12,19 @@
  */
 package tech.pegasys.pantheon.ethereum.retesteth;
 
-import static tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule.fromConfig;
-
 import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
+import tech.pegasys.pantheon.ethereum.chain.GenesisState;
 import tech.pegasys.pantheon.ethereum.chain.MutableBlockchain;
-import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Block;
-import tech.pegasys.pantheon.ethereum.core.BlockBody;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.BlockHeaderFunctions;
-import tech.pegasys.pantheon.ethereum.core.Hash;
-import tech.pegasys.pantheon.ethereum.core.LogsBloomFilter;
-import tech.pegasys.pantheon.ethereum.core.MutableAccount;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
-import tech.pegasys.pantheon.ethereum.core.Wei;
-import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.processor.BlockReplay;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockchainQueries;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHeaderFunctions;
+import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStoragePrefixedKeyBlockchainStorage;
@@ -39,8 +32,6 @@ import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStateKeyValueStorage
 import tech.pegasys.pantheon.ethereum.worldstate.DebuggableWorldStateArchive;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
-import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -67,55 +58,19 @@ public class RetestethContext {
 
     contextLock.lock();
     try {
+      protocolSchedule =
+          MainnetProtocolSchedule.fromConfig(
+              JsonGenesisConfigOptions.fromJsonObject(genesisConfig.getJsonObject("config")));
+
+      final GenesisState genesisState = GenesisState.fromJson(genesisConfigString, protocolSchedule);
+
       final DebuggableWorldStateArchive worldStateArchive =
           new DebuggableWorldStateArchive(
               new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()));
-
       final MutableWorldState worldState = worldStateArchive.getMutable();
-      final WorldUpdater updater = worldState.updater();
+      genesisState.writeStateTo(worldState);
 
-      final JsonObject alloc = genesisConfig.getJsonObject("alloc");
-      for (final String addressString : alloc.fieldNames()) {
-        final JsonObject accountJson = alloc.getJsonObject(addressString);
-
-        insertAccount(
-            updater,
-            Address.fromHexString(addressString),
-            Long.decode(accountJson.getString("nonce")),
-            Wei.fromHexString(accountJson.getString("balance")),
-            BytesValue.fromHexString(accountJson.getString("code")),
-            accountJson.getInteger("version", 0),
-            accountJson.getJsonObject("storage").getMap());
-      }
-
-      updater.commit();
-      worldState.persist();
-
-      final BlockHeader genesisBlockHeader =
-          new BlockHeader(
-              Hash.ZERO,
-              Hash.EMPTY_LIST_HASH,
-              Address.fromHexString(genesisConfig.getString("coinbase")),
-              worldState.rootHash(),
-              Hash.EMPTY_TRIE_HASH,
-              Hash.EMPTY_TRIE_HASH,
-              LogsBloomFilter.empty(),
-              UInt256.fromHexString(genesisConfig.getString("difficulty")),
-              0,
-              Long.decode(genesisConfig.getString("gaslimit")),
-              0L,
-              Long.decode(genesisConfig.getString("timestamp")),
-              BytesValue.fromHexString(genesisConfig.getString("extradata")),
-              Hash.fromHexString(genesisConfig.getString("mixhash")),
-              Long.decode(genesisConfig.getString("nonce")),
-              new MainnetBlockHeaderFunctions());
-
-      protocolSchedule =
-          fromConfig(
-              JsonGenesisConfigOptions.fromJsonObject(genesisConfig.getJsonObject("config")));
-
-      final Block genesisBlock = new Block(genesisBlockHeader, BlockBody.empty());
-      blockchain = createInMemoryBlockchain(genesisBlock);
+      blockchain = createInMemoryBlockchain(genesisState.getBlock());
       protocolContext = new ProtocolContext<>(blockchain, worldStateArchive, null);
 
       blockchainQueries = new BlockchainQueries(blockchain, worldStateArchive);
@@ -166,26 +121,6 @@ public class RetestethContext {
               }
             });
     return new JsonObject(normalized);
-  }
-
-  private static void insertAccount(
-      final WorldUpdater updater,
-      final Address address,
-      final long nonce,
-      final Wei balance,
-      final BytesValue code,
-      final int version,
-      final Map<String, Object> storage) {
-    final MutableAccount account = updater.getOrCreate(address);
-    account.setNonce(nonce);
-    account.setBalance(balance);
-    account.setCode(code);
-    account.setVersion(version);
-    for (final Map.Entry<String, Object> entry : storage.entrySet()) {
-      account.setStorageValue(
-          UInt256.fromHexString(entry.getKey()),
-          UInt256.fromHexString(entry.getValue().toString()));
-    }
   }
 
   private ProtocolSchedule<Void> getProtocolSchedule() {

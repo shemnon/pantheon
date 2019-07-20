@@ -31,13 +31,7 @@ import tech.pegasys.pantheon.util.uint.UInt256;
 import java.util.NavigableMap;
 import java.util.Optional;
 
-import io.vertx.core.json.Json;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class DebugStorageRangeAt implements JsonRpcMethod {
-
-  private static final Logger LOG = LogManager.getLogger();
 
   private final JsonRpcParameter parameters = new JsonRpcParameter();
   RetestethContext context;
@@ -54,7 +48,7 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
     final String blockHashOrNumber = parameters.required(request.getParams(), 0, String.class);
-    final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
+    //final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
     final Address accountAddress = parameters.required(request.getParams(), 2, Address.class);
     final Hash startKey =
         Hash.fromHexStringLenient(parameters.required(request.getParams(), 3, String.class));
@@ -69,13 +63,14 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
       blockHash = Optional.of(Hash.fromHexStringLenient(blockHashOrNumber));
     }
 
-    if (blockHash.isPresent()) {
-      if (context.getBlockchainQueries().getTransactionCount(blockHash.get()) >= transactionIndex) {
-        // post block state
-      } else {
-        // sub-block state
-      }
-    }
+    // TODO deal with in-block locations
+    //if (blockHash.isPresent()) {
+    //  if (context.getBlockchainQueries().getTransactionCount(blockHash.get()) >= transactionIndex) {
+    //    // post block state
+    //  } else {
+    //    // sub-block state
+    //  }
+    //}
 
     return extractStorageAt(
         request,
@@ -143,11 +138,9 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
       nextKey = entries.lastKey();
       entries.remove(nextKey);
     }
-    JsonRpcSuccessResponse result = new JsonRpcSuccessResponse(
+    return new JsonRpcSuccessResponse(
         request.getId(),
         new DebugStorageRangeAtResult(
             entries, nextKey, ((DebuggableMutableWorldState) worldState).getPreimages()));
-    LOG.info(Json.encodePrettily(result));
-    return result;
   }
 }
