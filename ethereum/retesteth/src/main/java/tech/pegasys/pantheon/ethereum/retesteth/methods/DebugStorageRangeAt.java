@@ -18,10 +18,8 @@ import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.jsonrpc.RpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.BlockParameter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.DebugStorageRangeAtResult;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 import tech.pegasys.pantheon.ethereum.worldstate.DebuggableMutableWorldState;
@@ -31,13 +29,17 @@ import tech.pegasys.pantheon.util.uint.UInt256;
 import java.util.NavigableMap;
 import java.util.Optional;
 
-public class DebugStorageRangeAt implements JsonRpcMethod {
+public class DebugStorageRangeAt extends AbstractBlockParameterMethod {
 
   private final JsonRpcParameter parameters = new JsonRpcParameter();
-  RetestethContext context;
 
   public DebugStorageRangeAt(final RetestethContext context) {
-    this.context = context;
+    super(context);
+  }
+
+  @Override
+  protected BlockParameter blockParameter(final JsonRpcRequest request) {
+    return parameters.required(request.getParams(), 0, BlockParameter.class);
   }
 
   @Override
@@ -46,22 +48,14 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
   }
 
   @Override
-  public JsonRpcResponse response(final JsonRpcRequest request) {
-    final String blockHashOrNumber = parameters.required(request.getParams(), 0, String.class);
+  protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
     // final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
     final Address accountAddress = parameters.required(request.getParams(), 2, Address.class);
     final Hash startKey =
         Hash.fromHexStringLenient(parameters.required(request.getParams(), 3, String.class));
     final int limit = parameters.required(request.getParams(), 4, Integer.class);
 
-    final UInt256 blockId = UInt256.fromHexString(blockHashOrNumber);
-    //    final Optional<TransactionWithMetadata> optional;
-    final Optional<Hash> blockHash;
-    if (blockId.fitsLong()) {
-      blockHash = context.getBlockchainQueries().getBlockHashByNumber(blockId.toLong());
-    } else {
-      blockHash = Optional.of(Hash.fromHexStringLenient(blockHashOrNumber));
-    }
+    final Optional<Hash> blockHash = getBlockchainQueries().getBlockHashByNumber(blockNumber);
 
     // TODO deal with in-block locations
     // if (blockHash.isPresent()) {
@@ -74,16 +68,13 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
     // }
 
     return extractStorageAt(
-        request,
         accountAddress,
         startKey,
         limit,
-        context
-            .getProtocolContext()
+        getProtocolContext()
             .getWorldStateArchive()
             .getMutable(
-                context
-                    .getBlockchainQueries()
+                getBlockchainQueries()
                     .blockByHash(blockHash.get())
                     .get()
                     .getHeader()
@@ -125,8 +116,7 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
     //        .orElseGet(() -> new JsonRpcSuccessResponse(request.getId(), null));
   }
 
-  private JsonRpcSuccessResponse extractStorageAt(
-      final JsonRpcRequest request,
+  private DebugStorageRangeAtResult extractStorageAt(
       final Address accountAddress,
       final Hash startKey,
       final int limit,
@@ -139,9 +129,7 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
       nextKey = entries.lastKey();
       entries.remove(nextKey);
     }
-    return new JsonRpcSuccessResponse(
-        request.getId(),
-        new DebugStorageRangeAtResult(
-            entries, nextKey, ((DebuggableMutableWorldState) worldState).getPreimages()));
+    return new DebugStorageRangeAtResult(
+        entries, nextKey, ((DebuggableMutableWorldState) worldState).getPreimages());
   }
 }

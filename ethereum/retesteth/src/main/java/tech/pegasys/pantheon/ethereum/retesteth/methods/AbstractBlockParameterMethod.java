@@ -12,6 +12,7 @@
  */
 package tech.pegasys.pantheon.ethereum.retesteth.methods;
 
+import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
@@ -48,6 +49,10 @@ public abstract class AbstractBlockParameterMethod implements JsonRpcMethod {
 
   BlockchainQueries getBlockchainQueries() {
     return context.getBlockchainQueries();
+  }
+
+  ProtocolContext<Void> getProtocolContext() {
+    return context.getProtocolContext();
   }
 
   private Object pendingResult() {

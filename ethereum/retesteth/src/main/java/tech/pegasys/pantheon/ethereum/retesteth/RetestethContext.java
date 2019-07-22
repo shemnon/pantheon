@@ -23,6 +23,7 @@ import tech.pegasys.pantheon.ethereum.core.BlockHeaderFunctions;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.processor.BlockReplay;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockchainQueries;
+import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockHeaderFunctions;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
@@ -51,6 +52,7 @@ public class RetestethContext {
   private ProtocolContext<Void> protocolContext;
   private BlockchainQueries blockchainQueries;
   private ProtocolSchedule<Void> protocolSchedule;
+  private HeaderValidationMode headerValidationMode;
   private BlockReplay blockReplay;
 
   public boolean resetContext(final String genesisConfigString) {
@@ -75,6 +77,11 @@ public class RetestethContext {
       protocolContext = new ProtocolContext<>(blockchain, worldStateArchive, null);
 
       blockchainQueries = new BlockchainQueries(blockchain, worldStateArchive);
+
+      headerValidationMode =
+          genesisConfig.getString("sealengine", "").equals("NoProof")
+              ? HeaderValidationMode.LIGHT
+              : HeaderValidationMode.FULL;
 
       blockReplay =
           new BlockReplay(
@@ -146,6 +153,10 @@ public class RetestethContext {
 
   public BlockchainQueries getBlockchainQueries() {
     return blockchainQueries;
+  }
+
+  public HeaderValidationMode getHeaderValidationMode() {
+    return headerValidationMode;
   }
 
   public BlockReplay getBlockReplay() {

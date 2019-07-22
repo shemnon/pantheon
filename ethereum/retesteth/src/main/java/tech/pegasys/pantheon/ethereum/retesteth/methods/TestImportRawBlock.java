@@ -18,11 +18,8 @@ import tech.pegasys.pantheon.ethereum.core.BlockImporter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcError;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcErrorResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
-import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 import tech.pegasys.pantheon.ethereum.rlp.RLP;
@@ -53,23 +50,28 @@ public class TestImportRawBlock implements JsonRpcMethod {
   public JsonRpcResponse response(final JsonRpcRequest request) {
     final String input = parameter.required(request.getParams(), 0, String.class);
     final ProtocolSpec<Void> protocolSpec = context.getProtocolSpec(context.getBlockHeight());
-    final ProtocolContext<Void> context = this.context.getProtocolContext();
+    final ProtocolContext<Void> protocolContext = this.context.getProtocolContext();
 
     final Block block;
     try {
       block =
           Block.readFrom(
               RLP.input(BytesValue.fromHexString(input)), protocolSpec.getBlockHeaderFunctions());
-    } catch (final RLPException e) {
+    } catch (final RLPException | IllegalArgumentException e) {
       LOG.debug("Failed to parse block RLP", e);
-      return new JsonRpcErrorResponse(request.getId(), JsonRpcError.INVALID_PARAMS);
+      return new JsonRpcSuccessResponse(request.getId(), "0x");
     }
 
     final BlockImporter<Void> blockImporter = protocolSpec.getBlockImporter();
-    final boolean imported =
-        blockImporter.importBlock(
-            context, block, HeaderValidationMode.NONE, HeaderValidationMode.NONE);
-
-    return new JsonRpcSuccessResponse(request.getId(), imported);
+    if (blockImporter.importBlock(
+        protocolContext,
+        block,
+        context.getHeaderValidationMode(),
+        context.getHeaderValidationMode())) {
+      return new JsonRpcSuccessResponse(request.getId(), block.getHash().toString());
+    } else {
+      LOG.debug("Failed to import block.");
+      return new JsonRpcSuccessResponse(request.getId(), "0x");
+    }
   }
 }

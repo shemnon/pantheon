@@ -15,15 +15,13 @@ package tech.pegasys.pantheon.ethereum.retesteth.methods;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.BlockParameter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockWithMetadata;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 import tech.pegasys.pantheon.ethereum.retesteth.results.DebugAccountRangeAtResult;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
-import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -31,13 +29,17 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-public class DebugAccountRangeAt implements JsonRpcMethod {
+public class DebugAccountRangeAt extends AbstractBlockParameterMethod {
 
-  private final RetestethContext context;
   private final JsonRpcParameter parameters = new JsonRpcParameter();
 
   public DebugAccountRangeAt(final RetestethContext context) {
-    this.context = context;
+    super(context);
+  }
+
+  @Override
+  protected BlockParameter blockParameter(final JsonRpcRequest request) {
+    return parameters.required(request.getParams(), 0, BlockParameter.class);
   }
 
   @Override
@@ -46,23 +48,14 @@ public class DebugAccountRangeAt implements JsonRpcMethod {
   }
 
   @Override
-  public JsonRpcResponse response(final JsonRpcRequest request) {
+  protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
     final Object[] params = request.getParams();
-    final String blockHashOrNumber = parameters.required(params, 0, String.class);
     final int txIndex = parameters.required(params, 1, Integer.TYPE);
     final String addressHash = parameters.required(params, 2, String.class);
     final int maxResults = parameters.required(params, 3, Integer.TYPE);
 
-    final UInt256 blockId = UInt256.fromHexString(blockHashOrNumber);
-    final Optional<BlockWithMetadata<Hash, Hash>> block;
-    if (blockId.fitsLong()) {
-      block = context.getBlockchainQueries().blockByNumberWithTxHashes(blockId.toLong());
-    } else {
-      block =
-          context
-              .getBlockchainQueries()
-              .blockByHashWithTxHashes(Hash.fromHexString(blockHashOrNumber));
-    }
+    final Optional<BlockWithMetadata<Hash, Hash>> block =
+        getBlockchainQueries().blockByNumberWithTxHashes(blockNumber);
     final Hash stateRoot;
     if (block.isEmpty()) {
       return new JsonRpcSuccessResponse(request.getId(), Map.of());
@@ -75,7 +68,7 @@ public class DebugAccountRangeAt implements JsonRpcMethod {
       // FIXME
     }
     final Optional<MutableWorldState> state =
-        context.getProtocolContext().getWorldStateArchive().getMutable(stateRoot);
+        getProtocolContext().getWorldStateArchive().getMutable(stateRoot);
 
     // We need to get all the hashed addresses, then sort them to figure out where to start.
     final TreeMap<String, String> sortedAnswers =
@@ -86,7 +79,7 @@ public class DebugAccountRangeAt implements JsonRpcMethod {
                 .collect(
                     Collectors.toMap(
                         account -> account.getAddressHash().toUnprefixedString(),
-                        account1 -> account1.getAddress().toUnprefixedString())));
+                        account -> account.getAddress().toUnprefixedString())));
 
     int remaining = maxResults;
     final Map<String, String> addressMap = new TreeMap<>();
@@ -101,7 +94,6 @@ public class DebugAccountRangeAt implements JsonRpcMethod {
     final String nextKey =
         addressIter.hasNext() ? addressIter.next().getKey() : Bytes32.ZERO.toUnprefixedString();
 
-    return new JsonRpcSuccessResponse(
-        request.getId(), new DebugAccountRangeAtResult(addressMap, nextKey));
+    return new DebugAccountRangeAtResult(addressMap, nextKey);
   }
 }
