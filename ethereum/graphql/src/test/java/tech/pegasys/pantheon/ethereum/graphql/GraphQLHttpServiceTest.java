@@ -119,14 +119,10 @@ public class GraphQLHttpServiceTest {
   public static void setupConstants() {
 
     final URL blocksUrl =
-        GraphQLHttpServiceTest.class
-            .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/graphql/graphQLTestBlockchain.blocks");
+        GraphQLHttpServiceTest.class.getClassLoader().getResource("testBlockchain.blocks");
 
     final URL genesisJsonUrl =
-        GraphQLHttpServiceTest.class
-            .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/graphql/graphQLTestGenesis.json");
+        GraphQLHttpServiceTest.class.getClassLoader().getResource("testGenesis.json");
 
     assertThat(blocksUrl).isNotNull();
     assertThat(genesisJsonUrl).isNotNull();

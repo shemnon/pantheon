@@ -67,12 +67,10 @@ public class EthGetBlockByHashIntegrationTest {
     final URL blocksUrl =
         EthGetBlockByNumberIntegrationTest.class
             .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/jsonrpc/jsonRpcTestBlockchain.blocks");
+            .getResource("testBlockchain.blocks");
 
     final URL genesisJsonUrl =
-        EthGetBlockByNumberIntegrationTest.class
-            .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/jsonrpc/jsonRpcTestGenesis.json");
+        EthGetBlockByNumberIntegrationTest.class.getClassLoader().getResource("testGenesis.json");
 
     assertThat(blocksUrl).isNotNull();
     assertThat(genesisJsonUrl).isNotNull();

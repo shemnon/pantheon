@@ -62,12 +62,12 @@ public class EthGetUncleByBlockHashAndIndexIntegrationTest {
     final URL blocksUrl =
         EthGetUncleByBlockHashAndIndexIntegrationTest.class
             .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/jsonrpc/jsonRpcTestBlockchain.blocks");
+            .getResource("testBlockchain.blocks");
 
     final URL genesisJsonUrl =
         EthGetUncleByBlockHashAndIndexIntegrationTest.class
             .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/jsonrpc/jsonRpcTestGenesis.json");
+            .getResource("testGenesis.json");
 
     assertThat(blocksUrl).isNotNull();
     assertThat(genesisJsonUrl).isNotNull();

@@ -55,8 +55,12 @@ import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
 
+import java.io.File;
 import java.net.URL;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -74,11 +78,11 @@ import okhttp3.OkHttpClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class AbstractEthJsonRpcHttpServiceTest {
-  @Rule public final TemporaryFolder folder = new TemporaryFolder();
+  @ClassRule public static final TemporaryFolder folder = new TemporaryFolder();
 
   protected static ProtocolSchedule<Void> PROTOCOL_SCHEDULE;
 
@@ -118,17 +122,12 @@ public abstract class AbstractEthJsonRpcHttpServiceTest {
     PROTOCOL_SCHEDULE = MainnetProtocolSchedule.create();
 
     final URL blocksUrl =
-        EthJsonRpcHttpBySpecTest.class
-            .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/jsonrpc/jsonRpcTestBlockchain.blocks");
+        ensureFileUrl(
+            EthJsonRpcHttpBySpecTest.class.getClassLoader().getResource("testBlockchain.blocks"));
 
     final URL genesisJsonUrl =
-        EthJsonRpcHttpBySpecTest.class
-            .getClassLoader()
-            .getResource("tech/pegasys/pantheon/ethereum/jsonrpc/jsonRpcTestGenesis.json");
-
-    assertThat(blocksUrl).isNotNull();
-    assertThat(genesisJsonUrl).isNotNull();
+        ensureFileUrl(
+            EthJsonRpcHttpBySpecTest.class.getClassLoader().getResource("testGenesis.json"));
 
     BLOCKS = new ArrayList<>();
     try (final RawBlockIterator iterator =
@@ -144,6 +143,19 @@ public abstract class AbstractEthJsonRpcHttpServiceTest {
 
     GENESIS_BLOCK = BLOCKS.get(0);
     GENESIS_CONFIG = GenesisState.fromJson(genesisJson, PROTOCOL_SCHEDULE);
+  }
+
+  /** Take a resource URL and if needed copy it to a temp file and return that URL. */
+  private static URL ensureFileUrl(final URL resource) throws Exception {
+    assertThat(resource).isNotNull();
+    try {
+      Paths.get(resource.toURI());
+    } catch (final FileSystemNotFoundException e) {
+      final File target = folder.newFile();
+      Files.copy(resource.openStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      return target.toURI().toURL();
+    }
+    return resource;
   }
 
   @Before
