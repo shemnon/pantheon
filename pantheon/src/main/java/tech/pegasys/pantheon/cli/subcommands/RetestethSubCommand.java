@@ -20,6 +20,7 @@ import static tech.pegasys.pantheon.cli.subcommands.RetestethSubCommand.COMMAND_
 import static tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration.DEFAULT_JSON_RPC_PORT;
 
 import tech.pegasys.pantheon.PantheonInfo;
+import tech.pegasys.pantheon.cli.custom.JsonRPCWhitelistHostsProperty;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcConfiguration;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethConfiguration;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethService;
@@ -73,6 +74,14 @@ public class RetestethSubCommand implements Runnable {
       arity = "1")
   private final Integer rpcHttpPort = DEFAULT_JSON_RPC_PORT;
 
+  @Option(
+      names = {"--host-whitelist"},
+      paramLabel = "<hostname>[,<hostname>...]... or * or all",
+      description =
+          "Comma separated list of hostnames to whitelist for RPC access, or * to accept any host (default: ${DEFAULT-VALUE})",
+      defaultValue = "localhost,127.0.0.1")
+  private final JsonRPCWhitelistHostsProperty hostsWhitelist = new JsonRPCWhitelistHostsProperty();
+
   private InetAddress autoDiscoveredDefaultIP;
 
   // Used to discover the default IP of the client.
@@ -105,6 +114,7 @@ public class RetestethSubCommand implements Runnable {
     final JsonRpcConfiguration jsonRpcConfiguration = JsonRpcConfiguration.createDefault();
     jsonRpcConfiguration.setHost(rpcHttpHost);
     jsonRpcConfiguration.setPort(rpcHttpPort);
+    jsonRpcConfiguration.setHostsWhitelist(hostsWhitelist);
 
     final RetestethService retestethService =
         new RetestethService(PantheonInfo.version(), retestethConfiguration, jsonRpcConfiguration);
@@ -122,9 +132,8 @@ public class RetestethSubCommand implements Runnable {
                 }));
     retestethService.start();
     try {
-      // when
-      Thread.sleep(Long.MAX_VALUE); // once we have the synronizer up we won't need this
-    } catch (InterruptedException e) {
+      Thread.sleep(Long.MAX_VALUE); // Is there a better way?
+    } catch (final InterruptedException e) {
       // e.printStackTrace();
     }
   }
