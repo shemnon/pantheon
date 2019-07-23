@@ -24,9 +24,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** Represent a mock worldState for testing. */
+@JsonIgnoreProperties("preimages")
 public class WorldStateMock extends DebuggableMutableWorldState {
 
   public static class AccountMock {
