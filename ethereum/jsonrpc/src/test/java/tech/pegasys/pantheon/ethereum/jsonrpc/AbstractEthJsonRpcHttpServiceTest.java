@@ -12,7 +12,6 @@
  */
 package tech.pegasys.pantheon.ethereum.jsonrpc;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -54,13 +53,10 @@ import tech.pegasys.pantheon.ethereum.util.RawBlockIterator;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
+import tech.pegasys.pantheon.testutil.BlockTestUtil;
 
-import java.io.File;
 import java.net.URL;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -121,13 +117,9 @@ public abstract class AbstractEthJsonRpcHttpServiceTest {
   public static void setupConstants() throws Exception {
     PROTOCOL_SCHEDULE = MainnetProtocolSchedule.create();
 
-    final URL blocksUrl =
-        ensureFileUrl(
-            EthJsonRpcHttpBySpecTest.class.getClassLoader().getResource("testBlockchain.blocks"));
+    final URL blocksUrl = BlockTestUtil.getTestBlockchainUrl();
 
-    final URL genesisJsonUrl =
-        ensureFileUrl(
-            EthJsonRpcHttpBySpecTest.class.getClassLoader().getResource("testGenesis.json"));
+    final URL genesisJsonUrl = BlockTestUtil.getTestGenesisUrl();
 
     BLOCKS = new ArrayList<>();
     try (final RawBlockIterator iterator =
@@ -143,19 +135,6 @@ public abstract class AbstractEthJsonRpcHttpServiceTest {
 
     GENESIS_BLOCK = BLOCKS.get(0);
     GENESIS_CONFIG = GenesisState.fromJson(genesisJson, PROTOCOL_SCHEDULE);
-  }
-
-  /** Take a resource URL and if needed copy it to a temp file and return that URL. */
-  private static URL ensureFileUrl(final URL resource) throws Exception {
-    assertThat(resource).isNotNull();
-    try {
-      Paths.get(resource.toURI());
-    } catch (final FileSystemNotFoundException e) {
-      final File target = folder.newFile();
-      Files.copy(resource.openStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-      return target.toURI().toURL();
-    }
-    return resource;
   }
 
   @Before
