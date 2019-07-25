@@ -13,11 +13,7 @@
 package tech.pegasys.pantheon.ethereum.retesteth.results;
 
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.JsonRpcResult;
-import tech.pegasys.pantheon.util.bytes.Bytes32;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
-import tech.pegasys.pantheon.util.uint.UInt256;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -27,9 +23,7 @@ public class DebugAccountRangeAtResult implements JsonRpcResult {
   private final Map<String, String> addressMap;
   private final String nextKey;
 
-  public DebugAccountRangeAtResult(
-      final Map<String, String> addressMap,
-      final String nextKey) {
+  public DebugAccountRangeAtResult(final Map<String, String> addressMap, final String nextKey) {
     this.addressMap = addressMap;
     this.nextKey = nextKey;
   }
