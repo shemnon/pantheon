@@ -14,7 +14,7 @@ package tech.pegasys.pantheon.cli;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -45,6 +45,7 @@ import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
 import tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration;
 import tech.pegasys.pantheon.services.PantheonPluginContextImpl;
+import tech.pegasys.pantheon.testutil.TestClock;
 import tech.pegasys.pantheon.util.BlockExporter;
 import tech.pegasys.pantheon.util.BlockImporter;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -55,6 +56,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -85,6 +87,7 @@ public abstract class CommandTestAbstract {
 
   protected final ByteArrayOutputStream commandErrorOutput = new ByteArrayOutputStream();
   private final PrintStream errPrintStream = new PrintStream(commandErrorOutput);
+  private final Clock testClock = new TestClock();
   private final HashMap<String, String> environment = new HashMap<>();
 
   @Mock protected RunnerBuilder mockRunnerBuilder;
@@ -109,7 +112,7 @@ public abstract class CommandTestAbstract {
   @Captor protected ArgumentCaptor<File> fileArgumentCaptor;
   @Captor protected ArgumentCaptor<String> stringArgumentCaptor;
   @Captor protected ArgumentCaptor<Integer> intArgumentCaptor;
-  @Captor protected ArgumentCaptor<Double> doubleArgumentCaptor;
+  @Captor protected ArgumentCaptor<Float> floatCaptor;
   @Captor protected ArgumentCaptor<EthNetworkConfig> ethNetworkConfigArgumentCaptor;
   @Captor protected ArgumentCaptor<SynchronizerConfiguration> syncConfigurationCaptor;
   @Captor protected ArgumentCaptor<JsonRpcConfiguration> jsonRpcConfigArgumentCaptor;
@@ -166,7 +169,7 @@ public abstract class CommandTestAbstract {
     when(mockRunnerBuilder.maxPeers(anyInt())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.limitRemoteWireConnectionsEnabled(anyBoolean()))
         .thenReturn(mockRunnerBuilder);
-    when(mockRunnerBuilder.fractionRemoteConnectionsAllowed(anyDouble()))
+    when(mockRunnerBuilder.fractionRemoteConnectionsAllowed(anyFloat()))
         .thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.p2pEnabled(anyBoolean())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.natMethod(any())).thenReturn(mockRunnerBuilder);
@@ -178,6 +181,7 @@ public abstract class CommandTestAbstract {
     when(mockRunnerBuilder.metricsSystem(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.metricsConfiguration(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.staticNodes(any())).thenReturn(mockRunnerBuilder);
+    when(mockRunnerBuilder.clock(any())).thenReturn(mockRunnerBuilder);
     when(mockRunnerBuilder.build()).thenReturn(mockRunner);
   }
 
@@ -224,6 +228,7 @@ public abstract class CommandTestAbstract {
             mockControllerBuilderFactory,
             keyLoader,
             mockPantheonPluginContext,
+            testClock,
             environment);
 
     // parse using Ansi.OFF to be able to assert on non formatted output results
@@ -253,6 +258,7 @@ public abstract class CommandTestAbstract {
         final PantheonController.Builder controllerBuilderFactory,
         final KeyLoader keyLoader,
         final PantheonPluginContextImpl pantheonPluginContext,
+        final Clock clock,
         final Map<String, String> environment) {
       super(
           mockLogger,
@@ -261,6 +267,7 @@ public abstract class CommandTestAbstract {
           mockRunnerBuilder,
           controllerBuilderFactory,
           pantheonPluginContext,
+          clock,
           environment);
       this.keyLoader = keyLoader;
     }

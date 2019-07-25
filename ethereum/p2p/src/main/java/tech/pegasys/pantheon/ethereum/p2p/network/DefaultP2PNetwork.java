@@ -23,13 +23,13 @@ import tech.pegasys.pantheon.ethereum.p2p.discovery.PeerDiscoveryAgent;
 import tech.pegasys.pantheon.ethereum.p2p.discovery.PeerDiscoveryEvent.PeerBondedEvent;
 import tech.pegasys.pantheon.ethereum.p2p.discovery.PeerDiscoveryStatus;
 import tech.pegasys.pantheon.ethereum.p2p.discovery.VertxPeerDiscoveryAgent;
-import tech.pegasys.pantheon.ethereum.p2p.peers.DefaultPeerProperties;
+import tech.pegasys.pantheon.ethereum.p2p.peers.DefaultPeerPrivileges;
 import tech.pegasys.pantheon.ethereum.p2p.peers.EnodeURL;
 import tech.pegasys.pantheon.ethereum.p2p.peers.LocalNode;
 import tech.pegasys.pantheon.ethereum.p2p.peers.MaintainedPeers;
 import tech.pegasys.pantheon.ethereum.p2p.peers.MutableLocalNode;
 import tech.pegasys.pantheon.ethereum.p2p.peers.Peer;
-import tech.pegasys.pantheon.ethereum.p2p.peers.PeerProperties;
+import tech.pegasys.pantheon.ethereum.p2p.peers.PeerPrivileges;
 import tech.pegasys.pantheon.ethereum.p2p.permissions.PeerPermissions;
 import tech.pegasys.pantheon.ethereum.p2p.permissions.PeerPermissionsBlacklist;
 import tech.pegasys.pantheon.ethereum.p2p.rlpx.ConnectCallback;
@@ -43,6 +43,7 @@ import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.nat.upnp.UpnpNatManager;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -409,6 +410,7 @@ public class DefaultP2PNetwork implements P2PNetwork {
 
     private Optional<UpnpNatManager> natManager = Optional.empty();
     private MetricsSystem metricsSystem;
+    private Clock clock;
 
     public P2PNetwork build() {
       validate();
@@ -424,9 +426,9 @@ public class DefaultP2PNetwork implements P2PNetwork {
 
       final MutableLocalNode localNode =
           MutableLocalNode.create(config.getRlpx().getClientId(), 5, supportedCapabilities);
-      final PeerProperties peerProperties = new DefaultPeerProperties(maintainedPeers);
+      final PeerPrivileges peerPrivileges = new DefaultPeerPrivileges(maintainedPeers);
       peerDiscoveryAgent = peerDiscoveryAgent == null ? createDiscoveryAgent() : peerDiscoveryAgent;
-      rlpxAgent = rlpxAgent == null ? createRlpxAgent(localNode, peerProperties) : rlpxAgent;
+      rlpxAgent = rlpxAgent == null ? createRlpxAgent(localNode, peerPrivileges, clock) : rlpxAgent;
 
       return new DefaultP2PNetwork(
           localNode,
@@ -447,24 +449,26 @@ public class DefaultP2PNetwork implements P2PNetwork {
           supportedCapabilities != null && supportedCapabilities.size() > 0,
           "Supported capabilities must be set and non-empty.");
       checkState(metricsSystem != null, "MetricsSystem must be set.");
+      checkState(clock != null, "Clock must be set.");
       checkState(peerDiscoveryAgent != null || vertx != null, "Vertx must be set.");
     }
 
     private PeerDiscoveryAgent createDiscoveryAgent() {
 
       return new VertxPeerDiscoveryAgent(
-          vertx, keyPair, config.getDiscovery(), peerPermissions, natManager, metricsSystem);
+          vertx, keyPair, config.getDiscovery(), peerPermissions, natManager, metricsSystem, clock);
     }
 
     private RlpxAgent createRlpxAgent(
-        final LocalNode localNode, final PeerProperties peerProperties) {
+        final LocalNode localNode, final PeerPrivileges peerPrivileges, final Clock clock) {
       return RlpxAgent.builder()
           .keyPair(keyPair)
           .config(config.getRlpx())
           .peerPermissions(peerPermissions)
-          .peerProperties(peerProperties)
+          .peerPrivileges(peerPrivileges)
           .localNode(localNode)
           .metricsSystem(metricsSystem)
+          .clock(clock)
           .build();
     }
 
@@ -518,6 +522,12 @@ public class DefaultP2PNetwork implements P2PNetwork {
     public Builder metricsSystem(final MetricsSystem metricsSystem) {
       checkNotNull(metricsSystem);
       this.metricsSystem = metricsSystem;
+      return this;
+    }
+
+    public Builder clock(final Clock clock) {
+      checkNotNull(clock);
+      this.clock = clock;
       return this;
     }
 

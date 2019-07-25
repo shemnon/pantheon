@@ -62,10 +62,9 @@ public interface DefaultCommandValues {
   // but we use FULL for the moment as Fast is still in progress
   SyncMode DEFAULT_SYNC_MODE = SyncMode.FULL;
   NatMethod DEFAULT_NAT_METHOD = NatMethod.NONE;
-  int FAST_SYNC_MAX_WAIT_TIME = 0;
   int FAST_SYNC_MIN_PEER_COUNT = 5;
   int DEFAULT_MAX_PEERS = 25;
-  double DEFAULT_FRACTION_REMOTE_WIRE_CONNECTIONS_ALLOWED =
+  float DEFAULT_FRACTION_REMOTE_WIRE_CONNECTIONS_ALLOWED =
       RlpxConfiguration.DEFAULT_FRACTION_REMOTE_CONNECTIONS_ALLOWED;
 
   static Path getDefaultPantheonDataPath(final Object command) {

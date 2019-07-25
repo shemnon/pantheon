@@ -21,6 +21,7 @@ import tech.pegasys.pantheon.ethereum.vm.Code;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
 import tech.pegasys.pantheon.ethereum.vm.OperationTracer;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
+import tech.pegasys.pantheon.testutil.TestClock;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.math.BigInteger;
@@ -35,11 +36,18 @@ public class TestCodeExecutor {
   private static final Address SENDER_ADDRESS = AddressHelpers.ofValue(244259721);
 
   public TestCodeExecutor(final ProtocolSchedule<Void> protocolSchedule) {
-    fixture = ExecutionContextTestFixture.builder().protocolSchedule(protocolSchedule).build();
+    fixture =
+        ExecutionContextTestFixture.builder()
+            .protocolSchedule(protocolSchedule)
+            .clock(TestClock.fixed())
+            .build();
   }
 
   public MessageFrame executeCode(
-      final String code, final long gasLimit, final Consumer<MutableAccount> accountSetup) {
+      final String code,
+      final int accountVersion,
+      final long gasLimit,
+      final Consumer<MutableAccount> accountSetup) {
     final ProtocolSpec<Void> protocolSpec = fixture.getProtocolSchedule().getByBlockNumber(0);
     final WorldUpdater worldState =
         createInitialWorldState(accountSetup, fixture.getStateArchive());
@@ -68,6 +76,7 @@ public class TestCodeExecutor {
             .address(SENDER_ADDRESS)
             .originator(SENDER_ADDRESS)
             .contract(SENDER_ADDRESS)
+            .contractAccountVersion(accountVersion)
             .gasPrice(transaction.getGasPrice())
             .inputData(transaction.getPayload())
             .sender(SENDER_ADDRESS)

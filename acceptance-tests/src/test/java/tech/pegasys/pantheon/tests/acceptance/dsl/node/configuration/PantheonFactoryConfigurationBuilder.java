@@ -52,6 +52,7 @@ public class PantheonFactoryConfigurationBuilder {
   private boolean revertReasonEnabled = false;
   private List<String> plugins = new ArrayList<>();
   private List<String> extraCLIOptions = new ArrayList<>();
+  private List<String> staticNodes = new ArrayList<>();
 
   public PantheonFactoryConfigurationBuilder() {
     // Check connections more frequently during acceptance tests to cut down on
@@ -193,8 +194,12 @@ public class PantheonFactoryConfigurationBuilder {
     return this;
   }
 
+  public PantheonFactoryConfigurationBuilder staticNodes(final List<String> staticNodes) {
+    this.staticNodes = staticNodes;
+    return this;
+  }
+
   public PantheonFactoryConfiguration build() {
-    networkingConfiguration.getRlpx().setFractionRemoteWireConnectionsAllowed(1.0);
     return new PantheonFactoryConfiguration(
         name,
         miningParameters,
@@ -212,6 +217,7 @@ public class PantheonFactoryConfigurationBuilder {
         bootnodeEligible,
         revertReasonEnabled,
         plugins,
-        extraCLIOptions);
+        extraCLIOptions,
+        staticNodes);
   }
 }

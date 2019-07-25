@@ -32,6 +32,8 @@ import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.testutil.TestClock;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
+import java.util.OptionalLong;
+
 public class EthProtocolManagerTestUtil {
 
   public static EthProtocolManager create(
@@ -63,7 +65,8 @@ public class EthProtocolManagerTestUtil {
   }
 
   public static EthProtocolManager create(final EthScheduler ethScheduler) {
-    final ProtocolSchedule<Void> protocolSchedule = MainnetProtocolSchedule.create();
+    final ProtocolSchedule<Void> protocolSchedule =
+        MainnetProtocolSchedule.create(TestClock.fixed());
     final GenesisConfigFile config = GenesisConfigFile.mainnet();
     final GenesisState genesisState = GenesisState.fromConfig(config, protocolSchedule);
     final Blockchain blockchain = createInMemoryBlockchain(genesisState.getBlock());
@@ -134,6 +137,13 @@ public class EthProtocolManagerTestUtil {
 
   public static RespondingEthPeer createPeer(
       final EthProtocolManager ethProtocolManager, final UInt256 td, final long estimatedHeight) {
+    return RespondingEthPeer.create(ethProtocolManager, td, estimatedHeight);
+  }
+
+  public static RespondingEthPeer createPeer(
+      final EthProtocolManager ethProtocolManager,
+      final UInt256 td,
+      final OptionalLong estimatedHeight) {
     return RespondingEthPeer.create(ethProtocolManager, td, estimatedHeight);
   }
 

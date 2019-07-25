@@ -15,12 +15,14 @@ package tech.pegasys.pantheon.ethereum.vm.operations;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import tech.pegasys.pantheon.config.StubGenesisConfigOptions;
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.core.TestCodeExecutor;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame.State;
+import tech.pegasys.pantheon.testutil.TestClock;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 import org.junit.Before;
@@ -34,7 +36,8 @@ import org.junit.runners.Parameterized.Parameters;
 public class ConstantinopleSStoreOperationGasCostTest {
 
   private static final ProtocolSchedule<Void> protocolSchedule =
-      MainnetProtocolSchedule.fromConfig(new StubGenesisConfigOptions().constantinopleBlock(0));
+      MainnetProtocolSchedule.fromConfig(
+          new StubGenesisConfigOptions().constantinopleBlock(0), TestClock.fixed());
 
   @Parameters(name = "Code: {0}, Original: {1}")
   public static Object[][] scenarios() {
@@ -84,6 +87,7 @@ public class ConstantinopleSStoreOperationGasCostTest {
     final MessageFrame frame =
         codeExecutor.executeCode(
             code,
+            Account.DEFAULT_VERSION,
             gasLimit,
             account -> account.setStorageValue(UInt256.ZERO, UInt256.of(originalValue)));
     assertThat(frame.getState()).isEqualTo(State.COMPLETED_SUCCESS);
