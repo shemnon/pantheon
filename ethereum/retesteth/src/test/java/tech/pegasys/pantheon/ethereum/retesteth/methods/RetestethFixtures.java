@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
@@ -37,7 +38,7 @@ class RetestethFixtures {
           Resources.toString(
               RetestethFixtures.class.getResource("jsonRpcTestGenesis.json"), Charsets.UTF_8);
       context = new RetestethContext();
-      context.resetContext(genesisJson);
+      context.resetContext(genesisJson, "noProof", Optional.empty());
 
       final URL blocksUrl = RetestethFixtures.class.getResource("jsonRpcTestBlockchain.blocks");
       final BlockImporter<Void> blockImporter = context.getProtocolSpec(0).getBlockImporter();

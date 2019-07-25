@@ -22,6 +22,7 @@ import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
@@ -48,12 +49,17 @@ public class TestSetChainParams implements JsonRpcMethod {
   public JsonRpcResponse response(final JsonRpcRequest request) {
 
     try {
-      final String chainParamsAsString =
-          new JsonObject((Map<String, Object>) request.getParams()[0]).encodePrettily();
+      final JsonObject chainParamsAsJson =
+          new JsonObject((Map<String, Object>) request.getParams()[0]);
+      final String chainParamsAsString = chainParamsAsJson.encodePrettily();
       LOG.trace("ChainParams {}", chainParamsAsString);
       final String genesisFileAsString = modifyGenesisFile(chainParamsAsString);
       LOG.trace("Genesis {}", genesisFileAsString);
-      final boolean result = context.resetContext(genesisFileAsString);
+      final boolean result =
+          context.resetContext(
+              genesisFileAsString,
+              chainParamsAsJson.getString("sealEngine", "NoProof"),
+              Optional.empty());
 
       return new JsonRpcSuccessResponse(request.getId(), result);
     } catch (final Exception e) {
@@ -78,6 +84,20 @@ public class TestSetChainParams implements JsonRpcMethod {
     }
   }
 
+  private static void maybeMoveToNumber(
+      final JsonObject src,
+      final String srcName,
+      final JsonObject dest,
+      final String destName,
+      final long defaultValue) {
+    if (src.containsKey(srcName)) {
+      dest.put(destName, Long.decode(src.getString(srcName)));
+      src.remove(srcName);
+    } else {
+      dest.put(destName, defaultValue);
+    }
+  }
+
   private static String modifyGenesisFile(final String initialGenesis) {
     final JsonObject chainParamsJson = new JsonObject(initialGenesis);
     final JsonObject config = new JsonObject();
@@ -85,10 +105,12 @@ public class TestSetChainParams implements JsonRpcMethod {
     final JsonObject params = chainParamsJson.getJsonObject("params");
     final JsonObject genesis = chainParamsJson.getJsonObject("genesis");
 
-    if (chainParamsJson.getString("sealEngine", "").equals("NoProof")) {
-      final JsonObject ethash = new JsonObject();
-      config.put("ethash", ethash);
-    }
+    // Whether sealEngine is NoProof, Ethash, or NoReward the genesis file is the same
+    final JsonObject ethash = new JsonObject();
+    config.put("ethash", ethash);
+    //    if (chainParamsJson.getString("sealEngine", "").equals("NoProof")) {
+    ethash.put("fixedDifficulty", 1);
+    //    }
 
     maybeMoveToNumber(params, "homesteadForkBlock", config, "homesteadBlock");
     maybeMoveToNumber(params, "EIP150ForkBlock", config, "eip150Block");
@@ -96,6 +118,7 @@ public class TestSetChainParams implements JsonRpcMethod {
     maybeMoveToNumber(params, "byzantiumForkBlock", config, "byzantiumBlock");
     maybeMoveToNumber(params, "constantinopleForkBlock", config, "constantinopleBlock");
     maybeMoveToNumber(params, "constantinopleFixForkBlock", config, "constantinopleFixBlock");
+    maybeMoveToNumber(params, "chainID", config, "chainId", 1);
     maybeMove(genesis, "author", chainParamsJson, "coinbase");
     maybeMove(genesis, "difficulty", chainParamsJson, "difficulty");
     maybeMove(genesis, "extraData", chainParamsJson, "extraData");

@@ -27,6 +27,7 @@ jar {
 
 dependencies {
   implementation(project(':config'))
+  implementation(project(':ethereum:blockcreation'))
   implementation(project(':ethereum:core'))
   implementation(project(':ethereum:eth'))
   implementation(project(':ethereum:graphql'))

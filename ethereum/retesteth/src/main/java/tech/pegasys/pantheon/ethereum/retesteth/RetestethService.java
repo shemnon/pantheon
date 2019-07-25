@@ -26,7 +26,10 @@ import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetBalance;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetBlockByNumber;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetCode;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetTransactionCount;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.EthSendRawTransaction;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestImportRawBlock;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.TestMineBlocks;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.TestModifyTimestamp;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestSetChainParams;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 
@@ -62,7 +65,10 @@ public class RetestethService {
         new EthGetBalance(retestethContext),
         new EthGetCode(retestethContext),
         new EthGetTransactionCount(retestethContext),
-        new DebugStorageRangeAt(retestethContext));
+        new DebugStorageRangeAt(retestethContext),
+        new TestModifyTimestamp(retestethContext),
+        new EthSendRawTransaction(retestethContext),
+        new TestMineBlocks(retestethContext));
 
     jsonRpcHttpService =
         new JsonRpcHttpService(
