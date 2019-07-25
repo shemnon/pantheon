@@ -47,7 +47,14 @@ public final class ProofOfWorkValidationRule implements DetachedBlockHeaderValid
     }
     final BigInteger difficulty =
         BytesValues.asUnsignedBigInteger(header.getDifficulty().getBytes());
-    final UInt256 target = UInt256.of(ETHHASH_TARGET_UPPER_BOUND.divide(difficulty));
+    final UInt256 target;
+    if (difficulty.equals(BigInteger.ONE)) {
+      target =
+          UInt256.fromHexString(
+              "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    } else {
+      target = UInt256.of(ETHHASH_TARGET_UPPER_BOUND.divide(difficulty));
+    }
 
     final UInt256 result = UInt256.wrap(Bytes32.wrap(hashBuffer, 32));
     if (result.compareTo(target) > 0) {

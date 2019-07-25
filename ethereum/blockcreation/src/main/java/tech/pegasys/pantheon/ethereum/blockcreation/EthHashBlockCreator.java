@@ -85,7 +85,14 @@ public class EthHashBlockCreator extends AbstractBlockCreator<Void> {
       final SealableBlockHeader sealableBlockHeader) {
     final BigInteger difficulty =
         BytesValues.asUnsignedBigInteger(sealableBlockHeader.getDifficulty().getBytes());
-    final UInt256 target = UInt256.of(EthHash.TARGET_UPPER_BOUND.divide(difficulty));
+    final UInt256 target;
+    if (difficulty.equals(BigInteger.ONE)) {
+      target =
+          UInt256.fromHexString(
+              "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    } else {
+      target = UInt256.of(EthHash.TARGET_UPPER_BOUND.divide(difficulty));
+    }
 
     return new EthHashSolverInputs(
         target, EthHash.hashHeader(sealableBlockHeader), sealableBlockHeader.getNumber());
