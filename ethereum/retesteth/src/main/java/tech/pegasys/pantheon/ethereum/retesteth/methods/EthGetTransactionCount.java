@@ -17,7 +17,6 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.RpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.BlockParameter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.Quantity;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 
 public class EthGetTransactionCount extends AbstractBlockParameterMethod {
@@ -39,11 +38,13 @@ public class EthGetTransactionCount extends AbstractBlockParameterMethod {
   }
 
   @Override
-  protected String resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
+  protected Long resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
     final Address address = parameters.required(request.getParams(), 0, Address.class);
     if (blockNumber > getBlockchainQueries().headBlockNumber()) {
       return null;
     }
-    return Quantity.create(getBlockchainQueries().getTransactionCount(address, blockNumber));
+    //return Quantity.create(getBlockchainQueries().getTransactionCount(address, blockNumber));
+    // retestet depends on a standards violation
+    return getBlockchainQueries().getTransactionCount(address, blockNumber);
   }
 }

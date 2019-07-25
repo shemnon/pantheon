@@ -17,7 +17,6 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.Quantity;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 
 public class EthBlockNumber implements JsonRpcMethod {
@@ -36,6 +35,8 @@ public class EthBlockNumber implements JsonRpcMethod {
   @Override
   public JsonRpcResponse response(final JsonRpcRequest req) {
     return new JsonRpcSuccessResponse(
-        req.getId(), Quantity.create(context.getBlockchainQueries().headBlockNumber()));
+        // req.getId(), Quantity.create(context.getBlockchainQueries().headBlockNumber()));
+        // retesteth is not standards conforming
+        req.getId(), context.getBlockchainQueries().headBlockNumber());
   }
 }

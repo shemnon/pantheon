@@ -23,6 +23,7 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessRe
 import tech.pegasys.pantheon.ethereum.retesteth.results.DebugAccountRangeAtResult;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class DebugAccountRangeAtTest {
@@ -50,6 +51,7 @@ public class DebugAccountRangeAtTest {
   }
 
   @Test
+  @Ignore("Docs say blockhash but retesteth never sends one")
   public void shouldRetrieveStorageRange_partialByBlockHash() {
     final JsonRpcRequest request =
         new JsonRpcRequest(
@@ -72,6 +74,7 @@ public class DebugAccountRangeAtTest {
   }
 
   @Test
+  @Ignore("Docs say blockhash but retesteth never sends one")
   public void shouldRetrieveStorageRange_completeByBlockHash() {
     final JsonRpcRequest request =
         new JsonRpcRequest(
