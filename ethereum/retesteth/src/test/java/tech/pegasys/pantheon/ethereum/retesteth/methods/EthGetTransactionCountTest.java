@@ -32,7 +32,7 @@ public class EthGetTransactionCountTest {
             "1", "eth_getTransactionCount", new Object[] {ACCOUNT_ADDRESS, "latest"});
     final JsonRpcSuccessResponse response =
         (JsonRpcSuccessResponse) ethGetTransactionCount.response(request);
-    assertEquals("0x20", response.getResult());
+    assertEquals(0x20L /*"0x20"*/, response.getResult());
   }
 
   @Test
@@ -41,6 +41,6 @@ public class EthGetTransactionCountTest {
         new JsonRpcRequest("2", "eth_getTransactionCount", new Object[] {ACCOUNT_ADDRESS, "28"});
     final JsonRpcSuccessResponse response =
         (JsonRpcSuccessResponse) ethGetTransactionCount.response(request);
-    assertEquals("0x1c", response.getResult());
+    assertEquals(0x1cL /*"0x1c"*/, response.getResult());
   }
 }

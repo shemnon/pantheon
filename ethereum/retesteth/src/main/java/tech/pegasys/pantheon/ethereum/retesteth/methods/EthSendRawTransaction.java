@@ -12,8 +12,6 @@
  */
 package tech.pegasys.pantheon.ethereum.retesteth.methods;
 
-import static tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcErrorConverter.convertTransactionInvalidReason;
-
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.jsonrpc.RpcMethod;

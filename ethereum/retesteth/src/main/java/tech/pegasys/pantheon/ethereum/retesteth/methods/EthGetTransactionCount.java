@@ -43,7 +43,7 @@ public class EthGetTransactionCount extends AbstractBlockParameterMethod {
     if (blockNumber > getBlockchainQueries().headBlockNumber()) {
       return null;
     }
-    //return Quantity.create(getBlockchainQueries().getTransactionCount(address, blockNumber));
+    // return Quantity.create(getBlockchainQueries().getTransactionCount(address, blockNumber));
     // retestet depends on a standards violation
     return getBlockchainQueries().getTransactionCount(address, blockNumber);
   }

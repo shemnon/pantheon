@@ -119,8 +119,7 @@ public class RetestethContext {
 
     protocolSchedule =
         MainnetProtocolSchedule.fromConfig(
-            JsonGenesisConfigOptions.fromJsonObject(genesisConfig.getJsonObject("config")),
-            retesethClock);
+            JsonGenesisConfigOptions.fromJsonObject(genesisConfig.getJsonObject("config")));
 
     final GenesisState genesisState = GenesisState.fromJson(genesisConfigString, protocolSchedule);
     coinbase = genesisState.getBlock().getHeader().getCoinbase();

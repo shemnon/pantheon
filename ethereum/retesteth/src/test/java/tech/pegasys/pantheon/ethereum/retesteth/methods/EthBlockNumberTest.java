@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.Quantity;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +47,7 @@ public class EthBlockNumberTest {
         new JsonRpcRequest(JSON_RPC_VERSION, ETH_METHOD, new Object[] {});
 
     final JsonRpcResponse expected =
-        new JsonRpcSuccessResponse(request.getId(), Quantity.create(32));
+        new JsonRpcSuccessResponse(request.getId(), 32L /*Quantity.create(32)*/);
     final JsonRpcResponse actual = method.response(request);
 
     assertThat(actual).isEqualToComparingFieldByFieldRecursively(expected);
