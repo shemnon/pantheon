@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import tech.pegasys.pantheon.config.GenesisConfigFile;
 import tech.pegasys.pantheon.controller.PantheonController;
 import tech.pegasys.pantheon.crypto.SECP256K1.KeyPair;
-import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.InMemoryStorageProvider;
 import tech.pegasys.pantheon.ethereum.core.MiningParametersTestBuilder;
@@ -73,7 +72,7 @@ public class PrivacyTest {
             .getProtocolSchedule()
             .getByBlockNumber(1)
             .getPrecompileContractRegistry()
-            .get(privacyContractAddress, Account.DEFAULT_VERSION);
+            .get(privacyContractAddress);
     assertThat(precompiledContract.getName()).isEqualTo("Privacy");
   }
 }

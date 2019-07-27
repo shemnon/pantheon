@@ -38,7 +38,6 @@ public interface Account {
 
   long DEFAULT_NONCE = 0L;
   Wei DEFAULT_BALANCE = Wei.ZERO;
-  int DEFAULT_VERSION = 0;
 
   /**
    * The Keccak-256 hash of the account address.
@@ -100,13 +99,6 @@ public interface Account {
   default boolean hasCode() {
     return !getCode().isEmpty();
   }
-
-  /**
-   * The version of the EVM bytecode associated with this account.
-   *
-   * @return the version of the account code. Default is zero.
-   */
-  int getVersion();
 
   /**
    * Retrieves a value in the account storage given its key.

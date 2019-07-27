@@ -17,7 +17,6 @@ import static tech.pegasys.pantheon.ethereum.vm.MessageFrame.DEFAULT_MAX_STACK_S
 
 import tech.pegasys.pantheon.ethereum.MainnetBlockValidator;
 import tech.pegasys.pantheon.ethereum.chain.Blockchain;
-import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.MutableAccount;
@@ -102,8 +101,7 @@ public abstract class MainnetProtocolSpecs {
                     contractCreationProcessor,
                     messageCallProcessor,
                     false,
-                    stackSizeLimit,
-                    Account.DEFAULT_VERSION))
+                    stackSizeLimit))
         .privateTransactionProcessorBuilder(
             (gasCalculator,
                 transactionValidator,
@@ -117,7 +115,6 @@ public abstract class MainnetProtocolSpecs {
                     messageCallProcessor,
                     false,
                     stackSizeLimit,
-                    Account.DEFAULT_VERSION,
                     new PrivateTransactionValidator(Optional.empty())))
         .difficultyCalculator(MainnetDifficultyCalculators.FRONTIER)
         .blockHeaderValidatorBuilder(MainnetBlockHeaderValidator::create)
@@ -224,8 +221,7 @@ public abstract class MainnetProtocolSpecs {
                     contractCreationProcessor,
                     messageCallProcessor,
                     true,
-                    stackSizeLimit,
-                    Account.DEFAULT_VERSION))
+                    stackSizeLimit))
         .privateTransactionValidatorBuilder(() -> new PrivateTransactionValidator(chainId))
         .privateTransactionProcessorBuilder(
             (gasCalculator,
@@ -240,7 +236,6 @@ public abstract class MainnetProtocolSpecs {
                     messageCallProcessor,
                     false,
                     stackSizeLimit,
-                    Account.DEFAULT_VERSION,
                     privateTransactionValidator))
         .name("SpuriousDragon");
   }
@@ -312,8 +307,7 @@ public abstract class MainnetProtocolSpecs {
                     contractCreationProcessor,
                     messageCallProcessor,
                     true,
-                    stackSizeLimit,
-                    ISTANBUL_ACCOUNT_VERSION))
+                    stackSizeLimit))
         .privateTransactionProcessorBuilder(
             (gasCalculator,
                 transactionValidator,
@@ -327,7 +321,6 @@ public abstract class MainnetProtocolSpecs {
                     messageCallProcessor,
                     false,
                     stackSizeLimit,
-                    ISTANBUL_ACCOUNT_VERSION,
                     privateTransactionValidator))
         .contractCreationProcessorBuilder(
             (gasCalculator, evm) ->
@@ -337,8 +330,7 @@ public abstract class MainnetProtocolSpecs {
                     true,
                     Collections.singletonList(MaxCodeSizeRule.of(contractSizeLimit)),
                     1,
-                    SPURIOUS_DRAGON_FORCE_DELETE_WHEN_EMPTY_ADDRESSES,
-                    ISTANBUL_ACCOUNT_VERSION))
+                    SPURIOUS_DRAGON_FORCE_DELETE_WHEN_EMPTY_ADDRESSES))
         .name("Istanbul");
   }
 

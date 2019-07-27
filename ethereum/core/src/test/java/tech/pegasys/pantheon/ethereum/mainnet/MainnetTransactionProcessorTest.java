@@ -19,7 +19,6 @@ import static tech.pegasys.pantheon.ethereum.mainnet.ValidationResult.invalid;
 import static tech.pegasys.pantheon.ethereum.mainnet.ValidationResult.valid;
 
 import tech.pegasys.pantheon.ethereum.chain.Blockchain;
-import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.ProcessableBlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
@@ -62,8 +61,7 @@ public class MainnetTransactionProcessorTest {
             contractCreationProcessor,
             messageCallProcessor,
             false,
-            MAX_STACK_SIZE,
-            Account.DEFAULT_VERSION);
+            MAX_STACK_SIZE);
   }
 
   @Test

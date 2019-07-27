@@ -59,8 +59,6 @@ public class PrivateTransactionProcessor {
 
   private final int maxStackSize;
 
-  private final int createContractAccountVersion;
-
   public static class Result implements TransactionProcessor.Result {
 
     private final Status status;
@@ -163,7 +161,6 @@ public class PrivateTransactionProcessor {
       final AbstractMessageProcessor messageCallProcessor,
       final boolean clearEmptyAccounts,
       final int maxStackSize,
-      final int createContractAccountVersion,
       final PrivateTransactionValidator privateTransactionValidator) {
     this.gasCalculator = gasCalculator;
     this.transactionValidator = transactionValidator;
@@ -171,7 +168,6 @@ public class PrivateTransactionProcessor {
     this.messageCallProcessor = messageCallProcessor;
     this.clearEmptyAccounts = clearEmptyAccounts;
     this.maxStackSize = maxStackSize;
-    this.createContractAccountVersion = createContractAccountVersion;
     this.privateTransactionValidator = privateTransactionValidator;
   }
 
@@ -230,7 +226,6 @@ public class PrivateTransactionProcessor {
               .address(privateContractAddress)
               .originator(senderAddress)
               .contract(privateContractAddress)
-              .contractAccountVersion(createContractAccountVersion)
               .initialGas(Gas.MAX_VALUE)
               .gasPrice(transaction.getGasPrice())
               .inputData(BytesValue.EMPTY)
@@ -259,8 +254,6 @@ public class PrivateTransactionProcessor {
               .address(to)
               .originator(senderAddress)
               .contract(to)
-              .contractAccountVersion(
-                  contract != null ? contract.getVersion() : Account.DEFAULT_VERSION)
               .initialGas(Gas.MAX_VALUE)
               .gasPrice(transaction.getGasPrice())
               .inputData(transaction.getPayload())

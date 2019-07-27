@@ -88,7 +88,6 @@ public class WorldStateMock extends DebuggableMutableWorldState {
     account.setNonce(toCopy.getNonce());
     account.setBalance(toCopy.getBalance());
     account.setCode(toCopy.getCode());
-    account.setVersion(toCopy.getVersion());
     for (final Map.Entry<UInt256, UInt256> entry : toCopy.getStorage().entrySet()) {
       account.setStorageValue(entry.getKey(), entry.getValue());
     }

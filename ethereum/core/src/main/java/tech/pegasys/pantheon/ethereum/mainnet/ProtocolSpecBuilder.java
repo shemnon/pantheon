@@ -15,7 +15,6 @@ package tech.pegasys.pantheon.ethereum.mainnet;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import tech.pegasys.pantheon.ethereum.BlockValidator;
-import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.BlockHeaderFunctions;
 import tech.pegasys.pantheon.ethereum.core.BlockImporter;
@@ -134,9 +133,7 @@ public class ProtocolSpecBuilder<T> {
               precompileContractRegistryBuilder.apply(precompiledContractConfiguration);
           if (precompiledContractConfiguration.getPrivacyParameters().isEnabled()) {
             MainnetPrecompiledContractRegistries.appendPrivacy(
-                registry, precompiledContractConfiguration, Account.DEFAULT_VERSION);
-            MainnetPrecompiledContractRegistries.appendPrivacy(
-                registry, precompiledContractConfiguration, 1);
+                registry, precompiledContractConfiguration);
           }
           return registry;
         };
@@ -295,8 +292,7 @@ public class ProtocolSpecBuilder<T> {
               privateTransactionValidator);
       Address address = Address.privacyPrecompiled(privacyParameters.getPrivacyAddress());
       PrivacyPrecompiledContract privacyPrecompiledContract =
-          (PrivacyPrecompiledContract)
-              precompileContractRegistry.get(address, Account.DEFAULT_VERSION);
+          (PrivacyPrecompiledContract) precompileContractRegistry.get(address);
       privacyPrecompiledContract.setPrivateTransactionProcessor(privateTransactionProcessor);
     }
 
