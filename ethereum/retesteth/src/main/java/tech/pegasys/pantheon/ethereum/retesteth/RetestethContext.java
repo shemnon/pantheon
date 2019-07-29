@@ -43,7 +43,8 @@ import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStoragePrefixedKeyBlockchainStorage;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStateKeyValueStorage;
-import tech.pegasys.pantheon.ethereum.worldstate.DebuggableWorldStateArchive;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStatePreimageKeyValueStorage;
+import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
@@ -125,9 +126,10 @@ public class RetestethContext {
     final GenesisState genesisState = GenesisState.fromJson(genesisConfigString, protocolSchedule);
     coinbase = genesisState.getBlock().getHeader().getCoinbase();
 
-    final DebuggableWorldStateArchive worldStateArchive =
-        new DebuggableWorldStateArchive(
-            new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()));
+    final WorldStateArchive worldStateArchive =
+        new WorldStateArchive(
+            new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()),
+            new WorldStatePreimageKeyValueStorage(new InMemoryKeyValueStorage()));
     final MutableWorldState worldState = worldStateArchive.getMutable();
     genesisState.writeStateTo(worldState);
 

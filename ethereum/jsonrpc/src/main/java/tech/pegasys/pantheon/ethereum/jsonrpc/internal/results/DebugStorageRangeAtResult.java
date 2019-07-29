@@ -12,13 +12,13 @@
  */
 package tech.pegasys.pantheon.ethereum.jsonrpc.internal.results;
 
+import tech.pegasys.pantheon.ethereum.core.AccountStorageEntry;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.TreeMap;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -26,21 +26,17 @@ import com.google.common.base.MoreObjects;
 
 public class DebugStorageRangeAtResult implements JsonRpcResult {
 
-  private final Map<String, StorageEntry> storage = new HashMap<>();
+  private final NavigableMap<String, StorageEntry> storage = new TreeMap<>();
   private final String nextKey;
 
   public DebugStorageRangeAtResult(
-      final Map<Bytes32, UInt256> entries,
-      final Bytes32 nextKey,
-      final Map<BytesValue, BytesValue> preimages) {
-    entries.forEach(
-        (keyHash, value) ->
-            storage.put(keyHash.toString(), new StorageEntry(preimages.get(keyHash), value)));
+      final NavigableMap<Bytes32, AccountStorageEntry> entries, final Bytes32 nextKey) {
+    entries.forEach((keyHash, entry) -> storage.put(keyHash.toString(), new StorageEntry(entry)));
     this.nextKey = nextKey != null ? nextKey.toString() : null;
   }
 
   @JsonGetter(value = "storage")
-  public Map<String, StorageEntry> getStorage() {
+  public NavigableMap<String, StorageEntry> getStorage() {
     return storage;
   }
 
@@ -49,33 +45,14 @@ public class DebugStorageRangeAtResult implements JsonRpcResult {
     return nextKey;
   }
 
-  @JsonGetter(value = "complete")
-  public boolean getComplete() {
-    return nextKey == null;
-  }
-
   @JsonPropertyOrder(value = {"key", "value"})
   public static class StorageEntry {
-    private final String key;
     private final String value;
+    private final String key;
 
-    public StorageEntry(final BytesValue key, final UInt256 value) {
-      this.key = key == null ? null : strictShortHex(key.toString());
-      this.value = strictShortHex(value.toHexString());
-    }
-
-    String strictShortHex(final String hexString) {
-      String workString = hexString;
-      if (workString.startsWith(("0x"))) {
-        workString = workString.substring(2);
-      }
-      while (workString.startsWith("00")) {
-        workString = workString.substring(2);
-      }
-      if (workString.length() == 0) {
-        workString = "00";
-      }
-      return "0x" + workString;
+    public StorageEntry(final AccountStorageEntry entry) {
+      this.value = entry.getValue().toHexString();
+      this.key = entry.getKey().map(UInt256::toHexString).orElse(null);
     }
 
     @JsonGetter(value = "key")

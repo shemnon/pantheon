@@ -12,23 +12,18 @@
  */
 package tech.pegasys.pantheon.ethereum.worldstate;
 
-import tech.pegasys.pantheon.ethereum.core.AbstractWorldUpdater;
 import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
-import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.MutableAccount;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.core.WorldState;
 import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStateKeyValueStorage;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStatePreimageKeyValueStorage;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
-import tech.pegasys.pantheon.util.bytes.Bytes32;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -45,44 +40,24 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
   // hashes at all, just the hashtoAddress map (this is also why things are separated this way,
   // it will make it easier to update later).
 
-  static class DebugInfo {
+  private static class DebugInfo {
     private final Set<Address> accounts = new HashSet<>();
-
-    private final Map<BytesValue, BytesValue> preimages = new HashMap<>();
 
     private void addAll(final DebugInfo other) {
       this.accounts.addAll(other.accounts);
-      this.preimages.putAll(other.preimages);
-    }
-
-    private void addAddress(final Address address) {
-      accounts.add(address);
-      preimages.put(Hash.hash(address), address);
-    }
-
-    void addKey(final BytesValue key) {
-      preimages.put(Hash.hash(key), key);
     }
   }
 
-  private final DebugInfo info;
+  private final DebugInfo info = new DebugInfo();
 
   public DebuggableMutableWorldState() {
-    super(new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()));
-    this.info = new DebugInfo();
-  }
-
-  DebuggableMutableWorldState(
-      final Bytes32 rootHash,
-      final WorldStateStorage worldStateStorage,
-      final DebugInfo debugInfo) {
-    super(rootHash, worldStateStorage);
-    this.info = debugInfo;
+    super(
+        new WorldStateKeyValueStorage(new InMemoryKeyValueStorage()),
+        new WorldStatePreimageKeyValueStorage(new InMemoryKeyValueStorage()));
   }
 
   public DebuggableMutableWorldState(final WorldState worldState) {
     super(worldState);
-    this.info = new DebugInfo();
 
     if (worldState instanceof DebuggableMutableWorldState) {
       final DebuggableMutableWorldState dws = ((DebuggableMutableWorldState) worldState);
@@ -93,10 +68,6 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
       // this branch is info.addressToHash, but that's not a huge deal.
       throw new RuntimeException(worldState + " is not a debuggable word state");
     }
-  }
-
-  public Map<BytesValue, BytesValue> getPreimages() {
-    return info.preimages;
   }
 
   @Override
@@ -130,7 +101,7 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
     return builder.toString();
   }
 
-  private static class InfoCollectingUpdater implements WorldUpdater {
+  private class InfoCollectingUpdater implements WorldUpdater {
     private final WorldUpdater wrapped;
     private final DebugInfo commitInfo;
     private DebugInfo ownInfo = new DebugInfo();
@@ -141,7 +112,7 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
     }
 
     private void record(final Address address) {
-      ownInfo.addAddress(address);
+      ownInfo.accounts.add(address);
     }
 
     @Override
@@ -187,21 +158,6 @@ public class DebuggableMutableWorldState extends DefaultMutableWorldState {
 
     @Override
     public void commit() {
-      WorldUpdater root = wrapped;
-      while (root instanceof InfoCollectingUpdater) {
-        root = ((InfoCollectingUpdater) root).wrapped;
-      }
-      if (root instanceof AbstractWorldUpdater) {
-        ((AbstractWorldUpdater<?, ?>) root)
-            .updatedAccounts()
-            .forEach(
-                account ->
-                    account
-                        .getUpdatedStorage()
-                        .forEach((key, value) -> ownInfo.addKey(key.getBytes())));
-      } else {
-        throw new RuntimeException("Sad Trombone");
-      }
       commitInfo.addAll(ownInfo);
       wrapped.commit();
     }

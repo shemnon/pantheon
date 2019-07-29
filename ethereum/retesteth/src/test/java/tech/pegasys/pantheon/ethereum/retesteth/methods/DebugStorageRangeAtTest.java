@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.assertEquals;
 
+import tech.pegasys.pantheon.ethereum.core.AccountStorageEntry;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
@@ -63,17 +64,20 @@ public class DebugStorageRangeAtTest {
             entry(
                 Hash.hash(Bytes32.fromHexString("0x02")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x02"),
-                    UInt256.fromHexString(
-                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x02")),
+                        UInt256.fromHexString("0x02")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x04")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x04"),
-                    UInt256.fromHexString(
-                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))));
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x04")),
+                        UInt256.fromHexString("0x04")))));
     assertThat(result.getNextKey()).isEqualTo(Hash.hash(Bytes32.fromHexString("0x01")).toString());
-    assertThat(result.getComplete()).isFalse();
   }
 
   @Test
@@ -95,35 +99,44 @@ public class DebugStorageRangeAtTest {
             entry(
                 Hash.hash(Bytes32.fromHexString("0x00")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x00"),
-                    UInt256.fromHexString(
-                        "0x000000000000000000000000000000000000000000000000000000000008fa01"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0x000000000000000000000000000000000000000000000000000000000008fa01"),
+                        Hash.hash(Bytes32.fromHexString("0x00")),
+                        UInt256.fromHexString("0x00")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x01")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x01"),
-                    UInt256.fromHexString(
-                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x01")),
+                        UInt256.fromHexString("0x01")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x02")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x02"),
-                    UInt256.fromHexString(
-                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x02")),
+                        UInt256.fromHexString("0x02")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x03")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x03"),
-                    UInt256.fromHexString(
-                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x03")),
+                        UInt256.fromHexString("0x03")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x04")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x04"),
-                    UInt256.fromHexString(
-                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))));
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x04")),
+                        UInt256.fromHexString("0x04")))));
     assertThat(result.getNextKey()).isNull();
-    assertThat(result.getComplete()).isTrue();
   }
 
   @Test
@@ -144,17 +157,20 @@ public class DebugStorageRangeAtTest {
             entry(
                 Hash.hash(Bytes32.fromHexString("0x02")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x02"),
-                    UInt256.fromHexString(
-                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x02")),
+                        UInt256.fromHexString("0x02")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x04")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x04"),
-                    UInt256.fromHexString(
-                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))));
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x04")),
+                        UInt256.fromHexString("0x04")))));
     assertThat(result.getNextKey()).isEqualTo(Hash.hash(Bytes32.fromHexString("0x01")).toString());
-    assertThat(result.getComplete()).isFalse();
   }
 
   @Test
@@ -175,34 +191,44 @@ public class DebugStorageRangeAtTest {
             entry(
                 Hash.hash(Bytes32.fromHexString("0x00")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x00"),
-                    UInt256.fromHexString(
-                        "0x000000000000000000000000000000000000000000000000000000000008fa01"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0x000000000000000000000000000000000000000000000000000000000008fa01"),
+                        Hash.hash(Bytes32.fromHexString("0x00")),
+                        UInt256.fromHexString("0x00")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x01")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x01"),
-                    UInt256.fromHexString(
-                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x01")),
+                        UInt256.fromHexString("0x01")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x02")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x02"),
-                    UInt256.fromHexString(
-                        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x02")),
+                        UInt256.fromHexString("0x02")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x03")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x03"),
-                    UInt256.fromHexString(
-                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))),
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x03")),
+                        UInt256.fromHexString("0x03")))),
             entry(
                 Hash.hash(Bytes32.fromHexString("0x04")).toString(),
                 new StorageEntry(
-                    Bytes32.fromHexString("0x04"),
-                    UInt256.fromHexString(
-                        "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"))));
+                    AccountStorageEntry.create(
+                        UInt256.fromHexString(
+                            "0xaabbccffffffffffffffffffffffffffffffffffffffffffffffffffffffffee"),
+                        Hash.hash(Bytes32.fromHexString("0x04")),
+                        UInt256.fromHexString("0x04")))));
+
     assertThat(result.getNextKey()).isNull();
-    assertThat(result.getComplete()).isTrue();
   }
 }
