@@ -44,7 +44,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 public class DefaultMutableBlockchain implements MutableBlockchain {
 
-  private final BlockchainStorage blockchainStorage;
+  protected final BlockchainStorage blockchainStorage;
 
   private final Subscribers<BlockAddedObserver> blockAddedObservers = Subscribers.create();
 
@@ -283,7 +283,7 @@ public class DefaultMutableBlockchain implements MutableBlockchain {
     return BlockAddedEvent.createForFork(fork);
   }
 
-  private BlockAddedEvent handleChainReorg(
+  protected BlockAddedEvent handleChainReorg(
       final BlockchainStorage.Updater updater, final Block newChainHead) {
     final Hash oldChainHead = blockchainStorage.getChainHead().get();
     BlockHeader oldChain = blockchainStorage.getBlockHeader(oldChainHead).get();

@@ -31,6 +31,7 @@ import tech.pegasys.pantheon.ethereum.retesteth.methods.TestGetLogHash;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestImportRawBlock;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestMineBlocks;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestModifyTimestamp;
+import tech.pegasys.pantheon.ethereum.retesteth.methods.TestRewindToBlock;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestSetChainParams;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 
@@ -70,7 +71,8 @@ public class RetestethService {
         new TestModifyTimestamp(retestethContext),
         new EthSendRawTransaction(retestethContext),
         new TestMineBlocks(retestethContext),
-        new TestGetLogHash(retestethContext));
+        new TestGetLogHash(retestethContext),
+        new TestRewindToBlock(retestethContext));
 
     jsonRpcHttpService =
         new JsonRpcHttpService(

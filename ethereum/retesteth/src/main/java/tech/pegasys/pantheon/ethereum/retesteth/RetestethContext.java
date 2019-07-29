@@ -16,9 +16,7 @@ import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
 import tech.pegasys.pantheon.ethereum.blockcreation.RandomNonceGenerator;
-import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
-import tech.pegasys.pantheon.ethereum.chain.MutableBlockchain;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
@@ -69,7 +67,7 @@ public class RetestethContext {
   private final ReentrantLock contextLock = new ReentrantLock();
   private String genesisConfig;
   private Address coinbase;
-  private MutableBlockchain blockchain;
+  private RetestethMutableBlockchain blockchain;
   private ProtocolContext<Void> protocolContext;
   private BlockchainQueries blockchainQueries;
   private ProtocolSchedule<Void> protocolSchedule;
@@ -200,14 +198,18 @@ public class RetestethContext {
         protocolContext, block, getHeaderValidationMode(), getHeaderValidationMode());
   }
 
-  private static MutableBlockchain createInMemoryBlockchain(final Block genesisBlock) {
+  public boolean rewindToBlock(final long blockNumber) {
+    return blockchain.rewindToBlock(blockNumber);
+  }
+
+  private static RetestethMutableBlockchain createInMemoryBlockchain(final Block genesisBlock) {
     return createInMemoryBlockchain(genesisBlock, new MainnetBlockHeaderFunctions());
   }
 
-  private static MutableBlockchain createInMemoryBlockchain(
+  private static RetestethMutableBlockchain createInMemoryBlockchain(
       final Block genesisBlock, final BlockHeaderFunctions blockHeaderFunctions) {
     final InMemoryKeyValueStorage keyValueStorage = new InMemoryKeyValueStorage();
-    return new DefaultMutableBlockchain(
+    return new RetestethMutableBlockchain(
         genesisBlock,
         new KeyValueStoragePrefixedKeyBlockchainStorage(keyValueStorage, blockHeaderFunctions),
         new NoOpMetricsSystem());
