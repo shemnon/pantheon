@@ -120,6 +120,9 @@ public class RetestethContext {
     protocolSchedule =
         MainnetProtocolSchedule.fromConfig(
             JsonGenesisConfigOptions.fromJsonObject(genesisConfig.getJsonObject("config")));
+    if ("NoReward".equalsIgnoreCase(sealEngine)) {
+      protocolSchedule = new NoRewardProtocolScheduleWrapper<>(protocolSchedule);
+    }
 
     final GenesisState genesisState = GenesisState.fromJson(genesisConfigString, protocolSchedule);
     coinbase = genesisState.getBlock().getHeader().getCoinbase();
@@ -167,6 +170,8 @@ public class RetestethContext {
             syncState,
             Wei.ZERO,
             transactionPoolConfiguration);
+
+    LOG.trace("Genesis Block {} ", genesisState::getBlock);
 
     return true;
   }
