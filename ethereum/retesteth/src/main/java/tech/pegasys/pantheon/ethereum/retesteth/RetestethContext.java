@@ -177,8 +177,6 @@ public class RetestethContext {
   }
 
   public boolean mineNewBlock() {
-    retesethClock.tickSeconds(15);
-
     final EthHashSolver solver =
         new EthHashSolver(new RandomNonceGenerator(), new EthHasher.Light());
     final EthHashBlockCreator blockCreator =
