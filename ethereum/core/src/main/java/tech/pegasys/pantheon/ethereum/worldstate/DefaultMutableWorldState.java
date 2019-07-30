@@ -51,6 +51,7 @@ public class DefaultMutableWorldState implements MutableWorldState {
       new HashMap<>();
   private final Map<Address, BytesValue> updatedAccountCode = new HashMap<>();
   private final Map<Bytes32, UInt256> newStorageKeyPreimages = new HashMap<>();
+  private final Map<Bytes32, Address> newAccountKeyPreimages = new HashMap<>();
 
   public DefaultMutableWorldState(
       final WorldStateStorage storage, final WorldStatePreimageStorage preimageStorage) {
@@ -133,15 +134,14 @@ public class DefaultMutableWorldState implements MutableWorldState {
   }
 
   @Override
-  public Stream<Account> streamAccounts() {
-    return accountStateTrie.entriesFrom(Bytes32.ZERO, Integer.MAX_VALUE).entrySet().stream()
+  public Stream<Account> streamAccounts(final Bytes32 startKeyHash, final int limit) {
+    return accountStateTrie.entriesFrom(startKeyHash, limit).entrySet().stream()
         .map(
             entry ->
                 deserializeAccount(
-                    preimageStorage
-                        .getStorageTrieKeyPreimage(entry.getKey())
-                        .map(bytes -> Address.wrap(bytes.getBytes().slice(12, 20)))
-                        .orElse(Address.ZERO),
+                    // TODO: Account address should be an {@code Optional} rather than defaulting to
+                    // ZERO
+                    getAccountTrieKeyPreimage(entry.getKey()).orElse(Address.ZERO),
                     Hash.wrap(entry.getKey()),
                     entry.getValue()));
   }
@@ -179,6 +179,7 @@ public class DefaultMutableWorldState implements MutableWorldState {
     // Persist preimages
     final WorldStatePreimageStorage.Updater preimageUpdater = preimageStorage.updater();
     newStorageKeyPreimages.forEach(preimageUpdater::putStorageTrieKeyPreimage);
+    newAccountKeyPreimages.forEach(preimageUpdater::putAccountTrieKeyPreimage);
 
     // Clear pending changes that we just flushed
     updatedStorageTries.clear();
@@ -193,6 +194,11 @@ public class DefaultMutableWorldState implements MutableWorldState {
   private Optional<UInt256> getStorageTrieKeyPreimage(final Bytes32 trieKey) {
     return Optional.ofNullable(newStorageKeyPreimages.get(trieKey))
         .or(() -> preimageStorage.getStorageTrieKeyPreimage(trieKey));
+  }
+
+  private Optional<Address> getAccountTrieKeyPreimage(final Bytes32 trieKey) {
+    return Optional.ofNullable(newAccountKeyPreimages.get(trieKey))
+        .or(() -> preimageStorage.getAccountTrieKeyPreimage(trieKey));
   }
 
   // An immutable class that represents an individual account as stored in
@@ -372,9 +378,6 @@ public class DefaultMutableWorldState implements MutableWorldState {
 
       for (final UpdateTrackingAccount<AccountState> updated : updatedAccounts()) {
         final AccountState origin = updated.getWrappedAccount();
-        wrapped.newStorageKeyPreimages.put(
-            updated.getAddressHash(),
-            UInt256.fromHexString(updated.getAddress().toUnprefixedString()));
 
         // Save the code in key-value storage ...
         Hash codeHash = origin == null ? Hash.EMPTY : origin.getCodeHash();
@@ -409,6 +412,8 @@ public class DefaultMutableWorldState implements MutableWorldState {
           storageRoot = Hash.wrap(storageTrie.getRootHash());
         }
 
+        // Save address preimage
+        wrapped.newAccountKeyPreimages.put(updated.getAddressHash(), updated.getAddress());
         // Lastly, save the new account.
         final BytesValue account =
             serializeAccount(

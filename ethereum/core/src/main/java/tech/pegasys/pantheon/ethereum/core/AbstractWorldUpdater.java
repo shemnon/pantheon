@@ -58,7 +58,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
 
   @Override
   public MutableAccount createAccount(final Address address, final long nonce, final Wei balance) {
-    final UpdateTrackingAccount<A> account = createUpdateTrackingAccount(address);
+    final UpdateTrackingAccount<A> account = new UpdateTrackingAccount<>(address);
     account.setNonce(nonce);
     account.setBalance(balance);
     return track(account);
@@ -93,7 +93,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
     if (origin == null) {
       return null;
     } else {
-      return track(createUpdateTrackingAccount(origin));
+      return track(new UpdateTrackingAccount<>(origin));
     }
   }
 
@@ -134,7 +134,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
    *
    * @return The accounts modified in this updater.
    */
-  public Collection<UpdateTrackingAccount<A>> updatedAccounts() {
+  protected Collection<UpdateTrackingAccount<A>> updatedAccounts() {
     return updatedAccounts.values();
   }
 
@@ -387,7 +387,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
       // We will recognize this case in commit below and use that tracker "pay back" our
       // allocation, so this isn't lost.
       final A account = wrappedWorldView().getForMutation(address);
-      return account == null ? null : createUpdateTrackingAccount(account);
+      return account == null ? null : new UpdateTrackingAccount<>(account);
     }
 
     @Override
@@ -421,7 +421,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
           existing = update.getWrappedAccount();
           if (existing == null) {
             // Brand new account, create our own version
-            existing = createUpdateTrackingAccount(update.address);
+            existing = new UpdateTrackingAccount<>(update.address);
           }
           wrapped.updatedAccounts.put(existing.address, existing);
         }
@@ -437,13 +437,5 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
         update.getUpdatedStorage().forEach(existing::setStorageValue);
       }
     }
-  }
-
-  <B extends Account> UpdateTrackingAccount<B> createUpdateTrackingAccount(final B account) {
-    return new UpdateTrackingAccount<>(account);
-  }
-
-  <B extends Account> UpdateTrackingAccount<B> createUpdateTrackingAccount(final Address address) {
-    return new UpdateTrackingAccount<>(address);
   }
 }

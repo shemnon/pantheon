@@ -89,9 +89,7 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
       nextKey = entries.lastKey();
       entries.remove(nextKey);
     }
-    JsonRpcSuccessResponse result =
-        new JsonRpcSuccessResponse(
-            request.getId(), new DebugStorageRangeAtResult(entries, nextKey));
-    return result;
+    return new JsonRpcSuccessResponse(
+        request.getId(), new DebugStorageRangeAtResult(entries, nextKey));
   }
 }

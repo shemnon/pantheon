@@ -12,6 +12,7 @@
  */
 package tech.pegasys.pantheon.ethereum.retesteth.methods;
 
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
@@ -23,10 +24,9 @@ import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 import tech.pegasys.pantheon.ethereum.retesteth.results.DebugAccountRangeAtResult;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class DebugAccountRangeAt extends AbstractBlockParameterMethod {
@@ -70,30 +70,53 @@ public class DebugAccountRangeAt extends AbstractBlockParameterMethod {
     final Optional<MutableWorldState> state =
         getProtocolContext().getWorldStateArchive().getMutable(stateRoot);
 
-    // We need to get all the hashed addresses, then sort them to figure out where to start.
-    final TreeMap<String, String> sortedAnswers =
-        new TreeMap<>(
-            state
-                .get()
-                .streamAccounts()
-                .collect(
-                    Collectors.toMap(
-                        account -> account.getAddressHash().toUnprefixedString(),
-                        account -> account.getAddress().toUnprefixedString())));
-
-    int remaining = maxResults;
-    final Map<String, String> addressMap = new TreeMap<>();
-    final Iterator<Map.Entry<String, String>> addressIter = sortedAnswers.entrySet().iterator();
-    while (addressIter.hasNext() && remaining > 0) {
-      final Map.Entry<String, String> entry = addressIter.next();
-      if (entry.getKey().compareTo(addressHash) >= 0) {
-        addressMap.put(entry.getKey(), entry.getValue());
-        remaining--;
+    //    // We need to get all the hashed addresses, then sort them to figure out where to start.
+    //    final TreeMap<String, String> sortedAnswers =
+    //        new TreeMap<>(
+    //            state
+    //                .get()
+    //                .streamAccounts()
+    //                .collect(
+    //                    Collectors.toMap(
+    //                        account -> account.getAddressHash().toUnprefixedString(),
+    //                        account -> account.getAddress().toUnprefixedString())));
+    //
+    //    int remaining = maxResults;
+    //    final Map<String, String> addressMap = new TreeMap<>();
+    //    final Iterator<Map.Entry<String, String>> addressIter =
+    // sortedAnswers.entrySet().iterator();
+    //    while (addressIter.hasNext() && remaining > 0) {
+    //      final Map.Entry<String, String> entry = addressIter.next();
+    //      if (entry.getKey().compareTo(addressHash) >= 0) {
+    //        addressMap.put(entry.getKey(), entry.getValue());
+    //        remaining--;
+    //      }
+    //    }
+    //    final String nextKey =
+    //        addressIter.hasNext() ? addressIter.next().getKey() :
+    // Bytes32.ZERO.toUnprefixedString();
+    //
+    if (state.isEmpty()) {
+      return new DebugAccountRangeAtResult(Map.of(), Bytes32.ZERO.toUnprefixedString());
+    } else {
+      final List<Account> accounts =
+          state
+              .get()
+              .streamAccounts(Bytes32.fromHexString(addressHash), maxResults + 1)
+              .collect(Collectors.toList());
+      Bytes32 nextKey = Bytes32.ZERO;
+      if (accounts.size() == maxResults + 1) {
+        nextKey = accounts.get(maxResults).getAddressHash();
+        accounts.remove(maxResults);
       }
-    }
-    final String nextKey =
-        addressIter.hasNext() ? addressIter.next().getKey() : Bytes32.ZERO.toUnprefixedString();
 
-    return new DebugAccountRangeAtResult(addressMap, nextKey);
+      return new DebugAccountRangeAtResult(
+          accounts.stream()
+              .collect(
+                  Collectors.toMap(
+                      account -> account.getAddressHash().toUnprefixedString(),
+                      account -> account.getAddress().toUnprefixedString())),
+          nextKey.toUnprefixedString());
+    }
   }
 }
