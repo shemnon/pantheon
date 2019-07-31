@@ -368,8 +368,7 @@ public class DefaultMutableBlockchain implements MutableBlockchain {
       return false;
     }
 
-    final Optional<BlockHeader> oldBlockHeader =
-        blockchainStorage.getBlockHeader(blockHash.get());
+    final Optional<BlockHeader> oldBlockHeader = blockchainStorage.getBlockHeader(blockHash.get());
     final Optional<BlockBody> oldBlockBody = blockchainStorage.getBlockBody(blockHash.get());
     if (oldBlockHeader.isEmpty() || oldBlockBody.isEmpty()) {
       return false;
@@ -382,7 +381,8 @@ public class DefaultMutableBlockchain implements MutableBlockchain {
 
     if (result.isNewCanonicalHead()) {
       chainHeader = block.getHeader();
-      totalDifficulty = calculateTotalDifficulty(block);;
+      totalDifficulty = calculateTotalDifficulty(block);
+      ;
       chainHeadTransactionCount = block.getBody().getTransactions().size();
       chainHeadOmmerCount = block.getBody().getOmmers().size();
       return true;
@@ -390,7 +390,6 @@ public class DefaultMutableBlockchain implements MutableBlockchain {
       return false;
     }
   }
-
 
   private static void indexTransactionForBlock(
       final BlockchainStorage.Updater updater, final Hash hash, final List<Transaction> txs) {

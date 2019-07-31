@@ -156,4 +156,8 @@ public class EthHashSolver {
     }
     return false;
   }
+
+  public Iterable<Long> getNonceGenerator() {
+    return nonceGenerator;
+  }
 }

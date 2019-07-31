@@ -158,6 +158,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
     if (blockReward.isZero()) {
       return true;
     }
+    final Wei blockReward = this.blockReward == Wei.MAX_WEI ? Wei.ZERO : this.blockReward;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
     final MutableAccount coinbase = updater.getOrCreate(header.getCoinbase());

@@ -25,8 +25,12 @@ import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 
 import java.math.BigInteger;
 import java.util.Optional;
+import java.util.Set;
 
 public class NoRewardProtocolScheduleWrapper<C> implements ProtocolSchedule<C> {
+
+  private final Set<String> TOUCH_ACCOUNT_SCHEDULES =
+      Set.of("Frontier", "Homestead", "TangerineWhistle");
 
   private final ProtocolSchedule<C> delegate;
 
@@ -37,11 +41,15 @@ public class NoRewardProtocolScheduleWrapper<C> implements ProtocolSchedule<C> {
   @Override
   public ProtocolSpec<C> getByBlockNumber(final long number) {
     final ProtocolSpec<C> original = delegate.getByBlockNumber(number);
+    // Pre Spurious Dragon we need to "touch" the accounts to create a zero-balance version.  We use
+    // the maximum possible reward as a sentinel value.
+    final Wei blockReward =
+        TOUCH_ACCOUNT_SCHEDULES.contains(original.getName()) ? Wei.MAX_WEI : Wei.ZERO;
     final BlockProcessor noRewardBlockProcessor =
         new MainnetBlockProcessor(
             original.getTransactionProcessor(),
             original.getTransactionReceiptFactory(),
-            Wei.ZERO,
+            blockReward,
             original.getMiningBeneficiaryCalculator());
     final BlockValidator<C> noRewardBlockValidator =
         new MainnetBlockValidator<>(
@@ -64,7 +72,7 @@ public class NoRewardProtocolScheduleWrapper<C> implements ProtocolSchedule<C> {
         original.getBlockHeaderFunctions(),
         original.getTransactionReceiptFactory(),
         original.getDifficultyCalculator(),
-        Wei.ZERO, // block reward
+        blockReward, // block reward
         null, // transaction receipt type; unused
         original.getMiningBeneficiaryCalculator(),
         original.getPrecompileContractRegistry());

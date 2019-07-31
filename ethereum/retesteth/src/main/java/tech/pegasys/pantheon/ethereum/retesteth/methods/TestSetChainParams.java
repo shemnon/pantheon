@@ -109,7 +109,7 @@ public class TestSetChainParams implements JsonRpcMethod {
     final JsonObject ethash = new JsonObject();
     config.put("ethash", ethash);
     //    if (chainParamsJson.getString("sealEngine", "").equals("NoProof")) {
-    ethash.put("fixedDifficulty", 1);
+    //    ethash.put("fixedDifficulty", 1);
     //    }
 
     maybeMoveToNumber(params, "homesteadForkBlock", config, "homesteadBlock");

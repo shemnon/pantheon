@@ -51,8 +51,8 @@ public class DebugStorageRangeAtResult implements JsonRpcResult {
     private final String key;
 
     public StorageEntry(final AccountStorageEntry entry) {
-      this.value = entry.getValue().toHexString();
-      this.key = entry.getKey().map(UInt256::toHexString).orElse(null);
+      this.value = entry.getValue().toStrictShortHexString();
+      this.key = entry.getKey().map(UInt256::toStrictShortHexString).orElse(null);
     }
 
     @JsonGetter(value = "key")

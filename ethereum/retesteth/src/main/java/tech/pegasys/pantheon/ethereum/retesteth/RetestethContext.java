@@ -15,10 +15,9 @@ package tech.pegasys.pantheon.ethereum.retesteth;
 import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
-import tech.pegasys.pantheon.ethereum.blockcreation.RandomNonceGenerator;
+import tech.pegasys.pantheon.ethereum.blockcreation.IncrementingNonceGenerator;
 import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
-import tech.pegasys.pantheon.ethereum.chain.MutableBlockchain;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
@@ -81,6 +80,7 @@ public class RetestethContext {
   private TransactionPool transactionPool;
   private EthScheduler ethScheduler;
   private String sealEngine;
+  private EthHashSolver ethHashSolver;
 
   public boolean resetContext(
       final String genesisConfigString, final String sealEngine, final Optional<Long> clockTime) {
@@ -140,10 +140,17 @@ public class RetestethContext {
 
     blockchainQueries = new BlockchainQueries(blockchain, worldStateArchive);
 
+    final String sealengine = genesisConfig.getString("sealengine", "");
     headerValidationMode =
-        genesisConfig.getString("sealengine", "").equals("NoProof")
+        "NoProof".equals(sealengine) || "NoReward".equals(sealEngine)
             ? HeaderValidationMode.LIGHT
             : HeaderValidationMode.FULL;
+
+    final Iterable<Long> nonceGenerator = new IncrementingNonceGenerator(0);
+    ethHashSolver =
+        "NoProof".equals(sealengine) || "NoReward".equals(sealEngine)
+            ? new NoProofSolver(nonceGenerator)
+            : new EthHashSolver(nonceGenerator, new EthHasher.Light());
 
     blockReplay =
         new BlockReplay(
@@ -179,8 +186,6 @@ public class RetestethContext {
   }
 
   public boolean mineNewBlock() {
-    final EthHashSolver solver =
-        new EthHashSolver(new RandomNonceGenerator(), new EthHasher.Light());
     final EthHashBlockCreator blockCreator =
         new EthHashBlockCreator(
             coinbase,
@@ -189,7 +194,7 @@ public class RetestethContext {
             protocolContext,
             protocolSchedule,
             Functions.identity(),
-            solver,
+            ethHashSolver,
             Wei.ZERO,
             blockchain.getChainHeadHeader());
     final Block block = blockCreator.createBlock(retesethClock.instant().getEpochSecond());

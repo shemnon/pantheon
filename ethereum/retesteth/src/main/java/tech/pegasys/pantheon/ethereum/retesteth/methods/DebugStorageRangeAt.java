@@ -48,7 +48,7 @@ public class DebugStorageRangeAt extends AbstractBlockParameterMethod {
 
   @Override
   protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
-     final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
+    final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
     final Address accountAddress = parameters.required(request.getParams(), 2, Address.class);
     final Hash startKey =
         Hash.fromHexStringLenient(parameters.required(request.getParams(), 3, String.class));

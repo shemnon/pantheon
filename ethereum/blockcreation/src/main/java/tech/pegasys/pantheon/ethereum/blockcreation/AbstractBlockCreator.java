@@ -256,13 +256,14 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
       final List<BlockHeader> ommers,
-      final Wei blockReward) {
+      final Wei blockRewardSpec) {
 
     // TODO(tmm): Added to make this work, should come from blockProcessor.
     final int MAX_GENERATION = 6;
-    if (blockReward.isZero()) {
+    if (blockRewardSpec.isZero()) {
       return true;
     }
+    final Wei blockReward = blockRewardSpec == Wei.MAX_WEI ? Wei.ZERO : blockRewardSpec;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
     final MutableAccount beneficiary = updater.getOrCreate(miningBeneficiary);
