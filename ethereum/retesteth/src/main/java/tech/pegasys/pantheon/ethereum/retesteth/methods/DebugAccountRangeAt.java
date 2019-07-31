@@ -56,53 +56,23 @@ public class DebugAccountRangeAt extends AbstractBlockParameterMethod {
 
     final Optional<BlockWithMetadata<Hash, Hash>> block =
         getBlockchainQueries().blockByNumberWithTxHashes(blockNumber);
-    final Hash stateRoot;
     if (block.isEmpty()) {
       return new JsonRpcSuccessResponse(request.getId(), Map.of());
     }
-    if (txIndex >= block.get().getTransactions().size()) {
-      stateRoot = block.get().getHeader().getStateRoot();
-    } else {
-      stateRoot = null;
-      // uggh, we have to replay :(
-      // FIXME
-    }
+
+    // TODO deal with mid-block locations
+
+    final Hash stateRoot = block.get().getHeader().getStateRoot();
     final Optional<MutableWorldState> state =
         getProtocolContext().getWorldStateArchive().getMutable(stateRoot);
 
-    //    // We need to get all the hashed addresses, then sort them to figure out where to start.
-    //    final TreeMap<String, String> sortedAnswers =
-    //        new TreeMap<>(
-    //            state
-    //                .get()
-    //                .streamAccounts()
-    //                .collect(
-    //                    Collectors.toMap(
-    //                        account -> account.getAddressHash().toUnprefixedString(),
-    //                        account -> account.getAddress().toUnprefixedString())));
-    //
-    //    int remaining = maxResults;
-    //    final Map<String, String> addressMap = new TreeMap<>();
-    //    final Iterator<Map.Entry<String, String>> addressIter =
-    // sortedAnswers.entrySet().iterator();
-    //    while (addressIter.hasNext() && remaining > 0) {
-    //      final Map.Entry<String, String> entry = addressIter.next();
-    //      if (entry.getKey().compareTo(addressHash) >= 0) {
-    //        addressMap.put(entry.getKey(), entry.getValue());
-    //        remaining--;
-    //      }
-    //    }
-    //    final String nextKey =
-    //        addressIter.hasNext() ? addressIter.next().getKey() :
-    // Bytes32.ZERO.toUnprefixedString();
-    //
     if (state.isEmpty()) {
       return new DebugAccountRangeAtResult(Map.of(), Bytes32.ZERO.toUnprefixedString());
     } else {
       final List<Account> accounts =
           state
               .get()
-              .streamAccounts(Bytes32.fromHexString(addressHash), maxResults + 1)
+              .streamAccounts(Bytes32.fromHexStringLenient(addressHash), maxResults + 1)
               .collect(Collectors.toList());
       Bytes32 nextKey = Bytes32.ZERO;
       if (accounts.size() == maxResults + 1) {

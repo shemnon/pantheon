@@ -48,7 +48,7 @@ public class DebugStorageRangeAt extends AbstractBlockParameterMethod {
 
   @Override
   protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
-    // final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
+     final int transactionIndex = parameters.required(request.getParams(), 1, Integer.class);
     final Address accountAddress = parameters.required(request.getParams(), 2, Address.class);
     final Hash startKey =
         Hash.fromHexStringLenient(parameters.required(request.getParams(), 3, String.class));
@@ -56,15 +56,7 @@ public class DebugStorageRangeAt extends AbstractBlockParameterMethod {
 
     final Optional<Hash> blockHash = getBlockchainQueries().getBlockHashByNumber(blockNumber);
 
-    // TODO deal with in-block locations
-    // if (blockHash.isPresent()) {
-    //  if (context.getBlockchainQueries().getTransactionCount(blockHash.get()) >= transactionIndex)
-    // {
-    //    // post block state
-    //  } else {
-    //    // sub-block state
-    //  }
-    // }
+    // TODO deal with mid-block locations
 
     return extractStorageAt(
         accountAddress,
@@ -79,40 +71,6 @@ public class DebugStorageRangeAt extends AbstractBlockParameterMethod {
                     .getHeader()
                     .getStateRoot())
             .get());
-    //    blockHash.map(blockHash -> context.getBlockReplay());
-    //      Optional<BlockWithMetadata<Hash, Hash>> block =
-    // context.getBlockchainQueries().blockByNumberWithTxHashes(blockId.toLong());
-    //      if (block.isPresent()) {
-    //        blockHash = block.get().getHeader().getHash();
-    //        optional =
-    //            context
-    //                .getBlockchainQueries()
-    //                .transactionByBlockNumberAndIndex(blockId.toLong(), transactionIndex);
-    //      } else {
-    //        optional = Optional.empty();
-    //      }
-    //    } else {
-    //      optional =
-    //          context
-    //              .getBlockchainQueries()
-    //              .transactionByBlockHashAndIndex(
-    //                  Hash.fromHexString(blockHashOrNumber), transactionIndex);
-    //      blockHash = optional.map(tx -> tx.getBlockHash()).orElse(null);
-    //    }
-    //    return optional
-    //        .map(
-    //            transactionWithMetadata ->
-    //                (context
-    //                    .getBlockReplay()
-    //                    .afterTransactionInBlock(
-    //                        blockHash,
-    //                        transactionWithMetadata.getTransaction().hash(),
-    //                        (transaction, blockHeader, blockchain, worldState,
-    // transactionProcessor) ->
-    //                            extractStorageAt(request, accountAddress, startKey, limit,
-    // worldState))
-    //                    .orElseGet(() -> new JsonRpcSuccessResponse(request.getId(), null))))
-    //        .orElseGet(() -> new JsonRpcSuccessResponse(request.getId(), null));
   }
 
   private DebugStorageRangeAtResult extractStorageAt(

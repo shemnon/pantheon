@@ -16,7 +16,9 @@ import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
 import tech.pegasys.pantheon.ethereum.blockcreation.RandomNonceGenerator;
+import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
+import tech.pegasys.pantheon.ethereum.chain.MutableBlockchain;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
@@ -68,7 +70,7 @@ public class RetestethContext {
   private final ReentrantLock contextLock = new ReentrantLock();
   private String genesisConfig;
   private Address coinbase;
-  private RetestethMutableBlockchain blockchain;
+  private DefaultMutableBlockchain blockchain;
   private ProtocolContext<Void> protocolContext;
   private BlockchainQueries blockchainQueries;
   private ProtocolSchedule<Void> protocolSchedule;
@@ -202,14 +204,14 @@ public class RetestethContext {
     return blockchain.rewindToBlock(blockNumber);
   }
 
-  private static RetestethMutableBlockchain createInMemoryBlockchain(final Block genesisBlock) {
+  private static DefaultMutableBlockchain createInMemoryBlockchain(final Block genesisBlock) {
     return createInMemoryBlockchain(genesisBlock, new MainnetBlockHeaderFunctions());
   }
 
-  private static RetestethMutableBlockchain createInMemoryBlockchain(
+  private static DefaultMutableBlockchain createInMemoryBlockchain(
       final Block genesisBlock, final BlockHeaderFunctions blockHeaderFunctions) {
     final InMemoryKeyValueStorage keyValueStorage = new InMemoryKeyValueStorage();
-    return new RetestethMutableBlockchain(
+    return new DefaultMutableBlockchain(
         genesisBlock,
         new KeyValueStoragePrefixedKeyBlockchainStorage(keyValueStorage, blockHeaderFunctions),
         new NoOpMetricsSystem());
@@ -264,8 +266,7 @@ public class RetestethContext {
   }
 
   public void setTimestamp(final long epochSeconds) {
-    // this impacts the genesis block, so rebuild
-    resetContext(genesisConfig, sealEngine, Optional.of(epochSeconds));
+    retesethClock.resetTime(epochSeconds);
   }
 
   public BlockReplay getBlockReplay() {
