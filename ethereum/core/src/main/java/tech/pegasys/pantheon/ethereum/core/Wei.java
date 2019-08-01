@@ -23,7 +23,6 @@ import java.math.BigInteger;
 public final class Wei extends BaseUInt256Value<Wei> {
 
   public static final Wei ZERO = of(0);
-  public static final Wei NO_REWARD = of(UInt256.MAX_VALUE);
 
   protected Wei(final Bytes32 bytes) {
     super(bytes, WeiCounter::new);

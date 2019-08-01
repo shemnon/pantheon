@@ -83,17 +83,21 @@ public class MainnetBlockProcessor implements BlockProcessor {
 
   private final Wei blockReward;
 
+  private final boolean eip158;
+
   private final MiningBeneficiaryCalculator miningBeneficiaryCalculator;
 
   public MainnetBlockProcessor(
       final TransactionProcessor transactionProcessor,
       final TransactionReceiptFactory transactionReceiptFactory,
       final Wei blockReward,
-      final MiningBeneficiaryCalculator miningBeneficiaryCalculator) {
+      final MiningBeneficiaryCalculator miningBeneficiaryCalculator,
+      final boolean eip158) {
     this.transactionProcessor = transactionProcessor;
     this.transactionReceiptFactory = transactionReceiptFactory;
     this.blockReward = blockReward;
     this.miningBeneficiaryCalculator = miningBeneficiaryCalculator;
+    this.eip158 = eip158;
   }
 
   @Override
@@ -143,7 +147,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
       receipts.add(transactionReceipt);
     }
 
-    if (!rewardCoinbase(worldState, blockHeader, ommers)) {
+    if (!rewardCoinbase(worldState, blockHeader, ommers, eip158)) {
       return Result.failed();
     }
 
@@ -154,12 +158,12 @@ public class MainnetBlockProcessor implements BlockProcessor {
   private boolean rewardCoinbase(
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
-      final List<BlockHeader> ommers) {
-    if (blockReward.isZero()) {
+      final List<BlockHeader> ommers,
+      final boolean eip158) {
+    if (eip158 && blockReward.isZero()) {
       return true;
     }
     // This reference equality check is deliberate.
-    final Wei blockReward = this.blockReward.equals(Wei.NO_REWARD) ? Wei.ZERO : this.blockReward;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
     final MutableAccount coinbase = updater.getOrCreate(header.getCoinbase());

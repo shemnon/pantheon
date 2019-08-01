@@ -196,7 +196,7 @@ public class EthHashBlockCreatorTest {
             .buildProcessableBlockHeader();
 
     blockCreator.rewardBeneficiary(
-        mutableWorldState, header, Collections.emptyList(), Wei.NO_REWARD);
+        mutableWorldState, header, Collections.emptyList(), Wei.ZERO, false);
 
     assertThat(mutableWorldState.get(BLOCK_1_COINBASE)).isNotNull();
     assertThat(mutableWorldState.get(BLOCK_1_COINBASE).getBalance()).isEqualTo(Wei.ZERO);

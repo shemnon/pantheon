@@ -31,6 +31,7 @@ import tech.pegasys.pantheon.ethereum.mainnet.BodyValidation;
 import tech.pegasys.pantheon.ethereum.mainnet.DifficultyCalculator;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockProcessor.TransactionReceiptFactory;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
+import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 import tech.pegasys.pantheon.ethereum.mainnet.ScheduleBasedBlockHeaderFunctions;
 import tech.pegasys.pantheon.ethereum.mainnet.TransactionProcessor;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -129,10 +130,15 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
 
       throwIfStopped();
 
-      final Wei blockReward =
-          protocolSchedule.getByBlockNumber(processableBlockHeader.getNumber()).getBlockReward();
+      final ProtocolSpec<C> protocolSpec =
+          protocolSchedule.getByBlockNumber(processableBlockHeader.getNumber());
 
-      if (!rewardBeneficiary(disposableWorldState, processableBlockHeader, ommers, blockReward)) {
+      if (!rewardBeneficiary(
+          disposableWorldState,
+          processableBlockHeader,
+          ommers,
+          protocolSpec.getBlockReward(),
+          protocolSpec.isEIP158())) {
         LOG.trace("Failed to apply mining reward, exiting.");
         throw new RuntimeException("Failed to apply mining reward.");
       }
@@ -256,14 +262,14 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
       final List<BlockHeader> ommers,
-      final Wei blockRewardSpec) {
+      final Wei blockReward,
+      boolean isEip158) {
 
     // TODO(tmm): Added to make this work, should come from blockProcessor.
     final int MAX_GENERATION = 6;
-    if (blockRewardSpec.isZero()) {
+    if (isEip158 && blockReward.isZero()) {
       return true;
     }
-    final Wei blockReward = blockRewardSpec.equals(Wei.NO_REWARD) ? Wei.ZERO : blockRewardSpec;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
     final MutableAccount beneficiary = updater.getOrCreate(miningBeneficiary);

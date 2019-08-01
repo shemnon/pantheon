@@ -54,6 +54,8 @@ public class ProtocolSpec<C> {
 
   private final PrecompileContractRegistry precompileContractRegistry;
 
+  private final boolean eip158;
+
   /**
    * Creates a new protocol specification instance.
    *
@@ -92,7 +94,8 @@ public class ProtocolSpec<C> {
       final Wei blockReward,
       final TransactionReceiptType transactionReceiptType,
       final MiningBeneficiaryCalculator miningBeneficiaryCalculator,
-      final PrecompileContractRegistry precompileContractRegistry) {
+      final PrecompileContractRegistry precompileContractRegistry,
+      final boolean eip158) {
     this.name = name;
     this.evm = evm;
     this.transactionValidator = transactionValidator;
@@ -109,6 +112,7 @@ public class ProtocolSpec<C> {
     this.blockReward = blockReward;
     this.miningBeneficiaryCalculator = miningBeneficiaryCalculator;
     this.precompileContractRegistry = precompileContractRegistry;
+    this.eip158 = eip158;
   }
 
   /**
@@ -235,6 +239,15 @@ public class ProtocolSpec<C> {
    */
   public Wei getBlockReward() {
     return blockReward;
+  }
+
+  /**
+   * EIP 158 prohibits adding new "empty" accounts to the account trie.
+   *
+   * @return if EIP158 is in effect for this spec.
+   */
+  public boolean isEIP158() {
+    return eip158;
   }
 
   public MiningBeneficiaryCalculator getMiningBeneficiaryCalculator() {
