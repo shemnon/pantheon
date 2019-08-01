@@ -652,8 +652,7 @@ public class DefaultMutableBlockchainTest {
     final List<TransactionReceipt> receipts = gen.receipts(newBlock);
 
     final AtomicBoolean observerInvoked = new AtomicBoolean(false);
-    blockchain.observeBlockAdded(
-        (block, chain) -> observerInvoked.set(true));
+    blockchain.observeBlockAdded((block, chain) -> observerInvoked.set(true));
 
     blockchain.appendBlock(newBlock, receipts);
 
@@ -674,16 +673,13 @@ public class DefaultMutableBlockchainTest {
     final List<TransactionReceipt> receipts = gen.receipts(newBlock);
 
     final AtomicBoolean observer1Invoked = new AtomicBoolean(false);
-    blockchain.observeBlockAdded(
-        (block, chain) -> observer1Invoked.set(true));
+    blockchain.observeBlockAdded((block, chain) -> observer1Invoked.set(true));
 
     final AtomicBoolean observer2Invoked = new AtomicBoolean(false);
-    blockchain.observeBlockAdded(
-        (block, chain) -> observer2Invoked.set(true));
+    blockchain.observeBlockAdded((block, chain) -> observer2Invoked.set(true));
 
     final AtomicBoolean observer3Invoked = new AtomicBoolean(false);
-    blockchain.observeBlockAdded(
-        (block, chain) -> observer3Invoked.set(true));
+    blockchain.observeBlockAdded((block, chain) -> observer3Invoked.set(true));
 
     blockchain.appendBlock(newBlock, receipts);
 
