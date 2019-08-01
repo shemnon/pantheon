@@ -245,24 +245,25 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
     return isCancelled.get();
   }
 
-  protected void throwIfStopped() throws CancellationException {
+  private void throwIfStopped() throws CancellationException {
     if (isCancelled.get()) {
       throw new CancellationException();
     }
   }
 
   /* Copied from BlockProcessor (with modifications). */
-  private boolean rewardBeneficiary(
+  boolean rewardBeneficiary(
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
       final List<BlockHeader> ommers,
-      final Wei blockReward) {
+      final Wei blockRewardSpec) {
 
     // TODO(tmm): Added to make this work, should come from blockProcessor.
     final int MAX_GENERATION = 6;
-    if (blockReward.isZero()) {
+    if (blockRewardSpec.isZero()) {
       return true;
     }
+    final Wei blockReward = blockRewardSpec.equals(Wei.NO_REWARD) ? Wei.ZERO : blockRewardSpec;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
     final MutableAccount beneficiary = updater.getOrCreate(miningBeneficiary);
