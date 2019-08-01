@@ -44,7 +44,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 public class DefaultMutableBlockchain implements MutableBlockchain {
 
-  private final BlockchainStorage blockchainStorage;
+  protected final BlockchainStorage blockchainStorage;
 
   private final Subscribers<BlockAddedObserver> blockAddedObservers = Subscribers.create();
 
@@ -360,6 +360,34 @@ public class DefaultMutableBlockchain implements MutableBlockchain {
         newChainHead,
         newTransactions.values().stream().flatMap(Collection::stream).collect(toList()),
         removedTransactions);
+  }
+
+  public boolean rewindToBlock(final long blockNumber) {
+    final Optional<Hash> blockHash = blockchainStorage.getBlockHash(blockNumber);
+    if (blockHash.isEmpty()) {
+      return false;
+    }
+
+    final Optional<BlockHeader> oldBlockHeader = blockchainStorage.getBlockHeader(blockHash.get());
+    final Optional<BlockBody> oldBlockBody = blockchainStorage.getBlockBody(blockHash.get());
+    if (oldBlockHeader.isEmpty() || oldBlockBody.isEmpty()) {
+      return false;
+    }
+    final Block block = new Block(oldBlockHeader.get(), oldBlockBody.get());
+
+    final BlockchainStorage.Updater updater = blockchainStorage.updater();
+    final BlockAddedEvent result = this.handleChainReorg(updater, block);
+    updater.commit();
+
+    if (result.isNewCanonicalHead()) {
+      chainHeader = block.getHeader();
+      totalDifficulty = calculateTotalDifficulty(block);
+      chainHeadTransactionCount = block.getBody().getTransactions().size();
+      chainHeadOmmerCount = block.getBody().getOmmers().size();
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private static void indexTransactionForBlock(
