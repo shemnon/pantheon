@@ -151,6 +151,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
     return Result.successful(receipts);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   private boolean rewardCoinbase(
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
@@ -158,6 +159,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
     if (blockReward.isZero()) {
       return true;
     }
+    // This reference equality check is deliberate.
     final Wei blockReward = this.blockReward == Wei.MAX_WEI ? Wei.ZERO : this.blockReward;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();

@@ -33,7 +33,6 @@ import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncState;
 import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPool;
 import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPoolConfiguration;
 import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPoolFactory;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.processor.BlockReplay;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockchainQueries;
 import tech.pegasys.pantheon.ethereum.mainnet.EthHashSolver;
 import tech.pegasys.pantheon.ethereum.mainnet.EthHasher;
@@ -67,19 +66,16 @@ public class RetestethContext {
   private static final Logger LOG = LogManager.getLogger();
 
   private final ReentrantLock contextLock = new ReentrantLock();
-  private String genesisConfig;
   private Address coinbase;
   private DefaultMutableBlockchain blockchain;
   private ProtocolContext<Void> protocolContext;
   private BlockchainQueries blockchainQueries;
   private ProtocolSchedule<Void> protocolSchedule;
   private HeaderValidationMode headerValidationMode;
-  private BlockReplay blockReplay;
   private RetestethClock retesethClock;
 
   private TransactionPool transactionPool;
   private EthScheduler ethScheduler;
-  private String sealEngine;
   private EthHashSolver ethHashSolver;
 
   public boolean resetContext(
@@ -109,9 +105,6 @@ public class RetestethContext {
 
   private boolean buildContext(
       final String genesisConfigString, final String sealEngine, final Optional<Long> clockTime) {
-    genesisConfig = genesisConfigString;
-    this.sealEngine = sealEngine;
-
     final JsonObject genesisConfig = normalizeKeys(new JsonObject(genesisConfigString));
 
     retesethClock = new RetestethClock();
@@ -151,12 +144,6 @@ public class RetestethContext {
         "NoProof".equals(sealengine) || "NoReward".equals(sealEngine)
             ? new NoProofSolver(nonceGenerator)
             : new EthHashSolver(nonceGenerator, new EthHasher.Light());
-
-    blockReplay =
-        new BlockReplay(
-            protocolSchedule,
-            blockchainQueries.getBlockchain(),
-            blockchainQueries.getWorldStateArchive());
 
     // mining support
 
@@ -274,15 +261,7 @@ public class RetestethContext {
     retesethClock.resetTime(epochSeconds);
   }
 
-  public BlockReplay getBlockReplay() {
-    return blockReplay;
-  }
-
   public TransactionPool getTransactionPool() {
     return transactionPool;
-  }
-
-  public String getSealEngine() {
-    return sealEngine;
   }
 }

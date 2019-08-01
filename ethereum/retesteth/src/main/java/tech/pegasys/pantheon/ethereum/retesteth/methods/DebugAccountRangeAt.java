@@ -50,7 +50,6 @@ public class DebugAccountRangeAt extends AbstractBlockParameterMethod {
   @Override
   protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
     final Object[] params = request.getParams();
-    final int txIndex = parameters.required(params, 1, Integer.TYPE);
     final String addressHash = parameters.required(params, 2, String.class);
     final int maxResults = parameters.required(params, 3, Integer.TYPE);
 

@@ -252,6 +252,7 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
   }
 
   /* Copied from BlockProcessor (with modifications). */
+  @SuppressWarnings("ReferenceEquality")
   private boolean rewardBeneficiary(
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
@@ -263,6 +264,7 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
     if (blockRewardSpec.isZero()) {
       return true;
     }
+    // This reference equality check is deliberate.
     final Wei blockReward = blockRewardSpec == Wei.MAX_WEI ? Wei.ZERO : blockRewardSpec;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
