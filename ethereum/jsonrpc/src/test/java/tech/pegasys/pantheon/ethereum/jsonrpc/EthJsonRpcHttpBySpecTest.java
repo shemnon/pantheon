@@ -244,8 +244,12 @@ public class EthJsonRpcHttpBySpecTest extends AbstractEthJsonRpcHttpServiceTest 
 
     specs.put(EthProtocolVersion.class, "eth_protocolVersion");
 
-    specs.put(DebugAccountRange.class, "debug_accountRangeAt_complete");
-    specs.put(DebugAccountRange.class, "debug_accountRangeAt_partial");
+    specs.put(DebugAccountRange.class, "debug_accountRange_blockHash");
+    specs.put(DebugAccountRange.class, "debug_accountRange_complete");
+    specs.put(DebugAccountRange.class, "debug_accountRange_partial");
+    specs.put(DebugAccountRange.class, "debug_storageRangeAt_blockHash");
+    specs.put(DebugAccountRange.class, "debug_storageRangeAt_blockNumber");
+    specs.put(DebugAccountRange.class, "debug_storageRangeAt_midBlock");
 
     return specs.values();
   }
