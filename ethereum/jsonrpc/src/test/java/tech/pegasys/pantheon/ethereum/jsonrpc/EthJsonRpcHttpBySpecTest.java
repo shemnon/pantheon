@@ -14,13 +14,15 @@ package tech.pegasys.pantheon.ethereum.jsonrpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugAccountRangeAt;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugAccountRange;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthBlockNumber;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthCall;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthEstimateGas;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBalance;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBlockTransactionCountByHash;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBlockTransactionCountByNumber;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetCode;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetFilterChanges;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetLogs;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetStorageAt;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetTransactionByBlockHashAndIndex;
@@ -31,6 +33,9 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetTransaction
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthNewBlockFilter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthNewFilter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthNewPendingTransactionFilter;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthProtocolVersion;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthSendRawTransaction;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthUninstallFilter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 
 import java.io.IOException;
@@ -212,8 +217,31 @@ public class EthJsonRpcHttpBySpecTest extends AbstractEthJsonRpcHttpServiceTest 
 
     specs.put(EthNewPendingTransactionFilter.class, "eth_newPendingTransactionFilter");
 
-    specs.put(DebugAccountRangeAt.class, "debug_accountRangeAt_complete");
-    specs.put(DebugAccountRangeAt.class, "debug_accountRangeAt_partial");
+    specs.put(EthUninstallFilter.class, "eth_uninstallFilter_NonexistentFilter");
+    specs.put(EthUninstallFilter.class, "eth_uninstallFilter_FilterIdTooLong");
+    specs.put(EthUninstallFilter.class, "eth_uninstallFilter_FilterIdNegative");
+
+    specs.put(EthGetFilterChanges.class, "eth_getFilterChanges_NonexistentFilter");
+    specs.put(EthGetFilterChanges.class, "eth_getFilterChanges_FilterIdTooLong");
+    specs.put(EthGetFilterChanges.class, "eth_getFilterChanges_FilterIdNegative");
+
+    specs.put(EthSendRawTransaction.class, "eth_sendRawTransaction_transferEther");
+    specs.put(EthSendRawTransaction.class, "eth_sendRawTransaction_contractCreation");
+    specs.put(EthSendRawTransaction.class, "eth_sendRawTransaction_messageCall");
+    specs.put(EthSendRawTransaction.class, "eth_sendRawTransaction_invalidByteValueHex");
+    specs.put(EthSendRawTransaction.class, "eth_sendRawTransaction_invalidNonceTooLow");
+    specs.put(EthSendRawTransaction.class, "eth_sendRawTransaction_invalidRawTransaction");
+    specs.put(EthSendRawTransaction.class, "eth_sendRawTransaction_unsignedTransaction");
+
+    specs.put(EthEstimateGas.class, "eth_estimateGas_contractDeploy");
+    specs.put(EthEstimateGas.class, "eth_estimateGas_transfer");
+    specs.put(EthEstimateGas.class, "eth_estimateGas_noParams");
+    specs.put(EthEstimateGas.class, "eth_estimateGas_insufficientGas");
+
+    specs.put(EthProtocolVersion.class, "eth_protocolVersion");
+
+    specs.put(DebugAccountRange.class, "debug_accountRangeAt_complete");
+    specs.put(DebugAccountRange.class, "debug_accountRangeAt_partial");
 
     return specs.values();
   }

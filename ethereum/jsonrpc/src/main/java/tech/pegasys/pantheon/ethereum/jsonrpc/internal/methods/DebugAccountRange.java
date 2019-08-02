@@ -31,16 +31,16 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.Suppliers;
 
-public class DebugAccountRangeAt extends AbstractBlockParameterMethod {
+public class DebugAccountRange extends AbstractBlockParameterMethod {
 
   final JsonRpcParameter parameters;
 
-  public DebugAccountRangeAt(
+  public DebugAccountRange(
       final JsonRpcParameter parameters, final BlockchainQueries blockchainQueries) {
     this(parameters, Suppliers.ofInstance(blockchainQueries));
   }
 
-  public DebugAccountRangeAt(
+  public DebugAccountRange(
       final JsonRpcParameter parameters, final Supplier<BlockchainQueries> blockchainQueries) {
     super(blockchainQueries, parameters);
     this.parameters = parameters;
@@ -53,7 +53,7 @@ public class DebugAccountRangeAt extends AbstractBlockParameterMethod {
 
   @Override
   public String getName() {
-    return "debug_accountRangeAt";
+    return "debug_accountRange";
   }
 
   @Override
