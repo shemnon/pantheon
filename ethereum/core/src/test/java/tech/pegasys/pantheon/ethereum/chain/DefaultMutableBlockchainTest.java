@@ -475,7 +475,7 @@ public class DefaultMutableBlockchainTest {
     // rewind it by 1 block
     blockchain.rewindToBlock(targetHead.getHeader().getNumber());
 
-    // Check chain has not reorganized
+    // Check chain has the expected blocks
     for (int i = 0; i < chain.size() - 1; i++) {
       assertBlockDataIsStored(blockchain, chain.get(i), blockReceipts.get(i));
     }
