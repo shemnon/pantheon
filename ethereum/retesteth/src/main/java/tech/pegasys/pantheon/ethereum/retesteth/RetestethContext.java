@@ -17,6 +17,7 @@ import tech.pegasys.pantheon.config.JsonUtil;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
 import tech.pegasys.pantheon.ethereum.blockcreation.IncrementingNonceGenerator;
+import tech.pegasys.pantheon.ethereum.chain.Blockchain;
 import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
 import tech.pegasys.pantheon.ethereum.core.Address;
@@ -31,9 +32,11 @@ import tech.pegasys.pantheon.ethereum.eth.manager.EthMessages;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthPeers;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthScheduler;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncState;
+import tech.pegasys.pantheon.ethereum.eth.transactions.PendingTransactions;
 import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPool;
 import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPoolConfiguration;
 import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPoolFactory;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.processor.BlockReplay;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockchainQueries;
 import tech.pegasys.pantheon.ethereum.mainnet.EthHashSolver;
 import tech.pegasys.pantheon.ethereum.mainnet.EthHasher;
@@ -72,6 +75,7 @@ public class RetestethContext {
   private BlockchainQueries blockchainQueries;
   private ProtocolSchedule<Void> protocolSchedule;
   private HeaderValidationMode headerValidationMode;
+  private BlockReplay blockReplay;
   private RetestethClock retesethClock;
 
   private TransactionPool transactionPool;
@@ -145,6 +149,12 @@ public class RetestethContext {
         "NoProof".equals(sealengine) || "NoReward".equals(sealEngine)
             ? new NoProofSolver(nonceGenerator)
             : new EthHashSolver(nonceGenerator, new EthHasher.Light());
+
+    blockReplay =
+        new BlockReplay(
+            protocolSchedule,
+            blockchainQueries.getBlockchain(),
+            blockchainQueries.getWorldStateArchive());
 
     // mining support
 
@@ -263,7 +273,15 @@ public class RetestethContext {
     retesethClock.resetTime(epochSeconds);
   }
 
+  public BlockReplay getBlockReplay() {
+    return blockReplay;
+  }
+
   public TransactionPool getTransactionPool() {
     return transactionPool;
+  }
+
+  public PendingTransactions getPendingTransactions() {
+    return transactionPool.getPendingTransactions();
   }
 }

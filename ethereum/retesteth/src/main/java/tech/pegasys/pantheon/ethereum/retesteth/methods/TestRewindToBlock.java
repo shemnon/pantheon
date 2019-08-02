@@ -21,10 +21,11 @@ import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 
 public class TestRewindToBlock implements JsonRpcMethod {
   private final RetestethContext context;
-  private final JsonRpcParameter parameter = new JsonRpcParameter();
+  private final JsonRpcParameter parameters;
 
-  public TestRewindToBlock(final RetestethContext context) {
+  public TestRewindToBlock(final RetestethContext context, final JsonRpcParameter parameters) {
     this.context = context;
+    this.parameters = parameters;
   }
 
   @Override
@@ -34,7 +35,7 @@ public class TestRewindToBlock implements JsonRpcMethod {
 
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
-    final long blockNumber = parameter.required(request.getParams(), 0, Long.TYPE);
+    final long blockNumber = parameters.required(request.getParams(), 0, Long.TYPE);
 
     return new JsonRpcSuccessResponse(request.getId(), context.rewindToBlock(blockNumber));
   }

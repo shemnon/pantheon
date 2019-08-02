@@ -48,7 +48,7 @@ public class RetestethClock extends Clock {
     return fixedInstant.orElseGet(delegateClock::instant);
   }
 
-  public void resetTime(final long time) {
+  void resetTime(final long time) {
     fixedInstant = Optional.of(Instant.ofEpochSecond(time));
   }
 

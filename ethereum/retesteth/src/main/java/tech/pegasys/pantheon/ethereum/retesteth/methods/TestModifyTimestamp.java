@@ -22,10 +22,11 @@ import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 public class TestModifyTimestamp implements JsonRpcMethod {
 
   private final RetestethContext context;
-  private final JsonRpcParameter parameter = new JsonRpcParameter();
+  private final JsonRpcParameter parameters;
 
-  public TestModifyTimestamp(final RetestethContext context) {
+  public TestModifyTimestamp(final RetestethContext context, final JsonRpcParameter parameters) {
     this.context = context;
+    this.parameters = parameters;
   }
 
   @Override
@@ -35,7 +36,7 @@ public class TestModifyTimestamp implements JsonRpcMethod {
 
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
-    final long epochSeconds = parameter.required(request.getParams(), 0, Long.class);
+    final long epochSeconds = parameters.required(request.getParams(), 0, Long.class);
     context.setTimestamp(epochSeconds);
     return new JsonRpcSuccessResponse(request.getId(), true);
   }

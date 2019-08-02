@@ -27,20 +27,23 @@ import com.google.common.base.Suppliers;
 public class EthGetBlockByNumber extends AbstractBlockParameterMethod {
 
   private final BlockResultFactory blockResult;
+  private final boolean includeCoinbase;
 
   public EthGetBlockByNumber(
       final BlockchainQueries blockchain,
       final BlockResultFactory blockResult,
       final JsonRpcParameter parameters) {
-    this(Suppliers.ofInstance(blockchain), blockResult, parameters);
+    this(Suppliers.ofInstance(blockchain), blockResult, parameters, false);
   }
 
   public EthGetBlockByNumber(
       final Supplier<BlockchainQueries> blockchain,
       final BlockResultFactory blockResult,
-      final JsonRpcParameter parameters) {
+      final JsonRpcParameter parameters,
+      final boolean includeCoinbase) {
     super(blockchain, parameters);
     this.blockResult = blockResult;
+    this.includeCoinbase = includeCoinbase;
   }
 
   @Override
@@ -55,6 +58,7 @@ public class EthGetBlockByNumber extends AbstractBlockParameterMethod {
 
   @Override
   protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
+    final BlockResult result;
     if (isCompleteTransactions(request)) {
       return transactionComplete(blockNumber);
     }
@@ -65,14 +69,14 @@ public class EthGetBlockByNumber extends AbstractBlockParameterMethod {
   private BlockResult transactionComplete(final long blockNumber) {
     return getBlockchainQueries()
         .blockByNumber(blockNumber)
-        .map(tx -> blockResult.transactionComplete(tx))
+        .map(tx -> blockResult.transactionComplete(tx, includeCoinbase))
         .orElse(null);
   }
 
   private BlockResult transactionHash(final long blockNumber) {
     return getBlockchainQueries()
         .blockByNumberWithTxHashes(blockNumber)
-        .map(tx -> blockResult.transactionHash(tx))
+        .map(tx -> blockResult.transactionHash(tx, includeCoinbase))
         .orElse(null);
   }
 

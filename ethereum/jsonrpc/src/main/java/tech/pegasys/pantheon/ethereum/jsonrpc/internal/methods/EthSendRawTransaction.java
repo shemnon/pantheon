@@ -14,6 +14,7 @@ package tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods;
 
 import static tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcErrorConverter.convertTransactionInvalidReason;
 
+import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPool;
 import tech.pegasys.pantheon.ethereum.jsonrpc.RpcMethod;
@@ -39,19 +40,23 @@ import org.apache.logging.log4j.Logger;
 public class EthSendRawTransaction implements JsonRpcMethod {
 
   private static final Logger LOG = LogManager.getLogger();
+  private final boolean sendEmptyHashOnInvalidBlock;
 
   private final Supplier<TransactionPool> transactionPool;
   private final JsonRpcParameter parameters;
 
   public EthSendRawTransaction(
       final TransactionPool transactionPool, final JsonRpcParameter parameters) {
-    this(Suppliers.ofInstance(transactionPool), parameters);
+    this(Suppliers.ofInstance(transactionPool), parameters, false);
   }
 
   public EthSendRawTransaction(
-      final Supplier<TransactionPool> transactionPool, final JsonRpcParameter parameters) {
+      final Supplier<TransactionPool> transactionPool,
+      final JsonRpcParameter parameters,
+      final boolean sendEmptyHashOnInvalidBlock) {
     this.transactionPool = transactionPool;
     this.parameters = parameters;
+    this.sendEmptyHashOnInvalidBlock = sendEmptyHashOnInvalidBlock;
   }
 
   @Override
@@ -78,8 +83,10 @@ public class EthSendRawTransaction implements JsonRpcMethod {
     return validationResult.either(
         () -> new JsonRpcSuccessResponse(request.getId(), transaction.hash().toString()),
         errorReason ->
-            new JsonRpcErrorResponse(
-                request.getId(), convertTransactionInvalidReason(errorReason)));
+            sendEmptyHashOnInvalidBlock
+                ? new JsonRpcSuccessResponse(request.getId(), Hash.EMPTY.toString())
+                : new JsonRpcErrorResponse(
+                    request.getId(), convertTransactionInvalidReason(errorReason)));
   }
 
   private Transaction decodeRawTransaction(final String hash)

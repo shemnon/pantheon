@@ -43,7 +43,7 @@ public class NoRewardProtocolScheduleWrapper<C> implements ProtocolSchedule<C> {
     final ProtocolSpec<C> original = delegate.getByBlockNumber(number);
     // Pre Spurious Dragon we need to "touch" the accounts to create a zero-balance version.  We use
     // the maximum possible reward as a sentinel value.
-    boolean skipZeroBlockRewards = !TOUCH_ACCOUNT_SCHEDULES.contains(original.getName());
+    final boolean skipZeroBlockRewards = !TOUCH_ACCOUNT_SCHEDULES.contains(original.getName());
     final BlockProcessor noRewardBlockProcessor =
         new MainnetBlockProcessor(
             original.getTransactionProcessor(),

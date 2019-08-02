@@ -17,16 +17,18 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcHttpService;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcMethodsFactory;
 import tech.pegasys.pantheon.ethereum.jsonrpc.health.HealthService;
 import tech.pegasys.pantheon.ethereum.jsonrpc.health.LivenessCheck;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugAccountRangeAt;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugStorageRangeAt;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthBlockNumber;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBalance;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBlockByNumber;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetCode;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetTransactionCount;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthSendRawTransaction;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.Web3ClientVersion;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.DebugAccountRangeAt;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.DebugStorageRangeAt;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.EthBlockNumber;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetBalance;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetBlockByNumber;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetCode;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.EthGetTransactionCount;
-import tech.pegasys.pantheon.ethereum.retesteth.methods.EthSendRawTransaction;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.BlockResultFactory;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestGetLogHash;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestImportRawBlock;
 import tech.pegasys.pantheon.ethereum.retesteth.methods.TestMineBlocks;
@@ -55,24 +57,26 @@ public class RetestethService {
     vertx = Vertx.vertx();
     retestethContext = new RetestethContext();
 
+    final JsonRpcParameter parameters = new JsonRpcParameter();
+    final BlockResultFactory blockResult = new BlockResultFactory();
     final Map<String, JsonRpcMethod> jsonRpcMethods = new HashMap<>();
     JsonRpcMethodsFactory.addMethods(
         jsonRpcMethods,
         new Web3ClientVersion(clientVersion),
         new TestSetChainParams(retestethContext),
-        new TestImportRawBlock(retestethContext),
-        new EthBlockNumber(retestethContext),
-        new EthGetBlockByNumber(retestethContext),
-        new DebugAccountRangeAt(retestethContext),
-        new EthGetBalance(retestethContext),
-        new EthGetCode(retestethContext),
-        new EthGetTransactionCount(retestethContext),
-        new DebugStorageRangeAt(retestethContext),
-        new TestModifyTimestamp(retestethContext),
-        new EthSendRawTransaction(retestethContext),
-        new TestMineBlocks(retestethContext),
-        new TestGetLogHash(retestethContext),
-        new TestRewindToBlock(retestethContext));
+        new TestImportRawBlock(retestethContext, parameters),
+        new EthBlockNumber(retestethContext::getBlockchainQueries, true),
+        new EthGetBlockByNumber(retestethContext::getBlockchainQueries, blockResult, parameters, true),
+        new DebugAccountRangeAt(parameters, retestethContext::getBlockchainQueries),
+        new EthGetBalance(retestethContext::getBlockchainQueries, parameters),
+        new EthGetCode(retestethContext::getBlockchainQueries, parameters),
+        new EthGetTransactionCount(retestethContext::getBlockchainQueries, retestethContext::getPendingTransactions, parameters, true),
+        new DebugStorageRangeAt(parameters, retestethContext::getBlockchainQueries, retestethContext::getBlockReplay),
+        new TestModifyTimestamp(retestethContext, parameters),
+        new EthSendRawTransaction(retestethContext::getTransactionPool, parameters, true),
+        new TestMineBlocks(retestethContext, parameters),
+        new TestGetLogHash(retestethContext, parameters),
+        new TestRewindToBlock(retestethContext, parameters));
 
     jsonRpcHttpService =
         new JsonRpcHttpService(

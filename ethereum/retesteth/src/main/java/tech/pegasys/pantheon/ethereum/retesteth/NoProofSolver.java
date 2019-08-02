@@ -19,7 +19,6 @@ import tech.pegasys.pantheon.ethereum.mainnet.EthHashSolverInputs;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 public class NoProofSolver extends EthHashSolver {
 
@@ -28,8 +27,7 @@ public class NoProofSolver extends EthHashSolver {
   }
 
   @Override
-  public EthHashSolution solveFor(final EthHashSolverJob job)
-      throws InterruptedException, ExecutionException {
+  public EthHashSolution solveFor(final EthHashSolverJob job) {
     return new EthHashSolution(
         getNonceGenerator().iterator().next(), Hash.EMPTY, new byte[Bytes32.SIZE]);
   }

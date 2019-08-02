@@ -21,10 +21,11 @@ import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
 
 public class TestMineBlocks implements JsonRpcMethod {
   private final RetestethContext context;
-  private final JsonRpcParameter parameter = new JsonRpcParameter();
+  private final JsonRpcParameter parameters;
 
-  public TestMineBlocks(final RetestethContext context) {
+  public TestMineBlocks(final RetestethContext context, final JsonRpcParameter parameters) {
     this.context = context;
+    this.parameters = parameters;
   }
 
   @Override
@@ -34,7 +35,7 @@ public class TestMineBlocks implements JsonRpcMethod {
 
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
-    long blocksToMine = parameter.required(request.getParams(), 0, Long.class);
+    long blocksToMine = parameters.required(request.getParams(), 0, Long.class);
     while (blocksToMine-- > 0) {
       if (!context.mineNewBlock()) {
         return new JsonRpcSuccessResponse(request.getId(), false);
