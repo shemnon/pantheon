@@ -54,7 +54,7 @@ public class ProtocolSpec<C> {
 
   private final PrecompileContractRegistry precompileContractRegistry;
 
-  private final boolean eip158;
+  private final boolean skipZeroBlockRewards;
 
   /**
    * Creates a new protocol specification instance.
@@ -95,7 +95,7 @@ public class ProtocolSpec<C> {
       final TransactionReceiptType transactionReceiptType,
       final MiningBeneficiaryCalculator miningBeneficiaryCalculator,
       final PrecompileContractRegistry precompileContractRegistry,
-      final boolean eip158) {
+      final boolean skipZeroBlockRewards) {
     this.name = name;
     this.evm = evm;
     this.transactionValidator = transactionValidator;
@@ -112,7 +112,7 @@ public class ProtocolSpec<C> {
     this.blockReward = blockReward;
     this.miningBeneficiaryCalculator = miningBeneficiaryCalculator;
     this.precompileContractRegistry = precompileContractRegistry;
-    this.eip158 = eip158;
+    this.skipZeroBlockRewards = skipZeroBlockRewards;
   }
 
   /**
@@ -242,12 +242,14 @@ public class ProtocolSpec<C> {
   }
 
   /**
-   * EIP 158 prohibits adding new "empty" accounts to the account trie.
+   * Sometimes we apply zero block rewards to the Trie (pre EIP158) sometimes we don't (post EIP158
+   * and all clique nets). The initial behavior was to never apply zero rewards. If a zero reward is
+   * applied it could affect the state tree with a "empty" account.
    *
-   * @return if EIP158 is in effect for this spec.
+   * @return If we skip block rewards when the reward is zero.
    */
-  public boolean isEIP158() {
-    return eip158;
+  public boolean isSkipZeroBlockRewards() {
+    return skipZeroBlockRewards;
   }
 
   public MiningBeneficiaryCalculator getMiningBeneficiaryCalculator() {

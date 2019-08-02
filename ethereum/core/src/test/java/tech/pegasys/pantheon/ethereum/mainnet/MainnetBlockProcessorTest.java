@@ -36,7 +36,7 @@ public class MainnetBlockProcessorTest {
       mock(TransactionReceiptFactory.class);
 
   @Test
-  public void noAccountCreatedWhenBlockRewardIsZero_postEIP158() {
+  public void noAccountCreatedWhenBlockRewardIsZeroAndSkipped() {
     final Blockchain blockchain = new TestBlockchain();
     final MainnetBlockProcessor blockProcessor =
         new MainnetBlockProcessor(
@@ -61,7 +61,7 @@ public class MainnetBlockProcessorTest {
   }
 
   @Test
-  public void accountCreatedWhenBlockRewardIsZero_preEIP158() {
+  public void accountCreatedWhenBlockRewardIsZeroAndNotSkipped() {
     final Blockchain blockchain = new TestBlockchain();
     final MainnetBlockProcessor blockProcessor =
         new MainnetBlockProcessor(

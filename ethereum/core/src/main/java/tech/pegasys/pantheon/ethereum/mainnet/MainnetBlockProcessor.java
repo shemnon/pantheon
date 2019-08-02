@@ -83,7 +83,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
 
   private final Wei blockReward;
 
-  private final boolean eip158;
+  private final boolean skipZeroBlockRewards;
 
   private final MiningBeneficiaryCalculator miningBeneficiaryCalculator;
 
@@ -92,12 +92,12 @@ public class MainnetBlockProcessor implements BlockProcessor {
       final TransactionReceiptFactory transactionReceiptFactory,
       final Wei blockReward,
       final MiningBeneficiaryCalculator miningBeneficiaryCalculator,
-      final boolean eip158) {
+      final boolean skipZeroBlockRewards) {
     this.transactionProcessor = transactionProcessor;
     this.transactionReceiptFactory = transactionReceiptFactory;
     this.blockReward = blockReward;
     this.miningBeneficiaryCalculator = miningBeneficiaryCalculator;
-    this.eip158 = eip158;
+    this.skipZeroBlockRewards = skipZeroBlockRewards;
   }
 
   @Override
@@ -147,7 +147,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
       receipts.add(transactionReceipt);
     }
 
-    if (!rewardCoinbase(worldState, blockHeader, ommers, eip158)) {
+    if (!rewardCoinbase(worldState, blockHeader, ommers, skipZeroBlockRewards)) {
       return Result.failed();
     }
 
@@ -159,8 +159,8 @@ public class MainnetBlockProcessor implements BlockProcessor {
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
       final List<BlockHeader> ommers,
-      final boolean eip158) {
-    if (eip158 && blockReward.isZero()) {
+      final boolean skipZeroBlockRewards) {
+    if (skipZeroBlockRewards && blockReward.isZero()) {
       return true;
     }
     // This reference equality check is deliberate.

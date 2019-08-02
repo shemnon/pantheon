@@ -122,7 +122,7 @@ public abstract class MainnetProtocolSpecs {
         .blockBodyValidatorBuilder(MainnetBlockBodyValidator::new)
         .transactionReceiptFactory(MainnetProtocolSpecs::frontierTransactionReceiptFactory)
         .blockReward(FRONTIER_BLOCK_REWARD)
-        .eip158(false)
+        .skipZeroBlockRewards(false)
         .blockProcessorBuilder(MainnetBlockProcessor::new)
         .blockValidatorBuilder(MainnetBlockValidator::new)
         .blockImporterBuilder(MainnetBlockImporter::new)
@@ -161,14 +161,14 @@ public abstract class MainnetProtocolSpecs {
                 transactionReceiptFactory,
                 blockReward,
                 miningBeneficiaryCalculator,
-                eip158) ->
+                skipZeroBlockRewards) ->
                 new DaoBlockProcessor(
                     new MainnetBlockProcessor(
                         transactionProcessor,
                         transactionReceiptFactory,
                         blockReward,
                         miningBeneficiaryCalculator,
-                        eip158)))
+                        skipZeroBlockRewards)))
         .name("DaoRecoveryInit");
   }
 
@@ -196,7 +196,7 @@ public abstract class MainnetProtocolSpecs {
 
     return tangerineWhistleDefinition(OptionalInt.empty(), configStackSizeLimit)
         .gasCalculator(SpuriousDragonGasCalculator::new)
-        .eip158(true)
+        .skipZeroBlockRewards(true)
         .messageCallProcessorBuilder(
             (evm, precompileContractRegistry) ->
                 new MainnetMessageCallProcessor(

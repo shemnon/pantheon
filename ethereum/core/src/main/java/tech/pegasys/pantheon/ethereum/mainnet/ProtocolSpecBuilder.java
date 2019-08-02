@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 public class ProtocolSpecBuilder<T> {
   private Supplier<GasCalculator> gasCalculatorBuilder;
   private Wei blockReward;
-  private boolean eip158;
+  private boolean skipZeroBlockRewards;
   private BlockHeaderFunctions blockHeaderFunctions;
   private TransactionReceiptFactory transactionReceiptFactory;
   private DifficultyCalculator<T> difficultyCalculator;
@@ -70,8 +70,8 @@ public class ProtocolSpecBuilder<T> {
     return this;
   }
 
-  public ProtocolSpecBuilder<T> eip158(final boolean eip158) {
-    this.eip158 = eip158;
+  public ProtocolSpecBuilder<T> skipZeroBlockRewards(final boolean skipZeroBlockRewards) {
+    this.skipZeroBlockRewards = skipZeroBlockRewards;
     return this;
   }
 
@@ -240,7 +240,7 @@ public class ProtocolSpecBuilder<T> {
         .blockImporterBuilder(blockImporterBuilder)
         .blockHeaderFunctions(blockHeaderFunctions)
         .blockReward(blockReward)
-        .eip158(eip158)
+        .skipZeroBlockRewards(skipZeroBlockRewards)
         .difficultyCalculator(difficultyCalculator)
         .transactionReceiptFactory(transactionReceiptFactory)
         .transactionReceiptType(transactionReceiptType)
@@ -319,7 +319,7 @@ public class ProtocolSpecBuilder<T> {
             transactionReceiptFactory,
             blockReward,
             miningBeneficiaryCalculator,
-            eip158);
+            skipZeroBlockRewards);
     final BlockValidator<T> blockValidator =
         blockValidatorBuilder.apply(blockHeaderValidator, blockBodyValidator, blockProcessor);
     final BlockImporter<T> blockImporter = blockImporterBuilder.apply(blockValidator);
@@ -341,7 +341,7 @@ public class ProtocolSpecBuilder<T> {
         transactionReceiptType,
         miningBeneficiaryCalculator,
         precompileContractRegistry,
-        eip158);
+        skipZeroBlockRewards);
   }
 
   public interface TransactionProcessorBuilder {
@@ -371,7 +371,7 @@ public class ProtocolSpecBuilder<T> {
         TransactionReceiptFactory transactionReceiptFactory,
         Wei blockReward,
         MiningBeneficiaryCalculator miningBeneficiaryCalculator,
-        boolean eip158);
+        boolean skipZeroBlockRewards);
   }
 
   public interface BlockValidatorBuilder<T> {

@@ -138,7 +138,7 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
           processableBlockHeader,
           ommers,
           protocolSpec.getBlockReward(),
-          protocolSpec.isEIP158())) {
+          protocolSpec.isSkipZeroBlockRewards())) {
         LOG.trace("Failed to apply mining reward, exiting.");
         throw new RuntimeException("Failed to apply mining reward.");
       }
@@ -263,11 +263,11 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
       final ProcessableBlockHeader header,
       final List<BlockHeader> ommers,
       final Wei blockReward,
-      boolean isEip158) {
+      boolean skipZeroBlockRewards) {
 
     // TODO(tmm): Added to make this work, should come from blockProcessor.
     final int MAX_GENERATION = 6;
-    if (isEip158 && blockReward.isZero()) {
+    if (skipZeroBlockRewards && blockReward.isZero()) {
       return true;
     }
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
