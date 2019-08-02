@@ -17,7 +17,7 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcHttpService;
 import tech.pegasys.pantheon.ethereum.jsonrpc.JsonRpcMethodsFactory;
 import tech.pegasys.pantheon.ethereum.jsonrpc.health.HealthService;
 import tech.pegasys.pantheon.ethereum.jsonrpc.health.LivenessCheck;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugAccountRangeAt;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugAccountRange;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugStorageRangeAt;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthBlockNumber;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBalance;
@@ -66,12 +66,21 @@ public class RetestethService {
         new TestSetChainParams(retestethContext),
         new TestImportRawBlock(retestethContext, parameters),
         new EthBlockNumber(retestethContext::getBlockchainQueries, true),
-        new EthGetBlockByNumber(retestethContext::getBlockchainQueries, blockResult, parameters, true),
-        new DebugAccountRangeAt(parameters, retestethContext::getBlockchainQueries),
+        new EthGetBlockByNumber(
+            retestethContext::getBlockchainQueries, blockResult, parameters, true),
+        new DebugAccountRange(parameters, retestethContext::getBlockchainQueries),
         new EthGetBalance(retestethContext::getBlockchainQueries, parameters),
         new EthGetCode(retestethContext::getBlockchainQueries, parameters),
-        new EthGetTransactionCount(retestethContext::getBlockchainQueries, retestethContext::getPendingTransactions, parameters, true),
-        new DebugStorageRangeAt(parameters, retestethContext::getBlockchainQueries, retestethContext::getBlockReplay),
+        new EthGetTransactionCount(
+            retestethContext::getBlockchainQueries,
+            retestethContext::getPendingTransactions,
+            parameters,
+            true),
+        new DebugStorageRangeAt(
+            parameters,
+            retestethContext::getBlockchainQueries,
+            retestethContext::getBlockReplay,
+            true),
         new TestModifyTimestamp(retestethContext, parameters),
         new EthSendRawTransaction(retestethContext::getTransactionPool, parameters, true),
         new TestMineBlocks(retestethContext, parameters),

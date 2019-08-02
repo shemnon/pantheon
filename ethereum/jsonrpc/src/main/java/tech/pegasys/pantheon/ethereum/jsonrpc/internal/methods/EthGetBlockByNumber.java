@@ -58,7 +58,6 @@ public class EthGetBlockByNumber extends AbstractBlockParameterMethod {
 
   @Override
   protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
-    final BlockResult result;
     if (isCompleteTransactions(request)) {
       return transactionComplete(blockNumber);
     }

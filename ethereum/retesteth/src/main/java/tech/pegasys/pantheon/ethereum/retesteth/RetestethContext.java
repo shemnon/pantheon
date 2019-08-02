@@ -17,7 +17,6 @@ import tech.pegasys.pantheon.config.JsonUtil;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
 import tech.pegasys.pantheon.ethereum.blockcreation.IncrementingNonceGenerator;
-import tech.pegasys.pantheon.ethereum.chain.Blockchain;
 import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
 import tech.pegasys.pantheon.ethereum.core.Address;
@@ -273,15 +272,15 @@ public class RetestethContext {
     retesethClock.resetTime(epochSeconds);
   }
 
-  public BlockReplay getBlockReplay() {
+  BlockReplay getBlockReplay() {
     return blockReplay;
   }
 
-  public TransactionPool getTransactionPool() {
+  TransactionPool getTransactionPool() {
     return transactionPool;
   }
 
-  public PendingTransactions getPendingTransactions() {
+  PendingTransactions getPendingTransactions() {
     return transactionPool.getPendingTransactions();
   }
 }

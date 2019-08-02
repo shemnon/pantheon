@@ -202,8 +202,7 @@ public class BlockResult implements JsonRpcResult {
 
   @JsonGetter(value = "author")
   @JsonInclude(Include.NON_NULL)
-  public String getCoinbase()
-  {
+  public String getCoinbase() {
     return coinbase;
   }
 }

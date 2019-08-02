@@ -50,8 +50,7 @@ public class BlockResultFactory {
         includeCoinbase);
   }
 
-  public BlockResult transactionHash(
-      final BlockWithMetadata<Hash, Hash> blockWithMetadata) {
+  public BlockResult transactionHash(final BlockWithMetadata<Hash, Hash> blockWithMetadata) {
     return transactionHash(blockWithMetadata, false);
   }
 

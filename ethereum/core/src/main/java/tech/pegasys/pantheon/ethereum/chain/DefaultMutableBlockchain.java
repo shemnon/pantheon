@@ -211,10 +211,7 @@ public class DefaultMutableBlockchain implements MutableBlockchain {
 
     updater.commit();
     if (blockAddedEvent.isNewCanonicalHead()) {
-      chainHeader = block.getHeader();
-      totalDifficulty = td;
-      chainHeadTransactionCount = block.getBody().getTransactions().size();
-      chainHeadOmmerCount = block.getBody().getOmmers().size();
+      updateCacheForNewCanonicalHead(block, td);
     }
 
     return blockAddedEvent;
@@ -368,27 +365,31 @@ public class DefaultMutableBlockchain implements MutableBlockchain {
       return false;
     }
 
-    final Optional<BlockHeader> oldBlockHeader = blockchainStorage.getBlockHeader(blockHash.get());
-    final Optional<BlockBody> oldBlockBody = blockchainStorage.getBlockBody(blockHash.get());
-    if (oldBlockHeader.isEmpty() || oldBlockBody.isEmpty()) {
-      return false;
-    }
-    final Block block = new Block(oldBlockHeader.get(), oldBlockBody.get());
-
     final BlockchainStorage.Updater updater = blockchainStorage.updater();
-    final BlockAddedEvent result = this.handleChainReorg(updater, block);
-    updater.commit();
+    try {
+      final Optional<BlockHeader> oldBlockHeader =
+          blockchainStorage.getBlockHeader(blockHash.get());
+      final Optional<BlockBody> oldBlockBody = blockchainStorage.getBlockBody(blockHash.get());
+      final Block block = new Block(oldBlockHeader.get(), oldBlockBody.get());
 
-    if (result.isNewCanonicalHead()) {
-      chainHeader = block.getHeader();
-      totalDifficulty = calculateTotalDifficulty(block);
-      ;
-      chainHeadTransactionCount = block.getBody().getTransactions().size();
-      chainHeadOmmerCount = block.getBody().getOmmers().size();
+      handleChainReorg(updater, block);
+      updater.commit();
+
+      updateCacheForNewCanonicalHead(block, calculateTotalDifficulty(block));
       return true;
-    } else {
-      return false;
+    } catch (final NoSuchElementException e) {
+      // Any Optional.get() calls in this block should be present, missing data means data
+      // corruption or a bug.
+      updater.rollback();
+      throw new IllegalStateException("Blockchain is missing data that should be present.", e);
     }
+  }
+
+  void updateCacheForNewCanonicalHead(final Block block, final UInt256 uInt256) {
+    chainHeader = block.getHeader();
+    totalDifficulty = uInt256;
+    chainHeadTransactionCount = block.getBody().getTransactions().size();
+    chainHeadOmmerCount = block.getBody().getOmmers().size();
   }
 
   private static void indexTransactionForBlock(

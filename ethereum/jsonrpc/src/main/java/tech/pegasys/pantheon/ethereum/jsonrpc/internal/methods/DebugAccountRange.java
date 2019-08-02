@@ -13,27 +13,31 @@
 package tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods;
 
 import tech.pegasys.pantheon.ethereum.core.Account;
+import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
-import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.BlockParameter;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.BlockParameterOrBlockHash;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockWithMetadata;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.queries.BlockchainQueries;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.results.DebugAccountRangeAtResult;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Suppliers;
 
-public class DebugAccountRange extends AbstractBlockParameterMethod {
+public class DebugAccountRange implements JsonRpcMethod {
 
-  final JsonRpcParameter parameters;
+  private final JsonRpcParameter parameters;
+  private final Supplier<BlockchainQueries> blockchainQueries;
 
   public DebugAccountRange(
       final JsonRpcParameter parameters, final BlockchainQueries blockchainQueries) {
@@ -42,38 +46,43 @@ public class DebugAccountRange extends AbstractBlockParameterMethod {
 
   public DebugAccountRange(
       final JsonRpcParameter parameters, final Supplier<BlockchainQueries> blockchainQueries) {
-    super(blockchainQueries, parameters);
     this.parameters = parameters;
-  }
-
-  @Override
-  protected BlockParameter blockParameter(final JsonRpcRequest request) {
-    return parameters.required(request.getParams(), 0, BlockParameter.class);
+    this.blockchainQueries = blockchainQueries;
   }
 
   @Override
   public String getName() {
-    return "debug_accountRange";
+    // TODO(shemnon) 5229b899 is the last stable commit of retesteth, after this they rename the
+    //  method to just "debug_accountRange".  Once the tool is stable we will support the new name.
+    return "debug_accountRangeAt";
   }
 
   @Override
-  protected Object resultByBlockNumber(final JsonRpcRequest request, final long blockNumber) {
+  public JsonRpcResponse response(final JsonRpcRequest request) {
     final Object[] params = request.getParams();
+    final BlockParameterOrBlockHash blockParameterOrBlockHash =
+        parameters.required(params, 0, BlockParameterOrBlockHash.class);
     final String addressHash = parameters.required(params, 2, String.class);
     final int maxResults = parameters.required(params, 3, Integer.TYPE);
 
-    final Optional<BlockWithMetadata<Hash, Hash>> block =
-        getBlockchainQueries().blockByNumberWithTxHashes(blockNumber);
-    if (block.isEmpty()) {
-      return new DebugAccountRangeAtResult(Map.of(), Bytes32.ZERO.toUnprefixedString());
+    final Optional<Hash> blockHashOptional = hashFromParameter(blockParameterOrBlockHash);
+    if (blockHashOptional.isEmpty()) {
+      return emptyResponse(request);
+    }
+    final Hash blockHash = blockHashOptional.get();
+    final Optional<BlockHeader> blockHeaderOptional =
+        blockchainQueries.get().blockByHash(blockHash).map(BlockWithMetadata::getHeader);
+    if (blockHeaderOptional.isEmpty()) {
+      return emptyResponse(request);
     }
 
     // TODO deal with mid-block locations
 
-    final Optional<MutableWorldState> state = getBlockchainQueries().getWorldState(blockNumber);
+    final Optional<MutableWorldState> state =
+        blockchainQueries.get().getWorldState(blockHeaderOptional.get().getNumber());
 
     if (state.isEmpty()) {
-      return new DebugAccountRangeAtResult(Map.of(), Bytes32.ZERO.toUnprefixedString());
+      return emptyResponse(request);
     } else {
       final List<Account> accounts =
           state
@@ -86,13 +95,35 @@ public class DebugAccountRange extends AbstractBlockParameterMethod {
         accounts.remove(maxResults);
       }
 
-      return new DebugAccountRangeAtResult(
-          accounts.stream()
-              .collect(
-                  Collectors.toMap(
-                      account -> account.getAddressHash().toUnprefixedString(),
-                      account -> account.getAddress().toUnprefixedString())),
-          nextKey.toUnprefixedString());
+      return new JsonRpcSuccessResponse(
+          request.getId(),
+          new DebugAccountRangeAtResult(
+              accounts.stream()
+                  .collect(
+                      Collectors.toMap(
+                          account -> account.getAddressHash().toString(),
+                          account -> account.getAddress().toString())),
+              nextKey.toString()));
     }
+  }
+
+  private Optional<Hash> hashFromParameter(final BlockParameterOrBlockHash blockParameter) {
+    if (blockParameter.isEarliest()) {
+      return blockchainQueries.get().getBlockHashByNumber(0);
+    } else if (blockParameter.isLatest() || blockParameter.isPending()) {
+      return blockchainQueries
+          .get()
+          .latestBlockWithTxHashes()
+          .map(block -> block.getHeader().getHash());
+    } else if (blockParameter.isNumeric()) {
+      return blockchainQueries.get().getBlockHashByNumber(blockParameter.getNumber().getAsLong());
+    } else {
+      return blockParameter.getHash();
+    }
+  }
+
+  private JsonRpcSuccessResponse emptyResponse(final JsonRpcRequest request) {
+    return new JsonRpcSuccessResponse(
+        request.getId(), new DebugAccountRangeAtResult(Collections.emptyNavigableMap(), null));
   }
 }
