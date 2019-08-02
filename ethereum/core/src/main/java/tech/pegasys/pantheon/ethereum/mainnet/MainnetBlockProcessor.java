@@ -163,7 +163,6 @@ public class MainnetBlockProcessor implements BlockProcessor {
     if (skipZeroBlockRewards && blockReward.isZero()) {
       return true;
     }
-    // This reference equality check is deliberate.
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
     final MutableAccount coinbase = updater.getOrCreate(header.getCoinbase());

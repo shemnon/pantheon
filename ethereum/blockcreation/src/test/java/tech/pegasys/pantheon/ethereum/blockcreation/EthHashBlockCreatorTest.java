@@ -145,7 +145,7 @@ public class EthHashBlockCreatorTest {
   }
 
   @Test
-  public void createMainnetBlock1_noReward() {
+  public void rewardBeneficiary_zeroReward_skipZeroRewardsFalse() {
     final ExecutionContextTestFixture executionContextTestFixture =
         ExecutionContextTestFixture.builder()
             .protocolSchedule(
@@ -200,5 +200,62 @@ public class EthHashBlockCreatorTest {
 
     assertThat(mutableWorldState.get(BLOCK_1_COINBASE)).isNotNull();
     assertThat(mutableWorldState.get(BLOCK_1_COINBASE).getBalance()).isEqualTo(Wei.ZERO);
+  }
+
+  @Test
+  public void rewardBeneficiary_zeroReward_skipZeroRewardsTrue() {
+    final ExecutionContextTestFixture executionContextTestFixture =
+        ExecutionContextTestFixture.builder()
+            .protocolSchedule(
+                new ProtocolScheduleBuilder<>(
+                        GenesisConfigFile.fromConfig(
+                                "{\"config\": {\"ethash\": {\"fixeddifficulty\":1}}}")
+                            .getConfigOptions(),
+                        BigInteger.valueOf(42),
+                        Function.identity(),
+                        PrivacyParameters.DEFAULT,
+                        false)
+                    .createProtocolSchedule())
+            .build();
+
+    final EthHashSolver solver = new EthHashSolver(Lists.newArrayList(BLOCK_1_NONCE), new Light());
+
+    final PendingTransactions pendingTransactions =
+        new PendingTransactions(
+            TransactionPoolConfiguration.DEFAULT_TX_RETENTION_HOURS,
+            1,
+            TestClock.fixed(),
+            metricsSystem);
+
+    final EthHashBlockCreator blockCreator =
+        new EthHashBlockCreator(
+            BLOCK_1_COINBASE,
+            parent -> BLOCK_1_EXTRA_DATA,
+            pendingTransactions,
+            executionContextTestFixture.getProtocolContext(),
+            executionContextTestFixture.getProtocolSchedule(),
+            gasLimit -> gasLimit,
+            solver,
+            Wei.ZERO,
+            executionContextTestFixture.getBlockchain().getChainHeadHeader());
+
+    final MutableWorldState mutableWorldState =
+        executionContextTestFixture.getStateArchive().getMutable();
+    assertThat(mutableWorldState.get(BLOCK_1_COINBASE)).isNull();
+
+    final ProcessableBlockHeader header =
+        BlockHeaderBuilder.create()
+            .parentHash(Hash.ZERO)
+            .coinbase(BLOCK_1_COINBASE)
+            .difficulty(UInt256.ONE)
+            .number(1)
+            .gasLimit(1)
+            .timestamp(1)
+            .buildProcessableBlockHeader();
+
+    blockCreator.rewardBeneficiary(
+        mutableWorldState, header, Collections.emptyList(), Wei.ZERO, true);
+
+    assertThat(mutableWorldState.get(BLOCK_1_COINBASE)).isNull();
   }
 }
