@@ -18,6 +18,7 @@ import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.DebugAccountRange
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthBlockNumber;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthCall;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBalance;
+import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBlockByNumber;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBlockTransactionCountByHash;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetBlockTransactionCountByNumber;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.EthGetCode;
@@ -79,6 +80,9 @@ public class EthJsonRpcHttpBySpecTest extends AbstractEthJsonRpcHttpServiceTest 
     specs.put(EthGetBalance.class, "eth_getBalance_illegalRangeGreaterThan");
     specs.put(EthGetBalance.class, "eth_getBalance_illegalRangeLessThan");
     specs.put(EthGetBalance.class, "eth_getBalance_invalidParams");
+
+    specs.put(EthGetBlockByNumber.class, "eth_getBlockByNumber_complete");
+    specs.put(EthGetBlockByNumber.class, "eth_getBlockByNumber_hashes");
 
     specs.put(EthGetStorageAt.class, "eth_getStorageAt_latest");
     specs.put(EthGetStorageAt.class, "eth_getStorageAt_invalidParams");

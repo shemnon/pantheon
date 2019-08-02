@@ -30,17 +30,27 @@ import tech.pegasys.pantheon.util.bytes.Bytes32;
 
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
 
 public class DebugStorageRangeAt implements JsonRpcMethod {
 
   private final JsonRpcParameter parameters;
-  private final BlockchainQueries blockchainQueries;
-  private final BlockReplay blockReplay;
+  private final Supplier<BlockchainQueries> blockchainQueries;
+  private final Supplier<BlockReplay> blockReplay;
 
   public DebugStorageRangeAt(
       final JsonRpcParameter parameters,
       final BlockchainQueries blockchainQueries,
       final BlockReplay blockReplay) {
+    this(parameters, Suppliers.ofInstance(blockchainQueries), Suppliers.ofInstance(blockReplay));
+  }
+
+  public DebugStorageRangeAt(
+      final JsonRpcParameter parameters,
+      final Supplier<BlockchainQueries> blockchainQueries,
+      final Supplier<BlockReplay> blockReplay) {
     this.parameters = parameters;
     this.blockchainQueries = blockchainQueries;
     this.blockReplay = blockReplay;
@@ -60,11 +70,12 @@ public class DebugStorageRangeAt implements JsonRpcMethod {
     final int limit = parameters.required(request.getParams(), 4, Integer.class);
 
     final Optional<TransactionWithMetadata> optional =
-        blockchainQueries.transactionByBlockHashAndIndex(blockHash, transactionIndex);
+        blockchainQueries.get().transactionByBlockHashAndIndex(blockHash, transactionIndex);
     return optional
         .map(
             transactionWithMetadata ->
                 (blockReplay
+                    .get()
                     .afterTransactionInBlock(
                         blockHash,
                         transactionWithMetadata.getTransaction().hash(),
