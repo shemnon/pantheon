@@ -76,6 +76,7 @@ public class ProtocolSpec<C> {
    * @param transactionReceiptType the type of transaction receipt to use, one of
    * @param miningBeneficiaryCalculator determines to whom mining proceeds are paid
    * @param precompileContractRegistry all the pre-compiled contracts added
+   * @param skipZeroBlockRewards should rewards be skipped if it is zero
    */
   public ProtocolSpec(
       final String name,
