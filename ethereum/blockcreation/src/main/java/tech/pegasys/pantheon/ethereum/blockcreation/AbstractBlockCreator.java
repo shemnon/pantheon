@@ -31,6 +31,7 @@ import tech.pegasys.pantheon.ethereum.mainnet.BodyValidation;
 import tech.pegasys.pantheon.ethereum.mainnet.DifficultyCalculator;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetBlockProcessor.TransactionReceiptFactory;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
+import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 import tech.pegasys.pantheon.ethereum.mainnet.ScheduleBasedBlockHeaderFunctions;
 import tech.pegasys.pantheon.ethereum.mainnet.TransactionProcessor;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -129,10 +130,15 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
 
       throwIfStopped();
 
-      final Wei blockReward =
-          protocolSchedule.getByBlockNumber(processableBlockHeader.getNumber()).getBlockReward();
+      final ProtocolSpec<C> protocolSpec =
+          protocolSchedule.getByBlockNumber(processableBlockHeader.getNumber());
 
-      if (!rewardBeneficiary(disposableWorldState, processableBlockHeader, ommers, blockReward)) {
+      if (!rewardBeneficiary(
+          disposableWorldState,
+          processableBlockHeader,
+          ommers,
+          protocolSpec.getBlockReward(),
+          protocolSpec.isSkipZeroBlockRewards())) {
         LOG.trace("Failed to apply mining reward, exiting.");
         throw new RuntimeException("Failed to apply mining reward.");
       }
@@ -245,27 +251,25 @@ public abstract class AbstractBlockCreator<C> implements AsyncBlockCreator {
     return isCancelled.get();
   }
 
-  protected void throwIfStopped() throws CancellationException {
+  private void throwIfStopped() throws CancellationException {
     if (isCancelled.get()) {
       throw new CancellationException();
     }
   }
 
   /* Copied from BlockProcessor (with modifications). */
-  @SuppressWarnings("ReferenceEquality")
-  private boolean rewardBeneficiary(
+  boolean rewardBeneficiary(
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
       final List<BlockHeader> ommers,
-      final Wei blockRewardSpec) {
+      final Wei blockReward,
+      boolean skipZeroBlockRewards) {
 
     // TODO(tmm): Added to make this work, should come from blockProcessor.
     final int MAX_GENERATION = 6;
-    if (blockRewardSpec.isZero()) {
+    if (skipZeroBlockRewards && blockReward.isZero()) {
       return true;
     }
-    // This reference equality check is deliberate.
-    final Wei blockReward = blockRewardSpec == Wei.MAX_WEI ? Wei.ZERO : blockRewardSpec;
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));
     final WorldUpdater updater = worldState.updater();
     final MutableAccount beneficiary = updater.getOrCreate(miningBeneficiary);
