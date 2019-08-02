@@ -108,9 +108,6 @@ public class TestSetChainParams implements JsonRpcMethod {
     // Whether sealEngine is NoProof, Ethash, or NoReward the genesis file is the same
     final JsonObject ethash = new JsonObject();
     config.put("ethash", ethash);
-    //    if (chainParamsJson.getString("sealEngine", "").equals("NoProof")) {
-    //    ethash.put("fixedDifficulty", 1);
-    //    }
 
     maybeMoveToNumber(params, "homesteadForkBlock", config, "homesteadBlock");
     maybeMoveToNumber(params, "EIP150ForkBlock", config, "eip150Block");

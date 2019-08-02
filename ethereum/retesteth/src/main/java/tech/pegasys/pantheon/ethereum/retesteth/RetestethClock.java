@@ -51,8 +51,4 @@ public class RetestethClock extends Clock {
   void resetTime(final long time) {
     fixedInstant = Optional.of(Instant.ofEpochSecond(time));
   }
-
-  public void tickSeconds(final long seconds) {
-    fixedInstant = Optional.of(Instant.ofEpochSecond(instant().getEpochSecond() + seconds));
-  }
 }
