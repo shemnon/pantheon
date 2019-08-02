@@ -13,6 +13,7 @@
 package tech.pegasys.pantheon.ethereum.retesteth;
 
 import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
+import tech.pegasys.pantheon.config.JsonUtil;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
 import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
 import tech.pegasys.pantheon.ethereum.blockcreation.IncrementingNonceGenerator;
@@ -50,14 +51,13 @@ import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Functions;
-import io.vertx.core.json.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,7 +105,8 @@ public class RetestethContext {
 
   private boolean buildContext(
       final String genesisConfigString, final String sealEngine, final Optional<Long> clockTime) {
-    final JsonObject genesisConfig = normalizeKeys(new JsonObject(genesisConfigString));
+    final ObjectNode genesisConfig =
+        normalizeKeys(JsonUtil.objectNodeFromString(genesisConfigString));
 
     retesethClock = new RetestethClock();
     clockTime.ifPresent(retesethClock::resetTime);
@@ -113,7 +114,7 @@ public class RetestethContext {
 
     protocolSchedule =
         MainnetProtocolSchedule.fromConfig(
-            JsonGenesisConfigOptions.fromJsonObject(genesisConfig.getJsonObject("config")));
+            JsonGenesisConfigOptions.fromJsonObject((ObjectNode) genesisConfig.get("config")));
     if ("NoReward".equalsIgnoreCase(sealEngine)) {
       protocolSchedule = new NoRewardProtocolScheduleWrapper<>(protocolSchedule);
     }
@@ -133,7 +134,7 @@ public class RetestethContext {
 
     blockchainQueries = new BlockchainQueries(blockchain, worldStateArchive);
 
-    final String sealengine = genesisConfig.getString("sealengine", "");
+    final String sealengine = JsonUtil.getString(genesisConfig, "sealengine", "");
     headerValidationMode =
         "NoProof".equals(sealengine) || "NoReward".equals(sealEngine)
             ? HeaderValidationMode.LIGHT
@@ -209,24 +210,25 @@ public class RetestethContext {
         new NoOpMetricsSystem());
   }
 
-  @SuppressWarnings("unchecked")
-  private static JsonObject normalizeKeys(final JsonObject genesis) {
-    final Map<String, Object> normalized = new HashMap<>();
+  /* Converts all to lowercase for easier lookup since the keys in a 'genesis.json' file are assumed
+   * case insensitive.
+   */
+  private static ObjectNode normalizeKeys(final ObjectNode genesis) {
+    final ObjectNode normalized = JsonUtil.createEmptyObjectNode();
     genesis
-        .getMap()
-        .forEach(
-            (key, value) -> {
+        .fields()
+        .forEachRemaining(
+            entry -> {
+              final String key = entry.getKey();
+              final JsonNode value = entry.getValue();
               final String normalizedKey = key.toLowerCase(Locale.US);
-              if (value instanceof JsonObject) {
-                normalized.put(normalizedKey, normalizeKeys((JsonObject) value));
-              } else if (value instanceof Map) {
-                normalized.put(
-                    normalizedKey, normalizeKeys(new JsonObject((Map<String, Object>) value)));
+              if (value instanceof ObjectNode) {
+                normalized.set(normalizedKey, normalizeKeys((ObjectNode) value));
               } else {
-                normalized.put(normalizedKey, value);
+                normalized.set(normalizedKey, value);
               }
             });
-    return new JsonObject(normalized);
+    return normalized;
   }
 
   public ProtocolSchedule<Void> getProtocolSchedule() {
