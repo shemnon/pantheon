@@ -198,6 +198,9 @@ public class RetestethContext {
             blockchain.getChainHeadHeader());
     final Block block = blockCreator.createBlock(retesethClock.instant().getEpochSecond());
 
+    // advance clock so next mine won't hit the same timestamp
+    retesethClock.advanceSeconds(1);
+
     final BlockImporter<Void> blockImporter =
         protocolSchedule.getByBlockNumber(blockchain.getChainHeadBlockNumber()).getBlockImporter();
     return blockImporter.importBlock(
