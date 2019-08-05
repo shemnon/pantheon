@@ -66,6 +66,8 @@ import org.apache.logging.log4j.Logger;
 public class RetestethContext {
 
   private static final Logger LOG = LogManager.getLogger();
+  private static final EthHasher NO_WORK_HASHER =
+      (final byte[] buffer, final long nonce, final long number, final byte[] headerHash) -> {};
 
   private final ReentrantLock contextLock = new ReentrantLock();
   private Address coinbase;
@@ -145,8 +147,8 @@ public class RetestethContext {
 
     final Iterable<Long> nonceGenerator = new IncrementingNonceGenerator(0);
     ethHashSolver =
-        "NoProof".equals(sealengine) || "NoReward".equals(sealEngine)
-            ? new NoProofSolver(nonceGenerator)
+        ("NoProof".equals(sealengine) || "NoReward".equals(sealEngine))
+            ? new EthHashSolver(nonceGenerator, NO_WORK_HASHER)
             : new EthHashSolver(nonceGenerator, new EthHasher.Light());
 
     blockReplay =
