@@ -14,6 +14,7 @@ package tech.pegasys.pantheon.services.kvstore;
 
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -22,11 +23,37 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
 
 public class InMemoryKeyValueStorage implements KeyValueStorage {
 
   private final Map<BytesValue, BytesValue> hashValueStore = new HashMap<>();
   private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+  @Override
+  public void clear() {
+    final Lock lock = rwLock.writeLock();
+    lock.lock();
+    try {
+      hashValueStore.clear();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  public void close() {}
+
+  @Override
+  public boolean containsKey(final BytesValue key) throws StorageException {
+    final Lock lock = rwLock.readLock();
+    lock.lock();
+    try {
+      return hashValueStore.containsKey(key);
+    } finally {
+      lock.unlock();
+    }
+  }
 
   @Override
   public Optional<BytesValue> get(final BytesValue key) {
@@ -40,12 +67,19 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
   }
 
   @Override
+  public long removeUnless(final Predicate<BytesValue> inUseCheck) {
+    hashValueStore.keySet().removeIf(key -> !inUseCheck.test(key));
+    return 0;
+  }
+
+  @Override
   public Transaction startTransaction() {
     return new InMemoryTransaction();
   }
 
-  @Override
-  public void close() {}
+  public Set<BytesValue> keySet() {
+    return Collections.unmodifiableSet(new HashSet<>(hashValueStore.keySet()));
+  }
 
   private class InMemoryTransaction extends AbstractTransaction {
 

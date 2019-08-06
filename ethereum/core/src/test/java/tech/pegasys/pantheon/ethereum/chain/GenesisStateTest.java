@@ -13,16 +13,15 @@
 package tech.pegasys.pantheon.ethereum.chain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static tech.pegasys.pantheon.ethereum.core.InMemoryStorageProvider.createInMemoryWorldState;
 
 import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Hash;
+import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.rlp.BytesValueRLPOutput;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStorageWorldStateStorage;
-import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
-import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
@@ -60,9 +59,7 @@ public final class GenesisStateTest {
     assertThat(header.getOmmersHash()).isEqualTo(Hash.EMPTY_LIST_HASH);
     assertThat(header.getExtraData()).isEqualTo(BytesValue.EMPTY);
     assertThat(header.getParentHash()).isEqualTo(Hash.ZERO);
-    final DefaultMutableWorldState worldState =
-        new DefaultMutableWorldState(
-            new KeyValueStorageWorldStateStorage(new InMemoryKeyValueStorage()));
+    final MutableWorldState worldState = createInMemoryWorldState();
     genesisState.writeStateTo(worldState);
     final Account first =
         worldState.get(Address.fromHexString("0x0000000000000000000000000000000000000001"));
@@ -89,25 +86,21 @@ public final class GenesisStateTest {
     assertThat(header.getParentHash()).isEqualTo(Hash.ZERO);
   }
 
-  @Test
-  public void createFromJsonWithContract() throws Exception {
+  private void assertContractInvariants(
+      final String sourceFile, final String blockHash, final int version) throws Exception {
     final GenesisState genesisState =
         GenesisState.fromJson(
-            Resources.toString(GenesisStateTest.class.getResource("genesis3.json"), Charsets.UTF_8),
+            Resources.toString(GenesisStateTest.class.getResource(sourceFile), Charsets.UTF_8),
             MainnetProtocolSchedule.create());
     final BlockHeader header = genesisState.getBlock().getHeader();
-    assertThat(header.getHash())
-        .isEqualTo(
-            Hash.fromHexString(
-                "0xe7fd8db206dcaf066b7c97b8a42a0abc18653613560748557ab44868652a78b6"));
+    assertThat(header.getHash()).isEqualTo(Hash.fromHexString(blockHash));
 
-    final DefaultMutableWorldState worldState =
-        new DefaultMutableWorldState(
-            new KeyValueStorageWorldStateStorage(new InMemoryKeyValueStorage()));
+    final MutableWorldState worldState = createInMemoryWorldState();
     genesisState.writeStateTo(worldState);
     final Account contract =
         worldState.get(Address.fromHexString("0x3850000000000000000000000000000000000000"));
     assertThat(contract.getCode()).isEqualTo(BytesValue.fromHexString(EXPECTED_CODE));
+    assertThat(contract.getVersion()).isEqualTo(version);
     assertStorageValue(
         contract,
         "c2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85d",
@@ -116,6 +109,32 @@ public final class GenesisStateTest {
         contract,
         "c2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f860",
         "000000000000000000000000385ef55e292fa39cf5ffbad99f534294565519ba");
+  }
+
+  @Test
+  public void createFromJsonWithContract() throws Exception {
+    assertContractInvariants(
+        "genesis3.json", "0xe7fd8db206dcaf066b7c97b8a42a0abc18653613560748557ab44868652a78b6", 0);
+  }
+
+  @Test
+  public void createFromJsonWithVersion() throws Exception {
+    assertContractInvariants(
+        "genesis4.json", "0x3224ddae856381f5fb67492b4561ecbc0cb1e9e50e6cf3238f6e049fe95a8604", 1);
+  }
+
+  @Test
+  public void createFromJsonWithNonce() throws Exception {
+    final GenesisState genesisState =
+        GenesisState.fromJson(
+            Resources.toString(
+                GenesisStateTest.class.getResource("genesisNonce.json"), Charsets.UTF_8),
+            MainnetProtocolSchedule.create());
+    final BlockHeader header = genesisState.getBlock().getHeader();
+    assertThat(header.getHash())
+        .isEqualTo(
+            Hash.fromHexString(
+                "0x36750291f1a8429aeb553a790dc2d149d04dbba0ca4cfc7fd5eb12d478117c9f"));
   }
 
   @Test

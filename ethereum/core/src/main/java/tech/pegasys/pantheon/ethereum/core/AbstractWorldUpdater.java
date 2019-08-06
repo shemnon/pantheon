@@ -163,6 +163,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
 
     private long nonce;
     private Wei balance;
+    private int version;
 
     @Nullable private BytesValue updatedCode; // Null if the underlying code has not been updated.
     @Nullable private Hash updatedCodeHash;
@@ -179,6 +180,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
 
       this.nonce = 0;
       this.balance = Wei.ZERO;
+      this.version = Account.DEFAULT_VERSION;
 
       this.updatedCode = BytesValue.EMPTY;
       this.updatedStorage = new TreeMap<>();
@@ -192,6 +194,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
 
       this.nonce = account.getNonce();
       this.balance = account.getBalance();
+      this.version = account.getVersion();
 
       this.updatedStorage = new TreeMap<>();
     }
@@ -284,6 +287,16 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
     }
 
     @Override
+    public void setVersion(final int version) {
+      this.version = version;
+    }
+
+    @Override
+    public int getVersion() {
+      return version;
+    }
+
+    @Override
     public UInt256 getStorageValue(final UInt256 key) {
       final UInt256 value = updatedStorage.get(key);
       if (value != null) {
@@ -306,21 +319,18 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
     }
 
     @Override
-    public NavigableMap<Bytes32, UInt256> storageEntriesFrom(
+    public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
         final Bytes32 startKeyHash, final int limit) {
-      final NavigableMap<Bytes32, UInt256> entries;
+      final NavigableMap<Bytes32, AccountStorageEntry> entries;
       if (account != null) {
         entries = account.storageEntriesFrom(startKeyHash, limit);
       } else {
         entries = new TreeMap<>();
       }
-      updatedStorage.forEach(
-          (key, value) -> {
-            final Hash hashedKey = Hash.hash(key.getBytes());
-            if (hashedKey.compareTo(startKeyHash) >= 0) {
-              entries.put(hashedKey, value);
-            }
-          });
+      updatedStorage.entrySet().stream()
+          .map(entry -> AccountStorageEntry.forKeyAndValue(entry.getKey(), entry.getValue()))
+          .filter(entry -> entry.getKeyHash().compareTo(startKeyHash) >= 0)
+          .forEach(entry -> entries.put(entry.getKeyHash(), entry));
 
       while (entries.size() > limit) {
         entries.remove(entries.lastKey());
@@ -358,7 +368,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
   static class StackedUpdater<W extends WorldView, A extends Account>
       extends AbstractWorldUpdater<AbstractWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
-    protected StackedUpdater(final AbstractWorldUpdater<W, A> world) {
+    StackedUpdater(final AbstractWorldUpdater<W, A> world) {
       super(world);
     }
 
@@ -419,6 +429,7 @@ public abstract class AbstractWorldUpdater<W extends WorldView, A extends Accoun
         existing.setBalance(update.getBalance());
         if (update.codeWasUpdated()) {
           existing.setCode(update.getCode());
+          existing.setVersion(update.getVersion());
         }
         if (update.getStorageWasCleared()) {
           existing.clearStorage();

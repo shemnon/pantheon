@@ -23,8 +23,9 @@ import tech.pegasys.pantheon.ethereum.core.Transaction;
 import tech.pegasys.pantheon.ethereum.core.WorldState;
 import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
 import tech.pegasys.pantheon.ethereum.mainnet.TransactionProcessor;
+import tech.pegasys.pantheon.ethereum.mainnet.TransactionValidationParams;
 import tech.pegasys.pantheon.ethereum.rlp.RLP;
-import tech.pegasys.pantheon.ethereum.worldstate.DebuggableMutableWorldState;
+import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
 import tech.pegasys.pantheon.testutil.JsonTestParameters;
 
 import java.util.Arrays;
@@ -80,7 +81,8 @@ public class GeneralStateReferenceTestTools {
       params.blacklistAll();
     }
     // Known incorrect test.
-    params.blacklist("RevertPrecompiledTouch-(EIP158|Byzantium)");
+    params.blacklist(
+        "RevertPrecompiledTouch(_storage)?-(EIP158|Byzantium|Constantinople|ConstantinopleFix)");
     // Gas integer value is too large to construct a valid transaction.
     params.blacklist("OverflowGasRequire");
     // Consumes a huge amount of memory
@@ -96,7 +98,7 @@ public class GeneralStateReferenceTestTools {
     final WorldState initialWorldState = spec.initialWorldState();
     final Transaction transaction = spec.transaction();
 
-    final MutableWorldState worldState = new DebuggableMutableWorldState(initialWorldState);
+    final MutableWorldState worldState = new DefaultMutableWorldState(initialWorldState);
     // Several of the GeneralStateTests check if the transaction could potentially
     // consume more gas than is left for the block it's attempted to be included in.
     // This check is performed within the `BlockImporter` rather than inside the
@@ -117,7 +119,7 @@ public class GeneralStateReferenceTestTools {
             blockHeader.getCoinbase(),
             new BlockHashLookup(blockHeader, blockchain),
             false,
-            false);
+            TransactionValidationParams.processingBlock());
     final Account coinbase = worldStateUpdater.getOrCreate(spec.blockHeader().getCoinbase());
     if (coinbase != null && coinbase.isEmpty() && shouldClearEmptyAccounts(spec.eip())) {
       worldStateUpdater.deleteAccount(coinbase.getAddress());

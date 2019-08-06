@@ -37,6 +37,7 @@ import tech.pegasys.pantheon.ethereum.core.MiningParameters;
 import tech.pegasys.pantheon.ethereum.core.Util;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.eth.transactions.PendingTransactions;
+import tech.pegasys.pantheon.ethereum.eth.transactions.TransactionPoolConfiguration;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.testutil.TestClock;
@@ -47,7 +48,6 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 
 import com.google.common.collect.Lists;
-import io.vertx.core.json.JsonObject;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -55,7 +55,7 @@ public class CliqueMinerExecutorTest {
 
   private static final int EPOCH_LENGTH = 10;
   private static final GenesisConfigOptions GENESIS_CONFIG_OPTIONS =
-      GenesisConfigFile.fromConfig(new JsonObject()).getConfigOptions();
+      GenesisConfigFile.fromConfig("{}").getConfigOptions();
   private final KeyPair proposerKeyPair = KeyPair.generate();
   private final Random random = new Random(21341234L);
   private Address localAddress;
@@ -89,9 +89,9 @@ public class CliqueMinerExecutorTest {
         new CliqueMinerExecutor(
             cliqueProtocolContext,
             Executors.newSingleThreadExecutor(),
-            CliqueProtocolSchedule.create(GENESIS_CONFIG_OPTIONS, proposerKeyPair),
+            CliqueProtocolSchedule.create(GENESIS_CONFIG_OPTIONS, proposerKeyPair, false),
             new PendingTransactions(
-                PendingTransactions.DEFAULT_TX_RETENTION_HOURS,
+                TransactionPoolConfiguration.DEFAULT_TX_RETENTION_HOURS,
                 1,
                 TestClock.fixed(),
                 metricsSystem),
@@ -126,9 +126,9 @@ public class CliqueMinerExecutorTest {
         new CliqueMinerExecutor(
             cliqueProtocolContext,
             Executors.newSingleThreadExecutor(),
-            CliqueProtocolSchedule.create(GENESIS_CONFIG_OPTIONS, proposerKeyPair),
+            CliqueProtocolSchedule.create(GENESIS_CONFIG_OPTIONS, proposerKeyPair, false),
             new PendingTransactions(
-                PendingTransactions.DEFAULT_TX_RETENTION_HOURS,
+                TransactionPoolConfiguration.DEFAULT_TX_RETENTION_HOURS,
                 1,
                 TestClock.fixed(),
                 metricsSystem),
@@ -163,9 +163,9 @@ public class CliqueMinerExecutorTest {
         new CliqueMinerExecutor(
             cliqueProtocolContext,
             Executors.newSingleThreadExecutor(),
-            CliqueProtocolSchedule.create(GENESIS_CONFIG_OPTIONS, proposerKeyPair),
+            CliqueProtocolSchedule.create(GENESIS_CONFIG_OPTIONS, proposerKeyPair, false),
             new PendingTransactions(
-                PendingTransactions.DEFAULT_TX_RETENTION_HOURS,
+                TransactionPoolConfiguration.DEFAULT_TX_RETENTION_HOURS,
                 1,
                 TestClock.fixed(),
                 metricsSystem),

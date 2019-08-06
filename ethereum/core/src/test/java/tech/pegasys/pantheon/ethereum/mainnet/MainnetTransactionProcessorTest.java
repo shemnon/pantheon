@@ -19,6 +19,7 @@ import static tech.pegasys.pantheon.ethereum.mainnet.ValidationResult.invalid;
 import static tech.pegasys.pantheon.ethereum.mainnet.ValidationResult.valid;
 
 import tech.pegasys.pantheon.ethereum.chain.Blockchain;
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.ProcessableBlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Transaction;
@@ -61,17 +62,17 @@ public class MainnetTransactionProcessorTest {
             contractCreationProcessor,
             messageCallProcessor,
             false,
-            MAX_STACK_SIZE);
+            MAX_STACK_SIZE,
+            Account.DEFAULT_VERSION);
   }
 
   @Test
-  public void
-      shouldCallTransactionValidatorWithExpectedTransactionValidationParamsWhenNotPersistingState() {
+  public void shouldCallTransactionValidatorWithExpectedTransactionValidationParams() {
     final ArgumentCaptor<TransactionValidationParams> txValidationParamCaptor =
         transactionValidationParamCaptor();
 
     final TransactionValidationParams expectedValidationParams =
-        new TransactionValidationParams.Builder().checkOnchainPermissions(false).build();
+        new TransactionValidationParams.Builder().build();
 
     transactionProcessor.processTransaction(
         blockchain,
@@ -81,30 +82,7 @@ public class MainnetTransactionProcessorTest {
         Address.fromHexString("1"),
         blockHashLookup,
         false,
-        false);
-
-    assertThat(txValidationParamCaptor.getValue())
-        .isEqualToComparingFieldByField(expectedValidationParams);
-  }
-
-  @Test
-  public void
-      shouldCallTransactionValidatorWithExpectedTransactionValidationParamsWhenPersistingState() {
-    final ArgumentCaptor<TransactionValidationParams> txValidationParamCaptor =
-        transactionValidationParamCaptor();
-
-    final TransactionValidationParams expectedValidationParams =
-        new TransactionValidationParams.Builder().checkOnchainPermissions(true).build();
-
-    transactionProcessor.processTransaction(
-        blockchain,
-        worldState,
-        blockHeader,
-        transaction,
-        Address.fromHexString("1"),
-        blockHashLookup,
-        true,
-        true);
+        new TransactionValidationParams.Builder().build());
 
     assertThat(txValidationParamCaptor.getValue())
         .isEqualToComparingFieldByField(expectedValidationParams);

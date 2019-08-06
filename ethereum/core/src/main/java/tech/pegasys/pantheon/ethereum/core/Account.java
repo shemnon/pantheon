@@ -31,12 +31,14 @@ import java.util.NavigableMap;
  *       practice, only non-zero mappings are stored and setting a key to the value 0 is akin to
  *       "removing" that key).
  *   <li><b>Code:</b> arbitrary-length sequence of bytes that corresponds to EVM bytecode.
+ *   <li><b>Version:</b> the version of the EVM bytecode.
  * </ul>
  */
 public interface Account {
 
   long DEFAULT_NONCE = 0L;
   Wei DEFAULT_BALANCE = Wei.ZERO;
+  int DEFAULT_VERSION = 0;
 
   /**
    * The Keccak-256 hash of the account address.
@@ -83,7 +85,7 @@ public interface Account {
   /**
    * The hash of the EVM bytecode associated with this account.
    *
-   * @return the hash of the account code (which may be {@link Hash#EMPTY}.
+   * @return the hash of the account code (which may be {@link Hash#EMPTY}).
    */
   Hash getCodeHash();
 
@@ -98,6 +100,13 @@ public interface Account {
   default boolean hasCode() {
     return !getCode().isEmpty();
   }
+
+  /**
+   * The version of the EVM bytecode associated with this account.
+   *
+   * @return the version of the account code. Default is zero.
+   */
+  int getVersion();
 
   /**
    * Retrieves a value in the account storage given its key.
@@ -142,7 +151,7 @@ public interface Account {
    *
    * @param startKeyHash the first key hash to return.
    * @param limit the maximum number of entries to return.
-   * @return the requested storage entries as a map of key hash to value.
+   * @return the requested storage entries as a map of key hash to entry.
    */
-  NavigableMap<Bytes32, UInt256> storageEntriesFrom(Bytes32 startKeyHash, int limit);
+  NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(Bytes32 startKeyHash, int limit);
 }

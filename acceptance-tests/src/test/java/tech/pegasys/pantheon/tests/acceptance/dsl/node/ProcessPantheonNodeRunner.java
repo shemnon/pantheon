@@ -14,9 +14,11 @@ package tech.pegasys.pantheon.tests.acceptance.dsl.node;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import tech.pegasys.pantheon.cli.options.NetworkingOptions;
 import tech.pegasys.pantheon.ethereum.jsonrpc.RpcApi;
 import tech.pegasys.pantheon.ethereum.jsonrpc.RpcApis;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
+import tech.pegasys.pantheon.tests.acceptance.dsl.StaticNodesUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -98,6 +100,10 @@ public class ProcessPantheonNodeRunner implements PantheonNodeRunner {
       params.add(node.getBootnodes().stream().map(URI::toString).collect(Collectors.joining(",")));
     }
 
+    if (node.hasStaticNodes()) {
+      createStaticNodes(node);
+    }
+
     if (node.isJsonRpcEnabled()) {
       params.add("--rpc-http-enabled");
       params.add("--rpc-http-host");
@@ -143,6 +149,14 @@ public class ProcessPantheonNodeRunner implements PantheonNodeRunner {
     if (!node.isP2pEnabled()) {
       params.add("--p2p-enabled");
       params.add("false");
+    } else {
+      final List<String> networkConfigParams =
+          NetworkingOptions.fromConfig(node.getNetworkingConfiguration()).getCLIOptions();
+      params.addAll(networkConfigParams);
+    }
+
+    if (node.isRevertReasonEnabled()) {
+      params.add("--revert-reason-enabled");
     }
 
     node.getPermissioningConfiguration()
@@ -233,6 +247,10 @@ public class ProcessPantheonNodeRunner implements PantheonNodeRunner {
     } catch (final IOException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  private void createStaticNodes(final PantheonNode node) {
+    StaticNodesUtils.createStaticNodesFile(node.homeDirectory(), node.getStaticNodes());
   }
 
   private String apiList(final Collection<RpcApi> rpcApis) {

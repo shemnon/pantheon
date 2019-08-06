@@ -8,7 +8,7 @@ if (env.BRANCH_NAME == "master") {
     properties([
         buildDiscarder(
             logRotator(
-                daysToKeepStr: '90'
+                daysToKeepStr: '30', artifactDaysToKeepStr: '7'
             )
         )
     ])
@@ -24,7 +24,11 @@ if (env.BRANCH_NAME == "master") {
 
 def docker_image_dind = 'docker:18.06.0-ce-dind'
 def docker_image = 'docker:18.06.0-ce'
-def build_image = 'pegasyseng/pantheon-build:0.0.5-jdk11'
+def build_image = 'pegasyseng/pantheon-build:0.0.7-jdk11'
+def registry = 'https://registry.hub.docker.com'
+def userAccount = 'dockerhub-pegasysengci'
+def imageRepos = 'pegasyseng'
+def imageTag = 'develop'
 
 def abortPreviousBuilds() {
     Run previousBuild = currentBuild.rawBuild.getPreviousBuildInProgress()
@@ -174,20 +178,13 @@ try {
                     }
                 }
             }
-        }
-
-        if (env.BRANCH_NAME == "master") {
-            def registry = 'https://registry.hub.docker.com'
-            def userAccount = 'dockerhub-pegasysengci'
-            def imageRepos = 'pegasyseng'
-            def imageTag = 'develop'
-            parallel KubernetesDockerImage: {
-                def stage_name = 'Kubernetes Docker image node: '
-                def image = imageRepos + '/pantheon-kubernetes:' + imageTag
-                def kubernetes_folder = 'kubernetes'
+        }, DockerImage: {
+                def stage_name = 'Docker image node: '
+                def image = imageRepos + '/pantheon:' + imageTag
+                def docker_folder = 'docker'
                 def version_property_file = 'gradle.properties'
-                def reports_folder = kubernetes_folder + '/reports'
-                def dockerfile = kubernetes_folder + '/Dockerfile'
+                def reports_folder = docker_folder + '/reports'
+                def dockerfile = docker_folder + '/Dockerfile'
                 node {
                     checkout scm
                     docker.image(build_image).inside() {
@@ -196,7 +193,7 @@ try {
                         }
 
                         stage(stage_name + 'Build image') {
-                            sh './gradlew docker'
+                            sh './gradlew distDocker'
                         }
 
                         stage(stage_name + "Test image labels") {
@@ -215,51 +212,22 @@ try {
                         try {
                             stage(stage_name + 'Test image') {
                                 sh "mkdir -p ${reports_folder}"
-                                sh "cd ${kubernetes_folder} && bash test.sh ${image}"
+                                sh "cd ${docker_folder} && bash test.sh ${image}"
                             }
                         } finally {
                             junit "${reports_folder}/*.xml"
                             sh "rm -rf ${reports_folder}"
                         }
-                        stage(stage_name + 'Push image') {
-                            docker.withRegistry(registry, userAccount) {
-                                docker.image(image).push()
-                            }
-                        }
-                    }
-                }
-            },
-            DockerImage: {
-                def stage_name = 'Docker image node: '
-                def image = imageRepos + '/pantheon:' + imageTag
-                node {
-                    checkout scm
-                    unstash 'distTarBall'
-                    docker.image(docker_image_dind).withRun('--privileged') { d ->
-                        docker.image(docker_image).inside("-e DOCKER_HOST=tcp://docker:2375 --link ${d.id}:docker") {
-                            stage(stage_name + 'build image') {
-                                sh "cd docker && cp ../build/distributions/pantheon-*.tar.gz ."
-                                pantheon = docker.build(image, "docker")
-                            }
-                            try {
-                                stage('test image') {
-                                    sh "apk add bash"
-                                    sh "mkdir -p docker/reports"
-                                    sh "cd docker && bash test.sh ${image}"
-                                }
-                            } finally {
-                                junit 'docker/reports/*.xml'
-                                sh "rm -rf docker/reports"
-                            }
-                            stage(stage_name + 'push image') {
+
+                        if (env.BRANCH_NAME == "master") {
+                            stage(stage_name + 'Push image') {
                                 docker.withRegistry(registry, userAccount) {
-                                    pantheon.push()
+                                    docker.image(image).push()
                                 }
                             }
                         }
                     }
                 }
-            }
         }
     }
 } catch (e) {

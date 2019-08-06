@@ -14,6 +14,7 @@ package tech.pegasys.pantheon.ethereum.chain;
 
 import tech.pegasys.pantheon.config.GenesisAllocation;
 import tech.pegasys.pantheon.config.GenesisConfigFile;
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockBody;
@@ -27,7 +28,8 @@ import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ScheduleBasedBlockHeaderFunctions;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStorageWorldStateStorage;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStateKeyValueStorage;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.WorldStatePreimageKeyValueStorage;
 import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -109,8 +111,10 @@ public final class GenesisState {
     genesisAccounts.forEach(
         genesisAccount -> {
           final MutableAccount account = updater.getOrCreate(genesisAccount.address);
+          account.setNonce(genesisAccount.nonce);
           account.setBalance(genesisAccount.balance);
           account.setCode(genesisAccount.code);
+          account.setVersion(genesisAccount.version);
           genesisAccount.storage.forEach(account::setStorageValue);
         });
     updater.commit();
@@ -118,9 +122,12 @@ public final class GenesisState {
   }
 
   private static Hash calculateGenesisStateHash(final List<GenesisAccount> genesisAccounts) {
+    final WorldStateKeyValueStorage stateStorage =
+        new WorldStateKeyValueStorage(new InMemoryKeyValueStorage());
+    final WorldStatePreimageKeyValueStorage preimageStorage =
+        new WorldStatePreimageKeyValueStorage(new InMemoryKeyValueStorage());
     final MutableWorldState worldState =
-        new DefaultMutableWorldState(
-            new KeyValueStorageWorldStateStorage(new InMemoryKeyValueStorage()));
+        new DefaultMutableWorldState(stateStorage, preimageStorage);
     writeAccountsTo(worldState, genesisAccounts);
     return worldState.rootHash();
   }
@@ -193,16 +200,15 @@ public final class GenesisState {
   }
 
   private static long parseNonce(final GenesisConfigFile genesis) {
-    return withNiceErrorMessage(
-        "nonce",
-        genesis.getNonce(),
-        value -> {
-          String nonce = value.toLowerCase(Locale.US);
-          if (nonce.startsWith("0x")) {
-            nonce = nonce.substring(2);
-          }
-          return Long.parseUnsignedLong(nonce, 16);
-        });
+    return withNiceErrorMessage("nonce", genesis.getNonce(), GenesisState::parseUnsignedLong);
+  }
+
+  private static long parseUnsignedLong(final String value) {
+    String nonce = value.toLowerCase(Locale.US);
+    if (nonce.startsWith("0x")) {
+      nonce = nonce.substring(2);
+    }
+    return Long.parseUnsignedLong(nonce, 16);
   }
 
   @Override
@@ -215,27 +221,35 @@ public final class GenesisState {
 
   private static final class GenesisAccount {
 
+    final long nonce;
     final Address address;
     final Wei balance;
-    final BytesValue code;
     final Map<UInt256, UInt256> storage;
+    final BytesValue code;
+    final int version;
 
-    public static GenesisAccount fromAllocation(final GenesisAllocation allocation) {
+    static GenesisAccount fromAllocation(final GenesisAllocation allocation) {
       return new GenesisAccount(
+          allocation.getNonce(),
           allocation.getAddress(),
           allocation.getBalance(),
+          allocation.getStorage(),
           allocation.getCode(),
-          allocation.getStorage());
+          allocation.getVersion());
     }
 
     private GenesisAccount(
+        final String hexNonce,
         final String hexAddress,
         final String balance,
+        final Map<String, String> storage,
         final String hexCode,
-        final Map<String, Object> storage) {
+        final String version) {
+      this.nonce = withNiceErrorMessage("nonce", hexNonce, GenesisState::parseUnsignedLong);
       this.address = withNiceErrorMessage("address", hexAddress, Address::fromHexString);
       this.balance = withNiceErrorMessage("balance", balance, this::parseBalance);
       this.code = hexCode != null ? BytesValue.fromHexString(hexCode) : null;
+      this.version = version != null ? Integer.decode(version) : Account.DEFAULT_VERSION;
       this.storage = parseStorage(storage);
     }
 
@@ -250,14 +264,19 @@ public final class GenesisState {
       return Wei.of(val);
     }
 
-    private Map<UInt256, UInt256> parseStorage(final Map<String, Object> storage) {
+    private Map<UInt256, UInt256> parseStorage(final Map<String, String> storage) {
       final Map<UInt256, UInt256> parsedStorage = new HashMap<>();
-      storage.forEach(
-          (key, value) ->
-              parsedStorage.put(
-                  withNiceErrorMessage("storage key", key, UInt256::fromHexString),
-                  withNiceErrorMessage(
-                      "storage value", String.valueOf(value), UInt256::fromHexString)));
+      storage
+          .entrySet()
+          .forEach(
+              (entry) -> {
+                final UInt256 key =
+                    withNiceErrorMessage("storage key", entry.getKey(), UInt256::fromHexString);
+                final UInt256 value =
+                    withNiceErrorMessage("storage value", entry.getValue(), UInt256::fromHexString);
+                parsedStorage.put(key, value);
+              });
+
       return parsedStorage;
     }
 
@@ -265,9 +284,11 @@ public final class GenesisState {
     public String toString() {
       return MoreObjects.toStringHelper(this)
           .add("address", address)
+          .add("nonce", nonce)
           .add("balance", balance)
-          .add("code", code)
           .add("storage", storage)
+          .add("code", code)
+          .add("version", version)
           .toString();
     }
   }

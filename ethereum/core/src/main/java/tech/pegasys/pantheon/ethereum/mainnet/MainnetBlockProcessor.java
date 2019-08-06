@@ -83,17 +83,21 @@ public class MainnetBlockProcessor implements BlockProcessor {
 
   private final Wei blockReward;
 
+  private final boolean skipZeroBlockRewards;
+
   private final MiningBeneficiaryCalculator miningBeneficiaryCalculator;
 
   public MainnetBlockProcessor(
       final TransactionProcessor transactionProcessor,
       final TransactionReceiptFactory transactionReceiptFactory,
       final Wei blockReward,
-      final MiningBeneficiaryCalculator miningBeneficiaryCalculator) {
+      final MiningBeneficiaryCalculator miningBeneficiaryCalculator,
+      final boolean skipZeroBlockRewards) {
     this.transactionProcessor = transactionProcessor;
     this.transactionReceiptFactory = transactionReceiptFactory;
     this.blockReward = blockReward;
     this.miningBeneficiaryCalculator = miningBeneficiaryCalculator;
+    this.skipZeroBlockRewards = skipZeroBlockRewards;
   }
 
   @Override
@@ -121,6 +125,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
       final BlockHashLookup blockHashLookup = new BlockHashLookup(blockHeader, blockchain);
       final Address miningBeneficiary =
           miningBeneficiaryCalculator.calculateBeneficiary(blockHeader);
+
       final TransactionProcessor.Result result =
           transactionProcessor.processTransaction(
               blockchain,
@@ -130,7 +135,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
               miningBeneficiary,
               blockHashLookup,
               true,
-              true);
+              TransactionValidationParams.processingBlock());
       if (result.isInvalid()) {
         return Result.failed();
       }
@@ -142,7 +147,7 @@ public class MainnetBlockProcessor implements BlockProcessor {
       receipts.add(transactionReceipt);
     }
 
-    if (!rewardCoinbase(worldState, blockHeader, ommers)) {
+    if (!rewardCoinbase(worldState, blockHeader, ommers, skipZeroBlockRewards)) {
       return Result.failed();
     }
 
@@ -153,8 +158,9 @@ public class MainnetBlockProcessor implements BlockProcessor {
   private boolean rewardCoinbase(
       final MutableWorldState worldState,
       final ProcessableBlockHeader header,
-      final List<BlockHeader> ommers) {
-    if (blockReward.isZero()) {
+      final List<BlockHeader> ommers,
+      final boolean skipZeroBlockRewards) {
+    if (skipZeroBlockRewards && blockReward.isZero()) {
       return true;
     }
     final Wei coinbaseReward = blockReward.plus(blockReward.times(ommers.size()).dividedBy(32));

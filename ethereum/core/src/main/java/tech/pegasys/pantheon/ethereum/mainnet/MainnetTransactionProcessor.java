@@ -32,6 +32,7 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +48,10 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
   private final AbstractMessageProcessor contractCreationProcessor;
 
   private final AbstractMessageProcessor messageCallProcessor;
+
   private final int maxStackSize;
+
+  private final int createContractAccountVersion;
 
   public static class Result implements TransactionProcessor.Result {
 
@@ -60,17 +64,30 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
     private final BytesValue output;
 
     private final ValidationResult<TransactionInvalidReason> validationResult;
+    private final Optional<BytesValue> revertReason;
 
     public static Result invalid(
         final ValidationResult<TransactionInvalidReason> validationResult) {
-      return new Result(Status.INVALID, LogSeries.empty(), -1, BytesValue.EMPTY, validationResult);
+      return new Result(
+          Status.INVALID,
+          LogSeries.empty(),
+          -1,
+          BytesValue.EMPTY,
+          validationResult,
+          Optional.empty());
     }
 
     public static Result failed(
         final long gasRemaining,
-        final ValidationResult<TransactionInvalidReason> validationResult) {
+        final ValidationResult<TransactionInvalidReason> validationResult,
+        final Optional<BytesValue> revertReason) {
       return new Result(
-          Status.FAILED, LogSeries.empty(), gasRemaining, BytesValue.EMPTY, validationResult);
+          Status.FAILED,
+          LogSeries.empty(),
+          gasRemaining,
+          BytesValue.EMPTY,
+          validationResult,
+          revertReason);
     }
 
     public static Result successful(
@@ -78,7 +95,8 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
         final long gasRemaining,
         final BytesValue output,
         final ValidationResult<TransactionInvalidReason> validationResult) {
-      return new Result(Status.SUCCESSFUL, logs, gasRemaining, output, validationResult);
+      return new Result(
+          Status.SUCCESSFUL, logs, gasRemaining, output, validationResult, Optional.empty());
     }
 
     Result(
@@ -86,12 +104,14 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
         final LogSeries logs,
         final long gasRemaining,
         final BytesValue output,
-        final ValidationResult<TransactionInvalidReason> validationResult) {
+        final ValidationResult<TransactionInvalidReason> validationResult,
+        final Optional<BytesValue> revertReason) {
       this.status = status;
       this.logs = logs;
       this.gasRemaining = gasRemaining;
       this.output = output;
       this.validationResult = validationResult;
+      this.revertReason = revertReason;
     }
 
     @Override
@@ -118,6 +138,11 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
     public ValidationResult<TransactionInvalidReason> getValidationResult() {
       return validationResult;
     }
+
+    @Override
+    public Optional<BytesValue> getRevertReason() {
+      return revertReason;
+    }
   }
 
   private final boolean clearEmptyAccounts;
@@ -128,13 +153,15 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
       final AbstractMessageProcessor contractCreationProcessor,
       final AbstractMessageProcessor messageCallProcessor,
       final boolean clearEmptyAccounts,
-      final int maxStackSize) {
+      final int maxStackSize,
+      final int createContractAccountVersion) {
     this.gasCalculator = gasCalculator;
     this.transactionValidator = transactionValidator;
     this.contractCreationProcessor = contractCreationProcessor;
     this.messageCallProcessor = messageCallProcessor;
     this.clearEmptyAccounts = clearEmptyAccounts;
     this.maxStackSize = maxStackSize;
+    this.createContractAccountVersion = createContractAccountVersion;
   }
 
   @Override
@@ -147,7 +174,7 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
       final OperationTracer operationTracer,
       final BlockHashLookup blockHashLookup,
       final Boolean isPersistingState,
-      final Boolean checkOnchainPermissions) {
+      final TransactionValidationParams transactionValidationParams) {
     LOG.trace("Starting execution of {}", transaction);
 
     ValidationResult<TransactionInvalidReason> validationResult =
@@ -160,16 +187,10 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
       return Result.invalid(validationResult);
     }
 
-    final TransactionValidationParams validationParams =
-        new TransactionValidationParams.Builder()
-            .allowFutureNonce(false)
-            .checkOnchainPermissions(checkOnchainPermissions)
-            .build();
-
     final Address senderAddress = transaction.getSender();
     final MutableAccount sender = worldState.getOrCreate(senderAddress);
     validationResult =
-        transactionValidator.validateForSender(transaction, sender, validationParams);
+        transactionValidator.validateForSender(transaction, sender, transactionValidationParams);
     if (!validationResult.isValid()) {
       LOG.warn("Invalid transaction: {}", validationResult.getErrorMessage());
       return Result.invalid(validationResult);
@@ -213,6 +234,8 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
               .address(contractAddress)
               .originator(senderAddress)
               .contract(contractAddress)
+              .contractBalance(sender.getBalance())
+              .contractAccountVersion(createContractAccountVersion)
               .gasPrice(transaction.getGasPrice())
               .inputData(BytesValue.EMPTY)
               .sender(senderAddress)
@@ -242,6 +265,9 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
               .address(to)
               .originator(senderAddress)
               .contract(to)
+              .contractBalance(contract != null ? contract.getBalance() : Wei.ZERO)
+              .contractAccountVersion(
+                  contract != null ? contract.getVersion() : Account.DEFAULT_VERSION)
               .gasPrice(transaction.getGasPrice())
               .inputData(transaction.getPayload())
               .sender(senderAddress)
@@ -302,7 +328,7 @@ public class MainnetTransactionProcessor implements TransactionProcessor {
           initialFrame.getOutputData(),
           validationResult);
     } else {
-      return Result.failed(refunded.toLong(), validationResult);
+      return Result.failed(refunded.toLong(), validationResult, initialFrame.getRevertReason());
     }
   }
 

@@ -14,8 +14,10 @@ package tech.pegasys.pantheon.ethereum.vm.operations;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static tech.pegasys.pantheon.ethereum.core.InMemoryStorageProvider.createInMemoryWorldStateArchive;
 
 import tech.pegasys.pantheon.ethereum.chain.Blockchain;
+import tech.pegasys.pantheon.ethereum.core.Account;
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.AddressHelpers;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
@@ -23,14 +25,14 @@ import tech.pegasys.pantheon.ethereum.core.BlockHeaderTestFixture;
 import tech.pegasys.pantheon.ethereum.core.Gas;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.MessageFrameTestFixture;
+import tech.pegasys.pantheon.ethereum.core.MutableAccount;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
 import tech.pegasys.pantheon.ethereum.mainnet.ConstantinopleGasCalculator;
-import tech.pegasys.pantheon.ethereum.storage.keyvalue.KeyValueStorageWorldStateStorage;
+import tech.pegasys.pantheon.ethereum.mainnet.IstanbulGasCalculator;
 import tech.pegasys.pantheon.ethereum.vm.MessageFrame;
 import tech.pegasys.pantheon.ethereum.vm.Words;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
-import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.uint.UInt256;
@@ -43,16 +45,23 @@ public class ExtCodeHashOperationTest {
 
   private final Blockchain blockchain = mock(Blockchain.class);
 
-  private final WorldStateArchive worldStateArchive =
-      new WorldStateArchive(new KeyValueStorageWorldStateStorage(new InMemoryKeyValueStorage()));
+  private final WorldStateArchive worldStateArchive = createInMemoryWorldStateArchive();
   private final WorldUpdater worldStateUpdater = worldStateArchive.getMutable().updater();
 
   private final ExtCodeHashOperation operation =
       new ExtCodeHashOperation(new ConstantinopleGasCalculator());
+  private final ExtCodeHashOperation operationIstanbul =
+      new ExtCodeHashOperation(new IstanbulGasCalculator());
 
   @Test
   public void shouldCharge400Gas() {
     assertThat(operation.cost(createMessageFrame(REQUESTED_ADDRESS))).isEqualTo(Gas.of(400));
+  }
+
+  @Test
+  public void istanbulShouldCharge700Gas() {
+    assertThat(operationIstanbul.cost(createMessageFrame(REQUESTED_ADDRESS)))
+        .isEqualTo(Gas.of(700));
   }
 
   @Test
@@ -63,8 +72,14 @@ public class ExtCodeHashOperationTest {
 
   @Test
   public void shouldReturnHashOfEmptyDataWhenAccountExistsButDoesNotHaveCode() {
-    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS);
+    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS).setBalance(Wei.of(1));
     assertThat(executeOperation(REQUESTED_ADDRESS)).isEqualTo(Hash.EMPTY);
+  }
+
+  @Test
+  public void shouldReturnZeroWhenAccountExistsButIsEmpty() {
+    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS);
+    assertThat(executeOperation(REQUESTED_ADDRESS)).isEqualTo(Bytes32.ZERO);
   }
 
   @Test
@@ -82,7 +97,9 @@ public class ExtCodeHashOperationTest {
   @Test
   public void shouldGetHashOfAccountCodeWhenCodeIsPresent() {
     final BytesValue code = BytesValue.fromHexString("0xabcdef");
-    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS).setCode(code);
+    final MutableAccount account = worldStateUpdater.getOrCreate(REQUESTED_ADDRESS);
+    account.setCode(code);
+    account.setVersion(Account.DEFAULT_VERSION);
     assertThat(executeOperation(REQUESTED_ADDRESS)).isEqualTo(Hash.hash(code));
   }
 
@@ -90,7 +107,9 @@ public class ExtCodeHashOperationTest {
   public void shouldZeroOutLeftMostBitsToGetAddress() {
     // If EXTCODEHASH of A is X, then EXTCODEHASH of A + 2**160 is X.
     final BytesValue code = BytesValue.fromHexString("0xabcdef");
-    worldStateUpdater.getOrCreate(REQUESTED_ADDRESS).setCode(code);
+    final MutableAccount account = worldStateUpdater.getOrCreate(REQUESTED_ADDRESS);
+    account.setCode(code);
+    account.setVersion(Account.DEFAULT_VERSION);
     final Bytes32 value =
         Words.fromAddress(REQUESTED_ADDRESS)
             .asUInt256()

@@ -21,11 +21,12 @@ import static java.util.Arrays.stream;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.contentOf;
 import static org.junit.Assert.assertTrue;
-import static tech.pegasys.pantheon.cli.operator.OperatorSubCommand.COMMAND_NAME;
-import static tech.pegasys.pantheon.cli.operator.OperatorSubCommand.GENERATE_BLOCKCHAIN_CONFIG_SUBCOMMAND_NAME;
 import static tech.pegasys.pantheon.cli.operator.OperatorSubCommandTest.Cmd.cmd;
+import static tech.pegasys.pantheon.cli.subcommands.operator.OperatorSubCommand.COMMAND_NAME;
+import static tech.pegasys.pantheon.cli.subcommands.operator.OperatorSubCommand.GENERATE_BLOCKCHAIN_CONFIG_SUBCOMMAND_NAME;
 
 import tech.pegasys.pantheon.cli.CommandTestAbstract;
 
@@ -75,7 +76,7 @@ public class OperatorSubCommandTest extends CommandTestAbstract {
 
   @Test
   public void operatorSubCommandExistAndHaveSubCommands() {
-    final CommandSpec spec = parseCommand();
+    final CommandSpec spec = parseCommand().getSpec();
     assertThat(spec.subcommands()).containsKeys(COMMAND_NAME);
     assertThat(spec.subcommands().get(COMMAND_NAME).getSubcommands())
         .containsKeys(GENERATE_BLOCKCHAIN_CONFIG_SUBCOMMAND_NAME);
@@ -152,15 +153,36 @@ public class OperatorSubCommandTest extends CommandTestAbstract {
         asList("key.pub", "priv.test"));
   }
 
-  @Test(expected = CommandLine.ExecutionException.class)
-  public void shouldFailIfDuplicateFiles() throws IOException {
-    runCmdAndCheckOutput(
-        cmd("--private-key-file-name", "dup.test", "--public-key-file-name", "dup.test"),
-        "/operator/config_generate_keys.json",
-        tmpOutputDirectoryPath,
-        "genesis.json",
-        true,
-        asList("key.pub", "priv.test"));
+  @Test
+  public void shouldFailIfDuplicateFiles() {
+    assertThatThrownBy(
+            () ->
+                runCmdAndCheckOutput(
+                    cmd(
+                        "--private-key-file-name",
+                        "dup.test",
+                        "--public-key-file-name",
+                        "dup.test"),
+                    "/operator/config_generate_keys.json",
+                    tmpOutputDirectoryPath,
+                    "genesis.json",
+                    true,
+                    asList("key.pub", "priv.test")))
+        .isInstanceOf(CommandLine.ExecutionException.class);
+  }
+
+  @Test
+  public void shouldFailIfPublicKeysAreWrongType() {
+    assertThatThrownBy(
+            () ->
+                runCmdAndCheckOutput(
+                    cmd(),
+                    "/operator/config_import_keys_invalid_keys.json",
+                    tmpOutputDirectoryPath,
+                    "genesis.json",
+                    false,
+                    singletonList("key.pub")))
+        .isInstanceOf(CommandLine.ExecutionException.class);
   }
 
   @Test(expected = CommandLine.ExecutionException.class)

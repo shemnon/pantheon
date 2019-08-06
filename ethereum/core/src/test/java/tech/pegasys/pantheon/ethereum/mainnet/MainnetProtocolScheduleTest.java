@@ -13,12 +13,10 @@
 package tech.pegasys.pantheon.ethereum.mainnet;
 
 import tech.pegasys.pantheon.config.GenesisConfigFile;
-import tech.pegasys.pantheon.ethereum.core.PrivacyParameters;
 
 import java.nio.charset.StandardCharsets;
 
 import com.google.common.io.Resources;
-import io.vertx.core.json.JsonObject;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
@@ -48,18 +46,16 @@ public class MainnetProtocolScheduleTest {
 
   @Test
   public void shouldOnlyUseFrontierWhenEmptyJsonConfigIsUsed() {
-    final JsonObject json = new JsonObject("{}");
     final ProtocolSchedule<Void> sched =
-        MainnetProtocolSchedule.fromConfig(GenesisConfigFile.fromConfig(json).getConfigOptions());
+        MainnetProtocolSchedule.fromConfig(GenesisConfigFile.fromConfig("{}").getConfigOptions());
     Assertions.assertThat(sched.getByBlockNumber(1L).getName()).isEqualTo("Frontier");
     Assertions.assertThat(sched.getByBlockNumber(Long.MAX_VALUE).getName()).isEqualTo("Frontier");
   }
 
   @Test
   public void createFromConfigWithSettings() {
-    final JsonObject json =
-        new JsonObject(
-            "{\"config\": {\"homesteadBlock\": 2, \"daoForkBlock\": 3, \"eip150Block\": 14, \"eip158Block\": 15, \"byzantiumBlock\": 16, \"constantinopleBlock\": 18, \"constantinopleFixBlock\": 19, \"chainId\":1234}}");
+    final String json =
+        "{\"config\": {\"homesteadBlock\": 2, \"daoForkBlock\": 3, \"eip150Block\": 14, \"eip158Block\": 15, \"byzantiumBlock\": 16, \"constantinopleBlock\": 18, \"constantinopleFixBlock\": 19, \"chainId\":1234}}";
     final ProtocolSchedule<Void> sched =
         MainnetProtocolSchedule.fromConfig(GenesisConfigFile.fromConfig(json).getConfigOptions());
     Assertions.assertThat(sched.getByBlockNumber(1).getName()).isEqualTo("Frontier");
@@ -76,9 +72,8 @@ public class MainnetProtocolScheduleTest {
 
   @Test
   public void outOfOrderConstantinoplesFail() {
-    final JsonObject json =
-        new JsonObject(
-            "{\"config\": {\"homesteadBlock\": 2, \"daoForkBlock\": 3, \"eip150Block\": 14, \"eip158Block\": 15, \"byzantiumBlock\": 16, \"constantinopleBlock\": 18, \"constantinopleFixBlock\": 17, \"chainId\":1234}}");
+    final String json =
+        "{\"config\": {\"homesteadBlock\": 2, \"daoForkBlock\": 3, \"eip150Block\": 14, \"eip158Block\": 15, \"byzantiumBlock\": 16, \"constantinopleBlock\": 18, \"constantinopleFixBlock\": 17, \"chainId\":1234}}";
     Assertions.assertThatExceptionOfType(RuntimeException.class)
         .describedAs(
             "Genesis Config Error: 'ConstantinopleFix' is scheduled for block 17 but it must be on or after block 18.")
@@ -95,8 +90,7 @@ public class MainnetProtocolScheduleTest {
             GenesisConfigFile.fromConfig(
                     Resources.toString(
                         this.getClass().getResource("/ropsten.json"), StandardCharsets.UTF_8))
-                .getConfigOptions(),
-            PrivacyParameters.DEFAULT);
+                .getConfigOptions());
     Assertions.assertThat(sched.getByBlockNumber(0).getName()).isEqualTo("TangerineWhistle");
     Assertions.assertThat(sched.getByBlockNumber(1).getName()).isEqualTo("TangerineWhistle");
     Assertions.assertThat(sched.getByBlockNumber(10).getName()).isEqualTo("SpuriousDragon");

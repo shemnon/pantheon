@@ -20,6 +20,7 @@ import tech.pegasys.pantheon.ethereum.privacy.PrivateTransactionStorage;
 import tech.pegasys.pantheon.ethereum.storage.StorageProvider;
 import tech.pegasys.pantheon.ethereum.storage.keyvalue.RocksDbStorageProvider;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
+import tech.pegasys.pantheon.ethereum.worldstate.WorldStatePreimageStorage;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateStorage;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
@@ -176,15 +177,17 @@ public class PrivacyParameters {
         Path privateDbPath = dataDir.resolve(PRIVATE_DATABASE_PATH);
         StorageProvider privateStorageProvider =
             RocksDbStorageProvider.create(
-                new RocksDbConfiguration.Builder()
+                RocksDbConfiguration.builder()
                     .databaseDir(privateDbPath)
                     .label("private_state")
                     .build(),
                 metricsSystem);
         WorldStateStorage privateWorldStateStorage =
             privateStorageProvider.createWorldStateStorage();
+        WorldStatePreimageStorage privatePreimageStorage =
+            privateStorageProvider.createWorldStatePreimageStorage();
         WorldStateArchive privateWorldStateArchive =
-            new WorldStateArchive(privateWorldStateStorage);
+            new WorldStateArchive(privateWorldStateStorage, privatePreimageStorage);
 
         PrivateTransactionStorage privateTransactionStorage =
             privateStorageProvider.createPrivateTransactionStorage();

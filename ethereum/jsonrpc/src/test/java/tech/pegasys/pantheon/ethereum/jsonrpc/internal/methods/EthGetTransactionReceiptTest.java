@@ -44,11 +44,11 @@ import org.junit.Test;
 public class EthGetTransactionReceiptTest {
 
   private final TransactionReceipt stateReceipt =
-      new TransactionReceipt(1, 12, Collections.emptyList());
+      new TransactionReceipt(1, 12, Collections.emptyList(), Optional.empty());
   private final Hash stateRoot =
       Hash.fromHexString("0000000000000000000000000000000000000000000000000000000000000000");
   private final TransactionReceipt rootReceipt =
-      new TransactionReceipt(stateRoot, 12, Collections.emptyList());
+      new TransactionReceipt(stateRoot, 12, Collections.emptyList(), Optional.empty());
 
   private final Signature signature = Signature.create(BigInteger.ONE, BigInteger.TEN, (byte) 1);
   private final Address sender =
@@ -92,7 +92,8 @@ public class EthGetTransactionReceiptTest {
           null,
           TransactionReceiptType.ROOT,
           BlockHeader::getCoinbase,
-          null);
+          null,
+          false);
   private final ProtocolSpec<Void> statusTransactionTypeSpec =
       new ProtocolSpec<>(
           "status",
@@ -111,7 +112,8 @@ public class EthGetTransactionReceiptTest {
           null,
           TransactionReceiptType.STATUS,
           BlockHeader::getCoinbase,
-          null);
+          null,
+          false);
 
   private final JsonRpcParameter parameters = new JsonRpcParameter();
 
@@ -127,7 +129,7 @@ public class EthGetTransactionReceiptTest {
       Hash.fromHexString("cbef69eaf44af151aa66677ae4b8d8c343a09f667c873a3a6f4558fa4051fa5f");
   Object[] params = new Object[] {receiptString};
   private final JsonRpcRequest request =
-      new JsonRpcRequest("1", "eth_getTransactionReceipt", params);;
+      new JsonRpcRequest("1", "eth_getTransactionReceipt", params);
 
   @Test
   public void shouldCreateAStatusTransactionReceiptWhenStatusTypeProtocol() {

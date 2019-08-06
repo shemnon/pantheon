@@ -53,7 +53,7 @@ public class OperationBenchmarkHelper {
     final Path storageDirectory = Files.createTempDirectory("benchmark");
     final KeyValueStorage keyValueStorage =
         RocksDbKeyValueStorage.create(
-            new RocksDbConfiguration.Builder().databaseDir(storageDirectory).build(),
+            RocksDbConfiguration.builder().databaseDir(storageDirectory).build(),
             new NoOpMetricsSystem());
 
     final ExecutionContextTestFixture executionContext =
@@ -98,6 +98,7 @@ public class OperationBenchmarkHelper {
         .address(messageFrame.getContractAddress())
         .originator(messageFrame.getOriginatorAddress())
         .contract(messageFrame.getRecipientAddress())
+        .contractBalance(messageFrame.getContractBalance())
         .gasPrice(messageFrame.getGasPrice())
         .inputData(messageFrame.getInputData())
         .sender(messageFrame.getSenderAddress())
