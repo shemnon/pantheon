@@ -305,6 +305,7 @@ public interface BytesValue extends Comparable<BytesValue>, UnformattedData {
   }
 
   /** @return The number of bytes this value represents. */
+  @Override
   int size();
 
   /**

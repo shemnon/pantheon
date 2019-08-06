@@ -157,6 +157,11 @@ public class LogsBloomFilter implements UnformattedData {
   }
 
   @Override
+  public int size() {
+    return data.size();
+  }
+
+  @Override
   public String getHexString() {
     return data.getHexString();
   }
