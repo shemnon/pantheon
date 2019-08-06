@@ -14,7 +14,7 @@ package tech.pegasys.pantheon.util.uint;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import tech.pegasys.pantheon.api.data.Quantity;
+import tech.pegasys.pantheon.plugin.data.Quantity;
 import tech.pegasys.pantheon.util.bytes.Bytes32Backed;
 
 /**

@@ -15,13 +15,13 @@ package tech.pegasys.pantheon.services;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import tech.pegasys.pantheon.api.data.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockBody;
 import tech.pegasys.pantheon.ethereum.core.BlockHeaderTestFixture;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthPeers;
 import tech.pegasys.pantheon.ethereum.eth.sync.BlockBroadcaster;
+import tech.pegasys.pantheon.plugin.data.BlockHeader;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.util.Collections;

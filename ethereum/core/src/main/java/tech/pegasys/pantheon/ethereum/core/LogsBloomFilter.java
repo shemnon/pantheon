@@ -15,9 +15,9 @@ package tech.pegasys.pantheon.ethereum.core;
 import static com.google.common.base.Preconditions.checkArgument;
 import static tech.pegasys.pantheon.crypto.Hash.keccak256;
 
-import tech.pegasys.pantheon.api.data.UnformattedData;
 import tech.pegasys.pantheon.ethereum.rlp.RLPException;
 import tech.pegasys.pantheon.ethereum.rlp.RLPInput;
+import tech.pegasys.pantheon.plugin.data.UnformattedData;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.bytes.MutableBytesValue;
 

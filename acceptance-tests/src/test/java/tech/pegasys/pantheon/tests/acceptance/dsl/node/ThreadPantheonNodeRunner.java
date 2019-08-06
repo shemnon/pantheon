@@ -16,9 +16,6 @@ import static tech.pegasys.pantheon.cli.config.NetworkName.DEV;
 
 import tech.pegasys.pantheon.Runner;
 import tech.pegasys.pantheon.RunnerBuilder;
-import tech.pegasys.pantheon.api.services.PantheonEvents;
-import tech.pegasys.pantheon.api.services.PicoCLIOptions;
-import tech.pegasys.pantheon.cli.EthNetworkConfig;
 import tech.pegasys.pantheon.cli.config.EthNetworkConfig;
 import tech.pegasys.pantheon.controller.KeyPairUtil;
 import tech.pegasys.pantheon.controller.PantheonController;
@@ -31,6 +28,8 @@ import tech.pegasys.pantheon.ethereum.p2p.peers.EnodeURL;
 import tech.pegasys.pantheon.ethereum.permissioning.PermissioningConfiguration;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
+import tech.pegasys.pantheon.plugin.services.PantheonEvents;
+import tech.pegasys.pantheon.plugin.services.PicoCLIOptions;
 import tech.pegasys.pantheon.services.PantheonEventsImpl;
 import tech.pegasys.pantheon.services.PantheonPluginContextImpl;
 import tech.pegasys.pantheon.services.PicoCLIOptionsImpl;

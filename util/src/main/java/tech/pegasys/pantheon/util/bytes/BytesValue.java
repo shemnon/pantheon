@@ -15,7 +15,7 @@ package tech.pegasys.pantheon.util.bytes;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkElementIndex;
 
-import tech.pegasys.pantheon.api.data.UnformattedData;
+import tech.pegasys.pantheon.plugin.data.UnformattedData;
 
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;

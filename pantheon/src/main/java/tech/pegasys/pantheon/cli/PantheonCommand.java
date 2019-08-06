@@ -31,9 +31,6 @@ import static tech.pegasys.pantheon.metrics.prometheus.MetricsConfiguration.DEFA
 import tech.pegasys.pantheon.PantheonInfo;
 import tech.pegasys.pantheon.Runner;
 import tech.pegasys.pantheon.RunnerBuilder;
-import tech.pegasys.pantheon.api.services.PantheonEvents;
-import tech.pegasys.pantheon.api.services.PicoCLIOptions;
-import tech.pegasys.pantheon.cli.PublicKeySubCommand.KeyLoader;
 import tech.pegasys.pantheon.cli.config.EthNetworkConfig;
 import tech.pegasys.pantheon.cli.config.NetworkName;
 import tech.pegasys.pantheon.cli.converter.MetricCategoryConverter;

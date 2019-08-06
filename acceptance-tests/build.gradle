@@ -51,7 +51,7 @@ dependencies {
   testImplementation 'org.web3j:abi'
   testImplementation 'org.web3j:core'
   testImplementation 'org.web3j:crypto'
-  testImplementation 'tech.pegasys.pantheon:api'
+  testImplementation 'tech.pegasys.pantheon:plugin-api'
 }
 
 test.enabled = false

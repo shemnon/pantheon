@@ -12,7 +12,7 @@
  */
 package tech.pegasys.pantheon.util.bytes;
 
-import tech.pegasys.pantheon.api.data.BinaryData;
+import tech.pegasys.pantheon.plugin.data.BinaryData;
 
 /** Base interface for a value whose content is stored as bytes. */
 public interface BytesBacked extends BinaryData {
