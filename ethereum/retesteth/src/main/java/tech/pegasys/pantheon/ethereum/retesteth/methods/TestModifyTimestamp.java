@@ -37,7 +37,7 @@ public class TestModifyTimestamp implements JsonRpcMethod {
   @Override
   public JsonRpcResponse response(final JsonRpcRequest request) {
     final long epochSeconds = parameters.required(request.getParams(), 0, Long.class);
-    context.setTimestamp(epochSeconds);
+    context.getRetestethClock().resetTime(epochSeconds);
     return new JsonRpcSuccessResponse(request.getId(), true);
   }
 }

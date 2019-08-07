@@ -25,7 +25,6 @@ import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSpec;
 
 import java.math.BigInteger;
 import java.util.Optional;
-import java.util.Set;
 
 public class NoRewardProtocolScheduleWrapper<C> implements ProtocolSchedule<C> {
 
@@ -67,7 +66,6 @@ public class NoRewardProtocolScheduleWrapper<C> implements ProtocolSchedule<C> {
         original.getTransactionReceiptFactory(),
         original.getDifficultyCalculator(),
         Wei.ZERO, // block reward
-        null, // transaction receipt type; unused
         original.getMiningBeneficiaryCalculator(),
         original.getPrecompileContractRegistry(),
         original.isSkipZeroBlockRewards());

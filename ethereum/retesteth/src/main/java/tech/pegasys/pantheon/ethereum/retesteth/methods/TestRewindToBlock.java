@@ -37,6 +37,7 @@ public class TestRewindToBlock implements JsonRpcMethod {
   public JsonRpcResponse response(final JsonRpcRequest request) {
     final long blockNumber = parameters.required(request.getParams(), 0, Long.TYPE);
 
-    return new JsonRpcSuccessResponse(request.getId(), context.rewindToBlock(blockNumber));
+    return new JsonRpcSuccessResponse(
+        request.getId(), context.getBlockchain().rewindToBlock(blockNumber));
   }
 }

@@ -12,10 +12,11 @@
  */
 package tech.pegasys.pantheon.ethereum.retesteth;
 
+import static tech.pegasys.pantheon.config.JsonUtil.normalizeKeys;
+
 import tech.pegasys.pantheon.config.JsonGenesisConfigOptions;
 import tech.pegasys.pantheon.config.JsonUtil;
 import tech.pegasys.pantheon.ethereum.ProtocolContext;
-import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
 import tech.pegasys.pantheon.ethereum.blockcreation.IncrementingNonceGenerator;
 import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
 import tech.pegasys.pantheon.ethereum.chain.GenesisState;
@@ -23,7 +24,6 @@ import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.core.Block;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.BlockHeaderFunctions;
-import tech.pegasys.pantheon.ethereum.core.BlockImporter;
 import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
 import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.eth.manager.EthContext;
@@ -51,15 +51,11 @@ import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
 import tech.pegasys.pantheon.metrics.MetricsSystem;
 import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
 import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
 
-import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Functions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -77,7 +73,7 @@ public class RetestethContext {
   private ProtocolSchedule<Void> protocolSchedule;
   private HeaderValidationMode headerValidationMode;
   private BlockReplay blockReplay;
-  private RetestethClock retesethClock;
+  private RetestethClock retestethClock;
 
   private TransactionPool transactionPool;
   private EthScheduler ethScheduler;
@@ -113,8 +109,8 @@ public class RetestethContext {
     final ObjectNode genesisConfig =
         normalizeKeys(JsonUtil.objectNodeFromString(genesisConfigString));
 
-    retesethClock = new RetestethClock();
-    clockTime.ifPresent(retesethClock::resetTime);
+    retestethClock = new RetestethClock();
+    clockTime.ifPresent(retestethClock::resetTime);
     final MetricsSystem metricsSystem = new NoOpMetricsSystem();
 
     protocolSchedule =
@@ -160,7 +156,7 @@ public class RetestethContext {
 
     // mining support
 
-    final EthPeers ethPeers = new EthPeers("reteseth", retesethClock, metricsSystem);
+    final EthPeers ethPeers = new EthPeers("reteseth", retestethClock, metricsSystem);
     final SyncState syncState = new SyncState(blockchain, ethPeers);
 
     ethScheduler = new EthScheduler(1, 1, 1, metricsSystem);
@@ -174,7 +170,7 @@ public class RetestethContext {
             protocolSchedule,
             protocolContext,
             ethContext,
-            retesethClock,
+            retestethClock,
             metricsSystem,
             syncState,
             Wei.ZERO,
@@ -183,33 +179,6 @@ public class RetestethContext {
     LOG.trace("Genesis Block {} ", genesisState::getBlock);
 
     return true;
-  }
-
-  public boolean mineNewBlock() {
-    final EthHashBlockCreator blockCreator =
-        new EthHashBlockCreator(
-            coinbase,
-            header -> BytesValue.of(),
-            transactionPool.getPendingTransactions(),
-            protocolContext,
-            protocolSchedule,
-            Functions.identity(),
-            ethHashSolver,
-            Wei.ZERO,
-            blockchain.getChainHeadHeader());
-    final Block block = blockCreator.createBlock(retesethClock.instant().getEpochSecond());
-
-    // advance clock so next mine won't hit the same timestamp
-    retesethClock.advanceSeconds(1);
-
-    final BlockImporter<Void> blockImporter =
-        protocolSchedule.getByBlockNumber(blockchain.getChainHeadBlockNumber()).getBlockImporter();
-    return blockImporter.importBlock(
-        protocolContext, block, getHeaderValidationMode(), getHeaderValidationMode());
-  }
-
-  public boolean rewindToBlock(final long blockNumber) {
-    return blockchain.rewindToBlock(blockNumber);
   }
 
   private static DefaultMutableBlockchain createInMemoryBlockchain(final Block genesisBlock) {
@@ -223,27 +192,6 @@ public class RetestethContext {
         genesisBlock,
         new KeyValueStoragePrefixedKeyBlockchainStorage(keyValueStorage, blockHeaderFunctions),
         new NoOpMetricsSystem());
-  }
-
-  /* Converts all to lowercase for easier lookup since the keys in a 'genesis.json' file are assumed
-   * case insensitive.
-   */
-  private static ObjectNode normalizeKeys(final ObjectNode genesis) {
-    final ObjectNode normalized = JsonUtil.createEmptyObjectNode();
-    genesis
-        .fields()
-        .forEachRemaining(
-            entry -> {
-              final String key = entry.getKey();
-              final JsonNode value = entry.getValue();
-              final String normalizedKey = key.toLowerCase(Locale.US);
-              if (value instanceof ObjectNode) {
-                normalized.set(normalizedKey, normalizeKeys((ObjectNode) value));
-              } else {
-                normalized.set(normalizedKey, value);
-              }
-            });
-    return normalized;
   }
 
   public ProtocolSchedule<Void> getProtocolSchedule() {
@@ -274,19 +222,31 @@ public class RetestethContext {
     return headerValidationMode;
   }
 
-  public void setTimestamp(final long epochSeconds) {
-    retesethClock.resetTime(epochSeconds);
-  }
-
   BlockReplay getBlockReplay() {
     return blockReplay;
   }
 
-  TransactionPool getTransactionPool() {
+  public TransactionPool getTransactionPool() {
     return transactionPool;
   }
 
   PendingTransactions getPendingTransactions() {
     return transactionPool.getPendingTransactions();
+  }
+
+  public Address getCoinbase() {
+    return coinbase;
+  }
+
+  public DefaultMutableBlockchain getBlockchain() {
+    return blockchain;
+  }
+
+  public RetestethClock getRetestethClock() {
+    return retestethClock;
+  }
+
+  public EthHashSolver getEthHashSolver() {
+    return ethHashSolver;
   }
 }

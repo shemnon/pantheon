@@ -12,12 +12,24 @@
  */
 package tech.pegasys.pantheon.ethereum.retesteth.methods;
 
+import tech.pegasys.pantheon.ethereum.ProtocolContext;
+import tech.pegasys.pantheon.ethereum.blockcreation.EthHashBlockCreator;
+import tech.pegasys.pantheon.ethereum.chain.DefaultMutableBlockchain;
+import tech.pegasys.pantheon.ethereum.core.Block;
+import tech.pegasys.pantheon.ethereum.core.BlockImporter;
+import tech.pegasys.pantheon.ethereum.core.Wei;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.JsonRpcRequest;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.methods.JsonRpcMethod;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.parameters.JsonRpcParameter;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcResponse;
 import tech.pegasys.pantheon.ethereum.jsonrpc.internal.response.JsonRpcSuccessResponse;
+import tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode;
+import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
+import tech.pegasys.pantheon.ethereum.retesteth.RetestethClock;
 import tech.pegasys.pantheon.ethereum.retesteth.RetestethContext;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
+
+import com.google.common.base.Functions;
 
 public class TestMineBlocks implements JsonRpcMethod {
   private final RetestethContext context;
@@ -37,11 +49,39 @@ public class TestMineBlocks implements JsonRpcMethod {
   public JsonRpcResponse response(final JsonRpcRequest request) {
     long blocksToMine = parameters.required(request.getParams(), 0, Long.class);
     while (blocksToMine-- > 0) {
-      if (!context.mineNewBlock()) {
+      if (!mineNewBlock()) {
         return new JsonRpcSuccessResponse(request.getId(), false);
       }
     }
 
     return new JsonRpcSuccessResponse(request.getId(), true);
+  }
+
+  private boolean mineNewBlock() {
+    final RetestethClock retesethClock = context.getRetestethClock();
+    final ProtocolSchedule<Void> protocolSchedule = context.getProtocolSchedule();
+    final ProtocolContext<Void> protocolContext = context.getProtocolContext();
+    final DefaultMutableBlockchain blockchain = context.getBlockchain();
+    final HeaderValidationMode headerValidationMode = context.getHeaderValidationMode();
+    final EthHashBlockCreator blockCreator =
+        new EthHashBlockCreator(
+            context.getCoinbase(),
+            header -> BytesValue.of(),
+            context.getTransactionPool().getPendingTransactions(),
+            protocolContext,
+            protocolSchedule,
+            Functions.identity(),
+            context.getEthHashSolver(),
+            Wei.ZERO,
+            blockchain.getChainHeadHeader());
+    final Block block = blockCreator.createBlock(retesethClock.instant().getEpochSecond());
+
+    // advance clock so next mine won't hit the same timestamp
+    retesethClock.advanceSeconds(1);
+
+    final BlockImporter<Void> blockImporter =
+        protocolSchedule.getByBlockNumber(blockchain.getChainHeadBlockNumber()).getBlockImporter();
+    return blockImporter.importBlock(
+        protocolContext, block, headerValidationMode, headerValidationMode);
   }
 }
