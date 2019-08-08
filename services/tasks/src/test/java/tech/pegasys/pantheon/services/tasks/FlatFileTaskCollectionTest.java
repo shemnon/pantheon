@@ -51,17 +51,15 @@ public class FlatFileTaskCollectionTest
       final List<BytesValue> tasks = new ArrayList<>();
 
       addItem(queue, tasks, 0);
-      final File[] currentFiles = getCurrentFiles(dataDir);
-      assertThat(currentFiles).hasSize(1);
-      final File firstFile = currentFiles[0];
+      assertThat(queue.getWriteFileNumber()).isEqualTo(0);
       int tasksInFirstFile = 1;
-      while (getCurrentFiles(dataDir).length == 1) {
+      while (queue.getWriteFileNumber() == 0) {
         addItem(queue, tasks, tasksInFirstFile);
         tasksInFirstFile++;
       }
 
-      assertThat(getCurrentFiles(dataDir)).hasSizeGreaterThan(1);
-      assertThat(getCurrentFiles(dataDir)).contains(firstFile);
+      assertThat(queue.getWriteFileNumber()).isGreaterThan(0);
+      assertThat(queue.getReadFileNumber()).isEqualTo(0);
 
       // Add an extra item to be sure we have at least one in a later file
       addItem(queue, tasks, 123);
@@ -72,8 +70,7 @@ public class FlatFileTaskCollectionTest
         removedTasks.add(queue.remove().getData());
       }
 
-      // Fully read files should have been removed.
-      assertThat(getCurrentFiles(dataDir)).doesNotContain(firstFile);
+      assertThat(queue.getReadFileNumber()).isEqualTo(0);
 
       // Check that all tasks were read correctly.
       removedTasks.add(queue.remove().getData());
@@ -88,11 +85,5 @@ public class FlatFileTaskCollectionTest
       final int value) {
     tasks.add(BytesValue.of(value));
     queue.add(BytesValue.of(value));
-  }
-
-  private File[] getCurrentFiles(final Path dataDir) {
-    return dataDir
-        .toFile()
-        .listFiles((dir, name) -> name.startsWith(FlatFileTaskCollection.FILENAME_PREFIX));
   }
 }
