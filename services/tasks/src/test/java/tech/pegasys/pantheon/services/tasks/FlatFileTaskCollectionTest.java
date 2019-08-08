@@ -60,8 +60,9 @@ public class FlatFileTaskCollectionTest
       assertThat(queue.getWriteFileNumber()).isGreaterThan(0);
       assertThat(queue.getReadFileNumber()).isEqualTo(0);
 
-      // Add an extra item to be sure we have at least one in a later file
+      // Add extra items to be sure we have at least one in a later file
       addItem(queue, tasks, 123);
+      addItem(queue, tasks, 124);
 
       final List<BytesValue> removedTasks = new ArrayList<>();
       // Read through all the items in the first file.
@@ -69,7 +70,9 @@ public class FlatFileTaskCollectionTest
         removedTasks.add(queue.remove().getData());
       }
 
-      assertThat(queue.getReadFileNumber()).isEqualTo(0);
+      // read one more to make sure we are reading from the next file
+      removedTasks.add(queue.remove().getData());
+      assertThat(queue.getReadFileNumber()).isEqualTo(1);
 
       // Check that all tasks were read correctly.
       removedTasks.add(queue.remove().getData());
