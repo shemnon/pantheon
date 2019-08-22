@@ -63,7 +63,8 @@ public class PendingTransactions {
   private final Map<Address, SortedMap<Long, TransactionInfo>> transactionsBySender =
       new HashMap<>();
 
-  private final Subscribers<PendingTransactionListener> pendingTransactionSubscribers = Subscribers.create();
+  private final Subscribers<PendingTransactionListener> pendingTransactionSubscribers =
+      Subscribers.create();
 
   private final Subscribers<PendingTransactionDroppedListener> transactionDroppedListeners =
       Subscribers.create();
