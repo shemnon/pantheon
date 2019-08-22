@@ -70,12 +70,12 @@ public class PantheonEventsImplTest {
   @Mock private EthPeers mockEthPeers;
   @Mock private EthContext mockEthContext;
   @Mock private EthMessages mockEthMessages;
+  @Mock private EthScheduler mockEthScheduler;
   @Mock private MutableBlockchain mockBlockchain;
   @Mock private TransactionValidator mockTransactionValidator;
   @Mock private ProtocolSpec<Void> mockProtocolSpec;
   @Mock private WorldStateArchive mockWorldStateArchive;
   @Mock private WorldState mockWorldState;
-  @Mock private EthScheduler mockEthScheduler;
   private tech.pegasys.pantheon.ethereum.core.BlockHeader fakeBlockHeader;
   private TransactionPool transactionPool;
   private BlockBroadcaster blockBroadcaster;
@@ -96,13 +96,10 @@ public class PantheonEventsImplTest {
     when(mockProtocolContext.getWorldStateArchive()).thenReturn(mockWorldStateArchive);
     when(mockProtocolSchedule.getByBlockNumber(anyLong())).thenReturn(mockProtocolSpec);
     when(mockProtocolSpec.getTransactionValidator()).thenReturn(mockTransactionValidator);
-    when(mockSyncState.isInSync(anyLong())).thenReturn(true);
     when(mockTransactionValidator.validate(any())).thenReturn(ValidationResult.valid());
     when(mockTransactionValidator.validateForSender(any(), any(), any()))
         .thenReturn(ValidationResult.valid());
     when(mockWorldStateArchive.get(any())).thenReturn(Optional.of(mockWorldState));
-
-    //    ethContext.getEthMessages().subscribe(EthPV62.TRANSACTIONS, transactionsMessageHandler);
 
     blockBroadcaster = new BlockBroadcaster(mockEthContext);
     transactionPool =
