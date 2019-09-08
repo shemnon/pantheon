@@ -17,6 +17,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.Mockito.atLeast;
@@ -70,6 +71,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -958,6 +960,22 @@ public class PantheonCommandTest extends CommandTestAbstract {
 
     //    assertThat(networkArg.getValue().getNetworkId())
     //        .isEqualTo(EthNetworkConfig.getNetworkConfig(MAINNET).getNetworkId());
+
+    assertThat(commandOutput.toString()).isEmpty();
+    assertThat(commandErrorOutput.toString()).isEmpty();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void overrideGenesisConfigFileChange() throws Exception {
+    final ArgumentCaptor<Map<String, String>> overrides = ArgumentCaptor.forClass(Map.class);
+
+    parseCommand("--network=dev", "--override-genesis-config=chainId=8675309");
+
+    verify(mockControllerBuilderFactory).fromEthNetworkConfig(any(), overrides.capture());
+    verify(mockControllerBuilder).build();
+    assertThat(overrides.getValue()).containsOnlyKeys("chainId");
+    assertThat(overrides.getValue()).containsEntry("chainId", "8675309");
 
     assertThat(commandOutput.toString()).isEmpty();
     assertThat(commandErrorOutput.toString()).isEmpty();

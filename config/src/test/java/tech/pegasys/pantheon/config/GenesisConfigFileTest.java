@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -212,6 +213,59 @@ public class GenesisConfigFileTest {
 
     assertThat(config.getConfigOptions().getChainId()).contains(new BigInteger("2017"));
     // Unfortunately there is no good (non-flakey) way to assert logs.
+  }
+
+  @Test
+  public void testOverridePresent() {
+    final GenesisConfigFile config = GenesisConfigFile.development();
+    final int bigBlock = 999_999_999;
+    final String bigBlockString = Integer.toString(bigBlock);
+    final Map<String, String> override = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    override.put("istanbulBlock", bigBlockString);
+    override.put("chainId", bigBlockString);
+    override.put("contractSizeLimit", bigBlockString);
+
+    assertThat(config.getConfigOptions(override).getIstanbulBlockNumber()).hasValue(bigBlock);
+    assertThat(config.getConfigOptions(override).getChainId())
+        .hasValue(BigInteger.valueOf(bigBlock));
+    assertThat(config.getConfigOptions(override).getContractSizeLimit()).hasValue(bigBlock);
+  }
+
+  @Test
+  public void testOverrideNull() {
+    final GenesisConfigFile config = GenesisConfigFile.development();
+    final Map<String, String> override = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    override.put("istanbulBlock", null);
+    override.put("chainId", null);
+    override.put("contractSizeLimit", null);
+
+    assertThat(config.getConfigOptions(override).getIstanbulBlockNumber()).isNotPresent();
+    assertThat(config.getConfigOptions(override).getChainId()).isNotPresent();
+    assertThat(config.getConfigOptions(override).getContractSizeLimit()).isNotPresent();
+  }
+
+  @Test
+  public void testOverrideEmptyString() {
+    final GenesisConfigFile config = GenesisConfigFile.development();
+    final Map<String, String> override = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    override.put("istanbulBlock", "");
+    override.put("chainId", "");
+    override.put("contractSizeLimit", "");
+
+    assertThat(config.getConfigOptions(override).getIstanbulBlockNumber()).isNotPresent();
+    assertThat(config.getConfigOptions(override).getChainId()).isNotPresent();
+    assertThat(config.getConfigOptions(override).getContractSizeLimit()).isNotPresent();
+  }
+
+  @Test
+  public void testNoOverride() {
+    final GenesisConfigFile config = GenesisConfigFile.development();
+
+    assertThat(config.getConfigOptions().getConstantinopleFixBlockNumber()).hasValue(0);
+    assertThat(config.getConfigOptions().getIstanbulBlockNumber()).isNotPresent();
+    assertThat(config.getConfigOptions().getChainId()).hasValue(BigInteger.valueOf(2018));
+    assertThat(config.getConfigOptions().getContractSizeLimit()).hasValue(2147483647);
+    assertThat(config.getConfigOptions().getEvmStackSize()).isNotPresent();
   }
 
   private GenesisConfigFile configWithProperty(final String key, final String value) {
