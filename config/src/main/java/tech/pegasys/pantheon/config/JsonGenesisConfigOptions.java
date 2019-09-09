@@ -231,7 +231,7 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
       final String value = configOverrides.get(key);
       return value == null || value.isEmpty()
           ? OptionalLong.empty()
-          : OptionalLong.of(Long.valueOf(configOverrides.get(key)));
+          : OptionalLong.of(Long.valueOf(configOverrides.get(key), 10));
     } else {
       return JsonUtil.getLong(configRoot, key);
     }
@@ -242,7 +242,7 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
       final String value = configOverrides.get(key);
       return value == null || value.isEmpty()
           ? OptionalInt.empty()
-          : OptionalInt.of(Integer.valueOf(configOverrides.get(key)));
+          : OptionalInt.of(Integer.valueOf(configOverrides.get(key), 10));
     } else {
       return JsonUtil.getInt(configRoot, key);
     }
@@ -255,7 +255,7 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
           ? Optional.empty()
           : Optional.of(new BigInteger(value));
     } else {
-      return JsonUtil.getValueAsString(configRoot, key).map(BigInteger::new);
+      return JsonUtil.getValueAsString(configRoot, key).map(s -> new BigInteger(s, 10));
     }
   }
 }

@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -242,6 +243,25 @@ public class GenesisConfigFileTest {
     assertThat(config.getConfigOptions(override).getIstanbulBlockNumber()).isNotPresent();
     assertThat(config.getConfigOptions(override).getChainId()).isNotPresent();
     assertThat(config.getConfigOptions(override).getContractSizeLimit()).isNotPresent();
+  }
+
+  @Test
+  public void testOverrideCaseInsensitivity() {
+    final GenesisConfigFile config = GenesisConfigFile.development();
+    final int bigBlock = 999_999_999;
+    final String bigBlockString = Integer.toString(bigBlock);
+    final Map<String, String> override = new HashMap<>();
+    // as speicified
+    override.put("istanbulBlock", bigBlockString);
+    // ALL CAPS
+    override.put("CHAINID", bigBlockString);
+    // all lower case
+    override.put("contractsizelimit", bigBlockString);
+
+    assertThat(config.getConfigOptions(override).getIstanbulBlockNumber()).hasValue(bigBlock);
+    assertThat(config.getConfigOptions(override).getChainId())
+        .hasValue(BigInteger.valueOf(bigBlock));
+    assertThat(config.getConfigOptions(override).getContractSizeLimit()).hasValue(bigBlock);
   }
 
   @Test
