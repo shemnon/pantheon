@@ -139,7 +139,6 @@ public abstract class CommandTestAbstract {
   public void initMocks() throws Exception {
 
     // doReturn used because of generic PantheonController
-    doReturn(mockControllerBuilder).when(mockControllerBuilderFactory).fromEthNetworkConfig(any());
     doReturn(mockControllerBuilder)
         .when(mockControllerBuilderFactory)
         .fromEthNetworkConfig(any(), any());
