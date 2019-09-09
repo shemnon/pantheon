@@ -130,7 +130,7 @@ public class PantheonController<C> implements java.io.Closeable {
 
     public PantheonControllerBuilder<?> fromEthNetworkConfig(
         final EthNetworkConfig ethNetworkConfig) {
-      return fromEthNetworkConfig(ethNetworkConfig);
+      return fromEthNetworkConfig(ethNetworkConfig, Collections.emptyMap());
     }
 
     public PantheonControllerBuilder<?> fromEthNetworkConfig(
