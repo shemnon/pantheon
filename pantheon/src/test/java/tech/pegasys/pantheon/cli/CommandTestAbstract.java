@@ -140,7 +140,9 @@ public abstract class CommandTestAbstract {
 
     // doReturn used because of generic PantheonController
     doReturn(mockControllerBuilder).when(mockControllerBuilderFactory).fromEthNetworkConfig(any());
-    doReturn(mockControllerBuilder).when(mockControllerBuilderFactory).fromEthNetworkConfig(any(), any());
+    doReturn(mockControllerBuilder)
+        .when(mockControllerBuilderFactory)
+        .fromEthNetworkConfig(any(), any());
     when(mockControllerBuilder.synchronizerConfiguration(any())).thenReturn(mockControllerBuilder);
     when(mockControllerBuilder.ethProtocolConfiguration(any())).thenReturn(mockControllerBuilder);
     when(mockControllerBuilder.rocksDbConfiguration(any())).thenReturn(mockControllerBuilder);
