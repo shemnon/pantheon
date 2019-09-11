@@ -171,7 +171,7 @@ public class PantheonNode implements NodeConfiguration, RunnableNode, AutoClosea
     return webSocketConfiguration().isEnabled();
   }
 
-  private boolean isMetricsEnabled() {
+  boolean isMetricsEnabled() {
     return metricsConfiguration.isEnabled();
   }
 
