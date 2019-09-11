@@ -151,7 +151,7 @@ public class ProcessPantheonNodeRunner implements PantheonNodeRunner {
       params.add(Integer.toString(metricsConfiguration.getPort()));
       for (final MetricCategory category : metricsConfiguration.getMetricCategories()) {
         params.add("--metrics-category");
-        params.add(((Enum<?>)category).name());
+        params.add(((Enum<?>) category).name());
       }
       if (metricsConfiguration.isPushEnabled()) {
         params.add("--metrics-push-enabled");
