@@ -38,7 +38,7 @@ public interface WorldStateStorage {
 
   Updater updater();
 
-  long prune(Predicate<byte[]> inUseCheck);
+  long prune(Predicate<BytesValue> inUseCheck);
 
   long addNodeAddedListener(NodesAddedListener listener);
 

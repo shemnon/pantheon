@@ -35,9 +35,6 @@ dependencies {
   implementation project(':plugin-api')
   implementation project(':services:kvstore')
 
-  // Runtime dependency gets the Plugin included in the distribution
-  runtime project(":plugins:rocksdb")
-
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.google.guava:guava'
   implementation 'io.vertx:vertx-core'
@@ -77,8 +74,6 @@ dependencies {
   jmhImplementation project(':ethereum:trie')
   jmhImplementation project(':metrics:core')
   jmhImplementation project(':services:kvstore')
-  jmhImplementation project(':plugin-api')
-  jmhImplementation project(':plugins:rocksdb')
   jmhImplementation project(':util')
 
   jmhImplementation 'com.google.guava:guava'

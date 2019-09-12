@@ -14,10 +14,9 @@ package tech.pegasys.pantheon.ethereum.storage.keyvalue;
 
 import tech.pegasys.pantheon.ethereum.core.Address;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStatePreimageStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorageTransaction;
+import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
+import tech.pegasys.pantheon.services.kvstore.KeyValueStorage.Transaction;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.util.Optional;
@@ -32,8 +31,8 @@ public class WorldStatePreimageKeyValueStorage implements WorldStatePreimageStor
   @Override
   public Optional<UInt256> getStorageTrieKeyPreimage(final Bytes32 trieKey) {
     return keyValueStorage
-        .get(trieKey.getArrayUnsafe())
-        .filter(val -> val.length == UInt256.SIZE)
+        .get(trieKey)
+        .filter(val -> val.size() == UInt256.SIZE)
         .map(Bytes32::wrap)
         .map(UInt256::wrap);
   }
@@ -41,9 +40,9 @@ public class WorldStatePreimageKeyValueStorage implements WorldStatePreimageStor
   @Override
   public Optional<Address> getAccountTrieKeyPreimage(final Bytes32 trieKey) {
     return keyValueStorage
-        .get(trieKey.getArrayUnsafe())
-        .filter(val -> val.length == Address.SIZE)
-        .map(val -> Address.wrap(BytesValue.wrap(val)));
+        .get(trieKey)
+        .filter(val -> val.size() == Address.SIZE)
+        .map(Address::wrap);
   }
 
   @Override
@@ -52,23 +51,23 @@ public class WorldStatePreimageKeyValueStorage implements WorldStatePreimageStor
   }
 
   public static class Updater implements WorldStatePreimageStorage.Updater {
-    private final KeyValueStorageTransaction transaction;
+    private final KeyValueStorage.Transaction transaction;
 
-    public Updater(final KeyValueStorageTransaction transaction) {
+    public Updater(final Transaction transaction) {
       this.transaction = transaction;
     }
 
     @Override
     public WorldStatePreimageStorage.Updater putStorageTrieKeyPreimage(
         final Bytes32 trieKey, final UInt256 preimage) {
-      transaction.put(trieKey.getArrayUnsafe(), preimage.getBytes().getArrayUnsafe());
+      transaction.put(trieKey, preimage.getBytes());
       return this;
     }
 
     @Override
     public WorldStatePreimageStorage.Updater putAccountTrieKeyPreimage(
         final Bytes32 trieKey, final Address preimage) {
-      transaction.put(trieKey.getArrayUnsafe(), preimage.getArrayUnsafe());
+      transaction.put(trieKey, preimage);
       return this;
     }
 

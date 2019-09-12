@@ -19,9 +19,13 @@ import tech.pegasys.pantheon.crypto.SECP256K1.KeyPair;
 import tech.pegasys.pantheon.ethereum.privacy.PrivateStateStorage;
 import tech.pegasys.pantheon.ethereum.privacy.PrivateTransactionStorage;
 import tech.pegasys.pantheon.ethereum.storage.StorageProvider;
+import tech.pegasys.pantheon.ethereum.storage.keyvalue.RocksDbStorageProvider;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateArchive;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStatePreimageStorage;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateStorage;
+import tech.pegasys.pantheon.metrics.noop.NoOpMetricsSystem;
+import tech.pegasys.pantheon.plugin.services.MetricsSystem;
+import tech.pegasys.pantheon.services.kvstore.RocksDbConfiguration;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +36,6 @@ import java.util.Optional;
 import com.google.common.io.Files;
 
 public class PrivacyParameters {
-
   public static final URI DEFAULT_ENCLAVE_URL = URI.create("http://localhost:8888");
   public static final PrivacyParameters DEFAULT = new PrivacyParameters();
 
@@ -135,14 +138,16 @@ public class PrivacyParameters {
   }
 
   public static class Builder {
+    private final String PRIVATE_DATABASE_PATH = "private";
 
     private boolean enabled;
     private URI enclaveUrl;
     private Integer privacyAddress = Address.PRIVACY;
+    private MetricsSystem metricsSystem = new NoOpMetricsSystem();
+    private Path dataDir;
     private File enclavePublicKeyFile;
     private String enclavePublicKey;
     private Path privateKeyPath;
-    private StorageProvider storageProvider;
 
     public Builder setPrivacyAddress(final Integer privacyAddress) {
       this.privacyAddress = privacyAddress;
@@ -159,8 +164,13 @@ public class PrivacyParameters {
       return this;
     }
 
-    public Builder setStorageProvider(final StorageProvider privateStorageProvider) {
-      this.storageProvider = privateStorageProvider;
+    public Builder setMetricsSystem(final MetricsSystem metricsSystem) {
+      this.metricsSystem = metricsSystem;
+      return this;
+    }
+
+    public Builder setDataDir(final Path dataDir) {
+      this.dataDir = dataDir;
       return this;
     }
 
@@ -170,23 +180,32 @@ public class PrivacyParameters {
     }
 
     public PrivacyParameters build() throws IOException {
-      final PrivacyParameters config = new PrivacyParameters();
+      PrivacyParameters config = new PrivacyParameters();
       if (enabled) {
-        final WorldStateStorage privateWorldStateStorage =
-            storageProvider.createWorldStateStorage();
-        final WorldStatePreimageStorage privatePreimageStorage =
-            storageProvider.createWorldStatePreimageStorage();
-        final WorldStateArchive privateWorldStateArchive =
+        Path privateDbPath = dataDir.resolve(PRIVATE_DATABASE_PATH);
+        StorageProvider privateStorageProvider =
+            RocksDbStorageProvider.create(
+                RocksDbConfiguration.builder()
+                    .databaseDir(privateDbPath)
+                    .label("private_state")
+                    .build(),
+                metricsSystem);
+        WorldStateStorage privateWorldStateStorage =
+            privateStorageProvider.createWorldStateStorage();
+        WorldStatePreimageStorage privatePreimageStorage =
+            privateStorageProvider.createWorldStatePreimageStorage();
+        WorldStateArchive privateWorldStateArchive =
             new WorldStateArchive(privateWorldStateStorage, privatePreimageStorage);
 
-        final PrivateTransactionStorage privateTransactionStorage =
-            storageProvider.createPrivateTransactionStorage();
-        final PrivateStateStorage privateStateStorage = storageProvider.createPrivateStateStorage();
+        PrivateTransactionStorage privateTransactionStorage =
+            privateStorageProvider.createPrivateTransactionStorage();
+        PrivateStateStorage privateStateStorage =
+            privateStorageProvider.createPrivateStateStorage();
 
         config.setPrivateWorldStateArchive(privateWorldStateArchive);
         config.setEnclavePublicKey(enclavePublicKey);
         config.setEnclavePublicKeyFile(enclavePublicKeyFile);
-        config.setPrivateStorageProvider(storageProvider);
+        config.setPrivateStorageProvider(privateStorageProvider);
         config.setPrivateTransactionStorage(privateTransactionStorage);
         config.setPrivateStateStorage(privateStateStorage);
         if (privateKeyPath != null) {

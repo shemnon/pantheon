@@ -12,9 +12,6 @@
  */
 package tech.pegasys.pantheon.services.kvstore;
 
-import tech.pegasys.pantheon.plugin.services.exception.StorageException;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorageTransaction;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.util.HashMap;
@@ -29,14 +26,14 @@ import java.util.function.Predicate;
 
 public class InMemoryKeyValueStorage implements KeyValueStorage {
 
-  private final Map<BytesValue, byte[]> hashValueStore;
+  private final Map<BytesValue, BytesValue> hashValueStore;
   private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
   public InMemoryKeyValueStorage() {
     this(new HashMap<>());
   }
 
-  protected InMemoryKeyValueStorage(final Map<BytesValue, byte[]> hashValueStore) {
+  protected InMemoryKeyValueStorage(final Map<BytesValue, BytesValue> hashValueStore) {
     this.hashValueStore = hashValueStore;
   }
 
@@ -52,65 +49,71 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
   }
 
   @Override
-  public boolean containsKey(final byte[] key) throws StorageException {
-    final Lock lock = rwLock.readLock();
-    lock.lock();
-    try {
-      return hashValueStore.containsKey(BytesValue.wrap(key));
-    } finally {
-      lock.unlock();
-    }
-  }
-
-  @Override
-  public Optional<byte[]> get(final byte[] key) throws StorageException {
-    final Lock lock = rwLock.readLock();
-    lock.lock();
-    try {
-      return Optional.ofNullable(hashValueStore.get(BytesValue.wrap(key)));
-    } finally {
-      lock.unlock();
-    }
-  }
-
-  @Override
-  public long removeAllKeysUnless(final Predicate<byte[]> retainCondition) throws StorageException {
-    long initialSize = hashValueStore.keySet().size();
-    hashValueStore.keySet().removeIf(key -> !retainCondition.test(key.getArrayUnsafe()));
-    return initialSize - hashValueStore.keySet().size();
-  }
-
-  @Override
   public void close() {}
 
   @Override
-  public KeyValueStorageTransaction startTransaction() {
-    return new KeyValueStorageTransactionTransitionValidatorDecorator(new InMemoryTransaction());
+  public boolean containsKey(final BytesValue key) throws StorageException {
+    final Lock lock = rwLock.readLock();
+    lock.lock();
+    try {
+      return hashValueStore.containsKey(key);
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  public Optional<BytesValue> get(final BytesValue key) {
+    final Lock lock = rwLock.readLock();
+    lock.lock();
+    try {
+      return Optional.ofNullable(hashValueStore.get(key));
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  public long removeUnless(final Predicate<BytesValue> inUseCheck) {
+    final Lock lock = rwLock.writeLock();
+    lock.lock();
+    try {
+      long initialSize = hashValueStore.keySet().size();
+      hashValueStore.keySet().removeIf(key -> !inUseCheck.test(key));
+      return initialSize - hashValueStore.keySet().size();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  public Transaction startTransaction() {
+    return new InMemoryTransaction();
   }
 
   public Set<BytesValue> keySet() {
     return Set.copyOf(hashValueStore.keySet());
   }
 
-  private class InMemoryTransaction implements KeyValueStorageTransaction {
+  private class InMemoryTransaction extends AbstractTransaction {
 
-    private Map<BytesValue, byte[]> updatedValues = new HashMap<>();
+    private Map<BytesValue, BytesValue> updatedValues = new HashMap<>();
     private Set<BytesValue> removedKeys = new HashSet<>();
 
     @Override
-    public void put(final byte[] key, final byte[] value) {
-      updatedValues.put(BytesValue.wrap(key), value);
-      removedKeys.remove(BytesValue.wrap(key));
+    protected void doPut(final BytesValue key, final BytesValue value) {
+      updatedValues.put(key, value);
+      removedKeys.remove(key);
     }
 
     @Override
-    public void remove(final byte[] key) {
-      removedKeys.add(BytesValue.wrap(key));
-      updatedValues.remove(BytesValue.wrap(key));
+    protected void doRemove(final BytesValue key) {
+      removedKeys.add(key);
+      updatedValues.remove(key);
     }
 
     @Override
-    public void commit() throws StorageException {
+    protected void doCommit() {
       final Lock lock = rwLock.writeLock();
       lock.lock();
       try {
@@ -124,7 +127,7 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
     }
 
     @Override
-    public void rollback() {
+    protected void doRollback() {
       updatedValues = null;
       removedKeys = null;
     }

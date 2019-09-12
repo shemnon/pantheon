@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -53,7 +52,7 @@ public class MarkSweepPrunerTest {
 
   private final BlockDataGenerator gen = new BlockDataGenerator();
   private final NoOpMetricsSystem metricsSystem = new NoOpMetricsSystem();
-  private final Map<BytesValue, byte[]> hashValueStore = spy(new HashMap<>());
+  private final Map<BytesValue, BytesValue> hashValueStore = spy(new HashMap<>());
   private final InMemoryKeyValueStorage stateStorage = spy(new TestInMemoryStorage(hashValueStore));
   private final WorldStateStorage worldStateStorage = new WorldStateKeyValueStorage(stateStorage);
   private final WorldStateArchive worldStateArchive =
@@ -157,9 +156,7 @@ public class MarkSweepPrunerTest {
 
     // Check that storage contains only the values we expect
     assertThat(hashValueStore.size()).isEqualTo(expectedNodes.size());
-    assertThat(hashValueStore.values())
-        .containsExactlyInAnyOrderElementsOf(
-            expectedNodes.stream().map(BytesValue::getArrayUnsafe).collect(Collectors.toSet()));
+    assertThat(hashValueStore.values()).containsExactlyInAnyOrderElementsOf(expectedNodes);
   }
 
   @Test
@@ -205,9 +202,7 @@ public class MarkSweepPrunerTest {
 
     // Check that storage contains only the values we expect
     assertThat(hashValueStore.size()).isEqualTo(expectedNodes.size());
-    assertThat(hashValueStore.values())
-        .containsExactlyInAnyOrderElementsOf(
-            expectedNodes.stream().map(BytesValue::getArrayUnsafe).collect(Collectors.toSet()));
+    assertThat(hashValueStore.values()).containsExactlyInAnyOrderElementsOf(expectedNodes);
   }
 
   @Test
@@ -238,7 +233,7 @@ public class MarkSweepPrunerTest {
     for (Bytes32 stateRoot : stateRoots) {
       inOrder.verify(hashValueStore).remove(stateRoot);
     }
-    inOrder.verify(stateStorage).removeAllKeysUnless(any());
+    inOrder.verify(stateStorage).removeUnless(any());
   }
 
   @Test
@@ -273,9 +268,9 @@ public class MarkSweepPrunerTest {
     for (Bytes32 stateRoot : stateRoots) {
       inOrder.verify(hashValueStore).remove(stateRoot);
     }
-    inOrder.verify(stateStorage).removeAllKeysUnless(any());
+    inOrder.verify(stateStorage).removeUnless(any());
 
-    assertThat(stateStorage.containsKey(markedRoot.getArrayUnsafe())).isTrue();
+    assertThat(stateStorage.containsKey(markedRoot)).isTrue();
   }
 
   private void generateBlockchainData(final int numBlocks, final int numAccounts) {
@@ -316,9 +311,7 @@ public class MarkSweepPrunerTest {
             (key, val) -> {
               final StateTrieAccountValue accountValue =
                   StateTrieAccountValue.readFrom(RLP.input(val));
-              stateStorage
-                  .get(accountValue.getCodeHash().getArrayUnsafe())
-                  .ifPresent(v -> collector.add(BytesValue.wrap(v)));
+              stateStorage.get(accountValue.getCodeHash()).ifPresent(collector::add);
               storageRoots.add(accountValue.getStorageRoot());
             });
 
@@ -362,7 +355,7 @@ public class MarkSweepPrunerTest {
 
   private static class TestInMemoryStorage extends InMemoryKeyValueStorage {
 
-    public TestInMemoryStorage(final Map<BytesValue, byte[]> hashValueStore) {
+    public TestInMemoryStorage(final Map<BytesValue, BytesValue> hashValueStore) {
       super(hashValueStore);
     }
   }

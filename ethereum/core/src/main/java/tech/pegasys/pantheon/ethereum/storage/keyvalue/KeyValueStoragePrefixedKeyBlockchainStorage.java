@@ -20,8 +20,7 @@ import tech.pegasys.pantheon.ethereum.core.BlockHeaderFunctions;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.TransactionReceipt;
 import tech.pegasys.pantheon.ethereum.rlp.RLP;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorageTransaction;
+import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.bytes.BytesValues;
@@ -118,14 +117,14 @@ public class KeyValueStoragePrefixedKeyBlockchainStorage implements BlockchainSt
   }
 
   private Optional<BytesValue> get(final BytesValue prefix, final BytesValue key) {
-    return storage.get(BytesValues.concatenate(prefix, key).getArrayUnsafe()).map(BytesValue::wrap);
+    return storage.get(BytesValues.concatenate(prefix, key));
   }
 
   public static class Updater implements BlockchainStorage.Updater {
 
-    private final KeyValueStorageTransaction transaction;
+    private final KeyValueStorage.Transaction transaction;
 
-    private Updater(final KeyValueStorageTransaction transaction) {
+    private Updater(final KeyValueStorage.Transaction transaction) {
       this.transaction = transaction;
     }
 
@@ -194,12 +193,11 @@ public class KeyValueStoragePrefixedKeyBlockchainStorage implements BlockchainSt
     }
 
     private void set(final BytesValue prefix, final BytesValue key, final BytesValue value) {
-      transaction.put(
-          BytesValues.concatenate(prefix, key).getArrayUnsafe(), value.getArrayUnsafe());
+      transaction.put(BytesValues.concatenate(prefix, key), value);
     }
 
     private void remove(final BytesValue prefix, final BytesValue key) {
-      transaction.remove(BytesValues.concatenate(prefix, key).getArrayUnsafe());
+      transaction.remove(BytesValues.concatenate(prefix, key));
     }
 
     private BytesValue rlpEncode(final List<TransactionReceipt> receipts) {

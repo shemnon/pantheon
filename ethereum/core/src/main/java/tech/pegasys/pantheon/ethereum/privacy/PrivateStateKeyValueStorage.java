@@ -13,8 +13,7 @@
 package tech.pegasys.pantheon.ethereum.privacy;
 
 import tech.pegasys.pantheon.ethereum.core.Hash;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorageTransaction;
+import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
@@ -30,13 +29,10 @@ public class PrivateStateKeyValueStorage implements PrivateStateStorage {
 
   @Override
   public Optional<Hash> getPrivateAccountState(final BytesValue privacyId) {
-    final byte[] id = privacyId.getArrayUnsafe();
-
-    if (keyValueStorage.get(id).isPresent()) {
-      return Optional.of(Hash.wrap(Bytes32.wrap(keyValueStorage.get(id).get())));
-    } else {
-      return Optional.empty();
-    }
+    if (keyValueStorage.get(privacyId).isPresent())
+      return Optional.of(
+          Hash.wrap(Bytes32.wrap(keyValueStorage.get(privacyId).get().extractArray())));
+    else return Optional.empty();
   }
 
   @Override
@@ -50,17 +46,16 @@ public class PrivateStateKeyValueStorage implements PrivateStateStorage {
   }
 
   public static class Updater implements PrivateStateStorage.Updater {
+    private final KeyValueStorage.Transaction transaction;
 
-    private final KeyValueStorageTransaction transaction;
-
-    private Updater(final KeyValueStorageTransaction transaction) {
+    private Updater(final KeyValueStorage.Transaction transaction) {
       this.transaction = transaction;
     }
 
     @Override
     public PrivateStateStorage.Updater putPrivateAccountState(
         final BytesValue privacyId, final Hash privateStateHash) {
-      transaction.put(privacyId.getArrayUnsafe(), privateStateHash.extractArray());
+      transaction.put(privacyId, BytesValue.wrap(privateStateHash.extractArray()));
       return this;
     }
 

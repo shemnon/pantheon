@@ -15,8 +15,7 @@ package tech.pegasys.pantheon.ethereum.storage.keyvalue;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.trie.MerklePatriciaTrie;
 import tech.pegasys.pantheon.ethereum.worldstate.WorldStateStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorageTransaction;
+import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.Subscribers;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -40,7 +39,7 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
     if (codeHash.equals(Hash.EMPTY)) {
       return Optional.of(BytesValue.EMPTY);
     } else {
-      return keyValueStorage.get(codeHash.getArrayUnsafe()).map(BytesValue::wrap);
+      return keyValueStorage.get(codeHash);
     }
   }
 
@@ -58,7 +57,7 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
     if (nodeHash.equals(MerklePatriciaTrie.EMPTY_TRIE_NODE_HASH)) {
       return Optional.of(MerklePatriciaTrie.EMPTY_TRIE_NODE);
     } else {
-      return keyValueStorage.get(nodeHash.getArrayUnsafe()).map(BytesValue::wrap);
+      return keyValueStorage.get(nodeHash);
     }
   }
 
@@ -69,7 +68,7 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
     } else if (hash.equals(Hash.EMPTY)) {
       return Optional.of(BytesValue.EMPTY);
     } else {
-      return keyValueStorage.get(hash.getArrayUnsafe()).map(BytesValue::wrap);
+      return keyValueStorage.get(hash);
     }
   }
 
@@ -84,8 +83,8 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
   }
 
   @Override
-  public long prune(final Predicate<byte[]> inUseCheck) {
-    return keyValueStorage.removeAllKeysUnless(inUseCheck);
+  public long prune(final Predicate<BytesValue> inUseCheck) {
+    return keyValueStorage.removeUnless(inUseCheck);
   }
 
   @Override
@@ -100,12 +99,12 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
 
   public static class Updater implements WorldStateStorage.Updater {
 
-    private final KeyValueStorageTransaction transaction;
+    private final KeyValueStorage.Transaction transaction;
     private final Subscribers<NodesAddedListener> nodeAddedListeners;
     private final List<Bytes32> addedNodes = new ArrayList<>();
 
     public Updater(
-        final KeyValueStorageTransaction transaction,
+        final KeyValueStorage.Transaction transaction,
         final Subscribers<NodesAddedListener> nodeAddedListeners) {
       this.transaction = transaction;
       this.nodeAddedListeners = nodeAddedListeners;
@@ -113,7 +112,7 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
 
     @Override
     public Updater removeAccountStateTrieNode(final Bytes32 nodeHash) {
-      transaction.remove(nodeHash.getArrayUnsafe());
+      transaction.remove(nodeHash);
       return this;
     }
 
@@ -125,7 +124,7 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
       }
 
       addedNodes.add(codeHash);
-      transaction.put(codeHash.getArrayUnsafe(), code.getArrayUnsafe());
+      transaction.put(codeHash, code);
       return this;
     }
 
@@ -136,7 +135,7 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
         return this;
       }
       addedNodes.add(nodeHash);
-      transaction.put(nodeHash.getArrayUnsafe(), node.getArrayUnsafe());
+      transaction.put(nodeHash, node);
       return this;
     }
 
@@ -147,7 +146,7 @@ public class WorldStateKeyValueStorage implements WorldStateStorage {
         return this;
       }
       addedNodes.add(nodeHash);
-      transaction.put(nodeHash.getArrayUnsafe(), node.getArrayUnsafe());
+      transaction.put(nodeHash, node);
       return this;
     }
 

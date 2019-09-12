@@ -228,9 +228,6 @@ public class ProcessPantheonNodeRunner implements PantheonNodeRunner {
             });
     params.addAll(node.getExtraCLIOptions());
 
-    params.add("--key-value-storage");
-    params.add("rocksdb");
-
     LOG.info("Creating pantheon process with params {}", params);
     final ProcessBuilder processBuilder =
         new ProcessBuilder(params)

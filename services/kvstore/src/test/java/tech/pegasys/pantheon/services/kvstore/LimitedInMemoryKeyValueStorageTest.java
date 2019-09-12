@@ -13,18 +13,16 @@
 package tech.pegasys.pantheon.services.kvstore;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
 
-import tech.pegasys.pantheon.kvstore.AbstractKeyValueStorageTest;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorage;
-import tech.pegasys.pantheon.plugin.services.storage.KeyValueStorageTransaction;
+import tech.pegasys.pantheon.services.kvstore.KeyValueStorage.Transaction;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import org.junit.Test;
 
 public class LimitedInMemoryKeyValueStorageTest extends AbstractKeyValueStorageTest {
 
   @Override
-  protected KeyValueStorage createStore() {
+  protected KeyValueStorage createStore() throws Exception {
     return new LimitedInMemoryKeyValueStorage(100_000_000);
   }
 
@@ -34,20 +32,20 @@ public class LimitedInMemoryKeyValueStorageTest extends AbstractKeyValueStorageT
     final LimitedInMemoryKeyValueStorage storage = new LimitedInMemoryKeyValueStorage(limit);
 
     for (int i = 0; i < limit * 2; i++) {
-      final KeyValueStorageTransaction tx = storage.startTransaction();
-      tx.put(bytesOf(i), bytesOf(i));
+      final Transaction tx = storage.startTransaction();
+      tx.put(BytesValue.of(i), BytesValue.of(i));
       tx.commit();
     }
 
     int hits = 0;
     for (int i = 0; i < limit * 2; i++) {
-      if (storage.get(bytesOf(i)).isPresent()) {
+      if (storage.containsKey(BytesValue.of(i))) {
         hits++;
       }
     }
 
     assertThat(hits <= limit).isTrue();
     // Oldest key should've been dropped first
-    assertFalse(storage.containsKey(bytesOf((0))));
+    assertThat(storage.containsKey(BytesValue.of(0))).isFalse();
   }
 }
